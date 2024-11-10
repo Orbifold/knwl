@@ -1,0 +1,33 @@
+[tool.poetry]
+name = "knwl"
+version = "0.1.0"
+description = ""
+authors = ["Swa <swa@orbifold.net>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.10,<3.13"
+torch = "^2.5.1"
+graspologic = "^3.4.1"
+networkx = "^3.4.2"
+transformers = "^4.46.1"
+tiktoken = "^0.8.0"
+pyvis = "^0.3.2"
+tenacity = "^9.0.0"
+ollama = "^0.3.3"
+openai = "^1.53.0"
+chromadb = "^0.5.16"
+
+
+
+[tool.poetry.group.dev.dependencies]
+faker = "^30.8.2"
+jupyter = "^1.1.1"
+pytest-cov = "^6.0.0"
+pytest-mock = "^3.14.0"
+pytest-asyncio = "^0.24.0"
+pytest = "^8.3.3"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

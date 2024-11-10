@@ -1,0 +1,13 @@
+__pycache__
+*.egg-info
+dickens/
+book.txt
+.idea/
+dist/
+venv
+tests/workdir/**/*
+.coverage
+**/.DS_Store
+workdir/
+.idea
+.vscode
