@@ -102,25 +102,38 @@ async def process_chunk(chunk_key: str, chunk: KnwlChunk) -> KnwlExtraction | No
 
 
 async def extract_entities_from_text(text: str, chunk_key: str = None) -> KnwlExtraction:
+    """
+
+    This extract the entities and relationships from the given tet.
+    The returned extraction is a graph with semantic id's. That is, the name of the entities are unique within this graphs and can be used as such.
+    Once merged into the larger knowledge graph they are not unique anymore and the id's are converted to the proper KnwlNode and KnwlEdge id's.
+
+    Args:
+        text:
+        chunk_key:
+
+    Returns:
+
+    """
     entity_extract_prompt = PROMPTS["entity_extraction"]
     continue_prompt = PROMPTS["entity_continue_extraction"]
     if_loop_prompt = PROMPTS["entity_if_loop_extraction"]
 
     context_base = dict(tuple_delimiter=PROMPTS["DEFAULT_TUPLE_DELIMITER"], record_delimiter=PROMPTS["DEFAULT_RECORD_DELIMITER"], completion_delimiter=PROMPTS["DEFAULT_COMPLETION_DELIMITER"], entity_types=",".join(PROMPTS["DEFAULT_ENTITY_TYPES"]), )
     final_prompt = entity_extract_prompt.format(**context_base, input_text=text)
-    final_result = await ollama_chat(final_prompt, input=text, category=CATEGORY_KEYWORD_EXTRACTION)
+    final_result = await ollama_chat(final_prompt, core_input=text, category=CATEGORY_KEYWORD_EXTRACTION)
 
     history = pack_messages(final_prompt, final_result)
     entity_extract_max_gleaning = settings.entity_extract_max_gleaning
     for now_glean_index in range(entity_extract_max_gleaning):
-        glean_result = await ollama_chat(continue_prompt, history_messages=history)
+        glean_result = await ollama_chat(continue_prompt, history_messages=history, category=CATEGORY_GLEANING)
 
         history += pack_messages(continue_prompt, glean_result)
         final_result += glean_result
         if now_glean_index == entity_extract_max_gleaning - 1:
             break
 
-        if_loop_result: str = await ollama_chat(if_loop_prompt, history_messages=history)
+        if_loop_result: str = await ollama_chat(if_loop_prompt, history_messages=history, category=CATEGORY_NEED_MORE)
         if_loop_result = if_loop_result.strip().strip('"').strip("'").lower()
         if if_loop_result != "yes":
             break
@@ -129,12 +142,12 @@ async def extract_entities_from_text(text: str, chunk_key: str = None) -> KnwlEx
 
     nodes: dict[str, List[KnwlNode]] = {}
     edges: dict[str, List[KnwlEdge]] = {}
+    node_map = {}  # map of node names to node ids
     for record in records:
         record = re.search(r"\((.*)\)", record)
         if record is None:
             continue
         record = record.group(1)
-        # print(record)
         record_attributes = split_string_by_multi_markers(record, [context_base["tuple_delimiter"]])
 
         if is_entity(record_attributes):
@@ -146,8 +159,10 @@ async def extract_entities_from_text(text: str, chunk_key: str = None) -> KnwlEx
                 found = [e for e in coll if e.type == node.type and e.description == node.description]
                 if len(found) == 0:
                     coll.append(node)
+            node_map[node.name] = node.id
         elif is_relationship(record_attributes):
             edge: KnwlEdge = await convert_record_to_edge(record_attributes, chunk_key)
+            # the edge key is the tuple of the source and target names, NOT the ids. Is corrected below
             edge_key = f"({edge.sourceId},{edge.targetId})"
             if (edge.sourceId, edge.targetId) not in edges:
                 edges[edge_key] = [edge]
@@ -156,8 +171,17 @@ async def extract_entities_from_text(text: str, chunk_key: str = None) -> KnwlEx
                 found = [e for e in coll if e.description == edge.description and e.keywords == edge.keywords]
                 if len(found) == 0:
                     coll.append(edge)
-
-    return KnwlExtraction(nodes=nodes, edges=edges)
+    # the edge endpoints are the names and not the ids
+    corrected_edges = {}
+    for key in edges:
+        for e in edges[key]:
+            if key not in corrected_edges:
+                corrected_edges[key] = []
+            source_id = node_map[e.sourceId]
+            target_id = node_map[e.targetId]
+            corrected_edge = KnwlEdge(sourceId=source_id, targetId=target_id, description=e.description, keywords=e.keywords, weight=e.weight, chunkIds=e.chunkIds)
+            corrected_edges[key].append(corrected_edge)
+    return KnwlExtraction(nodes=nodes, edges=corrected_edges)
 
 
 async def extract_graph_from_text(text: str) -> nx.Graph:
@@ -217,8 +241,8 @@ async def convert_record_to_node(record: list[str], chunk_key: str = None) -> Kn
         return None
     entity_type = clean_str(record[2].upper())
     entity_description = clean_str(record[3])
-    entity_source_id = chunk_key
-    return KnwlNode(name=entity_name, type=entity_type, description=entity_description, chunkIds=entity_source_id)
+    entity_chunk_id = chunk_key
+    return KnwlNode(name=entity_name, type=entity_type, description=entity_description, chunkIds=[entity_chunk_id])
 
 
 async def convert_record_to_edge(record: list[str], chunk_key: str, ) -> KnwlEdge:
@@ -244,7 +268,7 @@ async def convert_record_to_edge(record: list[str], chunk_key: str, ) -> KnwlEdg
         source, target = target, source
     edge_description = clean_str(record[3])
 
-    edge_keywords = clean_str(record[4])
-    edge_source_id = chunk_key
+    edge_keywords = [clean_str(u) for u in clean_str(record[4]).split(",")]
+    edge_chunk_id = chunk_key
     weight = (float(record[-1]) if is_float_regex(record[-1]) else 1.0)
-    return KnwlEdge(sourceId=source, targetId=target, description=edge_description, keywords=edge_keywords, weight=weight, chunkIds=edge_source_id)
+    return KnwlEdge(sourceId=source, targetId=target, description=edge_description, keywords=edge_keywords, weight=weight, chunkIds=[edge_chunk_id])

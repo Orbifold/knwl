@@ -9,10 +9,10 @@ from knwl.utils import KnwlChunk, KnwlDocument, load_json, logger, write_json, S
 
 
 class JsonStorage(StorageNameSpace):
-    def __init__(self, namespace: str = "default"):
-        super().__init__(namespace)
+    def __init__(self, namespace: str = "default", cache: bool = False):
+        super().__init__(namespace, cache)
 
-        if not settings.in_memory:
+        if self.cache:
             self.file_path = os.path.join(get_config("working_dir"), f"json_{self.namespace}", "data.json")
             self.parent_path = os.path.dirname(self.file_path)
             self.data = load_json(self.file_path) or {}
@@ -28,11 +28,11 @@ class JsonStorage(StorageNameSpace):
 
     async def save(self):
 
-        if not settings.in_memory:
+        if self.cache:
             os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
             write_json(self.data, self.file_path)
 
-    async def unsave(self):
+    async def clear_cache(self):
         """
         Asynchronously removes the file if it exists.
 
@@ -43,7 +43,7 @@ class JsonStorage(StorageNameSpace):
             OSError: If an error occurs during file removal.
         """
 
-        if not settings.in_memory and os.path.exists(self.parent_path) :
+        if self.cache and os.path.exists(self.parent_path):
             shutil.rmtree(self.parent_path)
 
     async def get_by_id(self, id):

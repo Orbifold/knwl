@@ -11,7 +11,7 @@ from .utils import hash_args
 # os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 # note that LangChain has a ton of caching mechanisms in place: https://python.langchain.com/docs/integrations/llm_caching
-ollama_cache = JsonStorage(namespace="ollama")
+ollama_cache = JsonStorage(namespace="ollama", cache=settings.cache_ollama)
 
 ollama_client = ollama.AsyncClient()
 
@@ -24,15 +24,16 @@ async def is_in_cache(messages: str | List[str]):
     return found is not None
 
 
-async def ollama_chat(prompt, system_prompt=None, history_messages=[], input: str = None, category: str = None, **kwargs) -> str:
+async def ollama_chat(prompt, system_prompt=None, history_messages=None, core_input: str = None, category: str = None, **kwargs) -> str:
     """
     Asynchronously interacts with the Ollama chat model, utilizing a caching mechanism to store and retrieve responses.
 
     Args:
+        category:
         prompt (str): The user's input to be sent to the chat model.
         system_prompt (str, optional): An optional system-level prompt to guide the chat model. Defaults to None.
         history_messages (list, optional): A list of previous messages to provide context to the chat model. Defaults to an empty list.
-        input (str, optional): An optional input string corresponding to the initial input. This is added to the cache to make it easier to detect the initial input rather than the directive prompt. Defaults to None.
+        core_input (str, optional): An optional input string corresponding to the initial input. This is added to the cache to make it easier to detect the initial input rather than the directive prompt. Defaults to None.
         **kwargs: Additional keyword arguments to be passed to the chat model.
 
     Returns:
@@ -47,6 +48,8 @@ async def ollama_chat(prompt, system_prompt=None, history_messages=[], input: st
     Raises:
         Any exceptions raised by the Ollama client or cache operations.
     """
+    if history_messages is None:
+        history_messages = []
     messages = []
     if system_prompt:
         messages.append({"role": "system", "content": system_prompt})
@@ -70,7 +73,7 @@ async def ollama_chat(prompt, system_prompt=None, history_messages=[], input: st
             key: {
                 "timestamp": datetime.now().isoformat(),
                 "prompt": prompt,
-                "input": input,
+                "input": core_input,
                 "messages": len(messages),
                 "content": content,
                 "category": category,

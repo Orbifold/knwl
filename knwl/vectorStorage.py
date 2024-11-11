@@ -11,14 +11,16 @@ from knwl.utils import StorageNameSpace
 class VectorStorage(StorageNameSpace):
     metadata: list[str]
 
-    def __init__(self, namespace: str = "default", metadata: list[str] = []):
-        super().__init__(namespace)
+    def __init__(self, namespace: str = "default", metadata=None, cache: bool = False):
+        super().__init__(namespace, cache)
+        if metadata is None:
+            metadata = []
         self.metadata = metadata
 
-        if settings.in_memory:
-            self.client = chromadb.Client()
-        else:
+        if self.cache:
             self.client = chromadb.PersistentClient(path=os.path.join(settings.working_dir, f"vectordb_{self.namespace}"))
+        else:
+            self.client = chromadb.Client()
 
         self.collection = self.client.get_or_create_collection(name=self.namespace)
 

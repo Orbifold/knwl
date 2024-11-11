@@ -1,7 +1,6 @@
-
 import shutil
 from dataclasses import asdict
-from typing import cast
+from typing import cast, Dict, Any, Tuple
 
 import networkx as nx
 
@@ -85,9 +84,9 @@ class GraphStorage(StorageNameSpace):
     file_path: str | None
     parent_path: str | None
 
-    def __init__(self, namespace: str = "default"):
-        super().__init__(namespace)
-        if not settings.in_memory:
+    def __init__(self, namespace: str = "default", cache: bool = False):
+        super().__init__(namespace, cache)
+        if self.cache:
             self.file_path = os.path.join(settings.working_dir, f"graphdb_{self.namespace}", f"data.graphml")
             self.parent_path = os.path.dirname(self.file_path)
             os.makedirs(self.parent_path, exist_ok=True)
@@ -106,8 +105,6 @@ class GraphStorage(StorageNameSpace):
             self.graph = nx.Graph()
             self.file_path = None
             self.parent_path = None
-
-
 
     @staticmethod
     def to_knwl_node(node: dict) -> KnwlNode | None:
@@ -152,7 +149,7 @@ class GraphStorage(StorageNameSpace):
         nx.write_graphml(graph, file_name)
 
     async def save(self):
-        if not settings.in_memory:
+        if self.cache:
             GraphStorage.write(self.graph, self.file_path)
 
     async def node_exists(self, node_id: str) -> bool:
@@ -271,6 +268,48 @@ class GraphStorage(StorageNameSpace):
             edges.extend([e for e in n_edges if e is not None and e.id not in [ee.id for ee in edges]])
         return edges
 
+    async def get_edge_degrees(self, edges: List[KnwlEdge]) -> List[int]:
+        """
+        Asynchronously retrieves the degrees of the given edges.
+
+        Args:
+            edges (List[KnwlEdge]): A list of KnwlEdge objects for which to retrieve degrees.
+
+        Returns:
+            List[int]: A list of degrees for the given edges.
+        """
+        return await asyncio.gather(*[self.edge_degree(e.sourceId, e.targetId) for e in edges])
+
+    async def get_semantic_endpoints(self, edge_ids: List[str]) -> dict[str, tuple[str, str]]:
+        """
+        Asynchronously retrieves the names of the nodes with the given IDs.
+
+        Args:
+            edge_ids (List[str]): A list of node IDs for which to retrieve names.
+
+        Returns:
+            List[str]: A list of node names.
+        """
+        edges = await asyncio.gather(*[self.get_edge_by_id(id) for id in edge_ids])
+        coll = {}
+        for e in edges:
+            source_id = e.sourceId
+            target_id = e.targetId
+            source_node = await self.get_node_by_id(source_id)
+            target_node = await self.get_node_by_id(target_id)
+            if source_node and target_node:
+                coll[e.id] = (source_node.name, target_node.name)
+        return coll
+
+    async def get_edge_by_id(self, edge_id: str) -> KnwlEdge | None:
+        for edge in self.graph.edges(data=True):
+            if edge[2]["id"] == edge_id:
+                found = edge[2]
+                found["id"] = edge_id
+                found = GraphStorage.to_knwl_edge(found)
+                return found
+        raise ValueError(f"Edge with id {edge_id} not found")
+
     async def upsert_node(self, node_id: object, node_data: object = None):
         if node_id is None:
             raise ValueError("Insufficient data to upsert node")
@@ -328,7 +367,7 @@ class GraphStorage(StorageNameSpace):
 
     async def clear(self):
         self.graph.clear()
-        if not settings.in_memory:
+        if self.cache:
             await self.save()
 
     async def node_count(self):
@@ -344,8 +383,8 @@ class GraphStorage(StorageNameSpace):
         self.graph.remove_node(node_id)
 
     async def remove_edge(self, source_node_id: object, target_node_id: str = None):
-        sourceId=None
-        targetId=None
+        sourceId = None
+        targetId = None
         if isinstance(source_node_id, KnwlEdge):
             sourceId = source_node_id.sourceId
             targetId = source_node_id.targetId
@@ -379,5 +418,5 @@ class GraphStorage(StorageNameSpace):
         return self.graph.get_edge_data(source_node_id, target_node_id).get("weight", 1.0)
 
     async def unsave(self) -> None:
-        if os.path.exists(self.file_path) and not settings.in_memory:
+        if os.path.exists(self.file_path) and self.cache:
             shutil.rmtree(self.parent_path)

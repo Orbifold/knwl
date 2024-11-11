@@ -98,7 +98,7 @@ async def test_save_source(dummy_store):
 async def test_save():
     settings.in_memory = False
     store = JsonStorage("dummy")
-    await store.unsave()
+    await store.clear_cache()
     await store.clear()
 
     data = {"key1": {"value": "data1"}}
@@ -109,5 +109,5 @@ async def test_save():
     assert os.path.exists(file_path)
     data = load_json(file_path)
     assert data == {"key1": {"value": "data1"}}
-    await store.unsave()
+    await store.clear_cache()
     assert not os.path.exists(file_path)

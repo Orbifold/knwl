@@ -20,6 +20,7 @@ class Settings:
         self.summary_max = 20
         self.logging_enabled = False
         self.in_memory = True
+        self.cache_ollama = True
 
     def update(self, **kwargs):
         """

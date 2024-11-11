@@ -15,9 +15,23 @@ from .logging import logger
 
 CATEGORY_KEYWORD_EXTRACTION = "Keywords Extraction"
 CATEGORY_NAIVE_QUERY = "Naive Query"
+CATEGORY_GLEANING = "Gleaning"
+CATEGORY_NEED_MORE = "Need more extraction"
+
+
+def get_endpoint_ids(key: str) -> tuple[str | None, str | None]:
+    found = re.search(r"\((.*)\)", key)
+    if found is None:
+        return None, None
+    found = found.group(1)
+    return found.split(",")[0], found.split(",")[1]
 
 
 def unique_strings(ar: List[str] | List[List[str]]) -> List[str]:
+    if ar is None:
+        return []
+    if len(ar) == 0:
+        return []
     if isinstance(ar[0], list):
         ar = [item for sublist in ar for item in sublist]
         return list(set(ar))
@@ -47,7 +61,12 @@ class KnwlNode:
 
     @staticmethod
     def hash_node(n: 'KnwlNode') -> str:
-        return hash_with_prefix(n.name + " " + n.type + " " + (n.description or ""), prefix="node-")
+        # name and type form the primary key
+        return hash_with_prefix(n.name + " " + n.type, prefix="node-")
+
+    @staticmethod
+    def hash_keys(name: str, type: str) -> str:
+        return hash_with_prefix(name + " " + type, prefix="node-")
 
     def update_id(self):
         if self.name is not None and len(str.strip(self.name)) > 0:
@@ -212,6 +231,8 @@ class KnwlChunk:
 class KnwlExtraction:
     """
     A class used to represent a Knowledge Extraction.
+    Note that the id's of the nodes and edges are semantic, ie. actual names.
+    The conversion to real identifiers happens downstream when this is merged into the knowledge graph.
 
     Attributes
     ----------
@@ -231,12 +252,39 @@ class KnwlExtraction:
     typeName: str = "KnwlExtraction"
     id: str = field(default=str(uuid4()))
 
+    def is_consistent(self) -> bool:
+        """
+        Check if the graph is consistent: all the edge endpoints are in the node list.
+        """
+        node_ids = self.get_node_ids()
+        edge_ids = self.get_edge_ids()
+
+        for edge in self.edges:
+            source_id, target_id = get_endpoint_ids(edge)
+            if source_id is None or target_id is None:
+                return False
+            if source_id not in node_ids or target_id not in node_ids:
+                return False
+        return True
+
+    def get_node_ids(self) -> List[str]:
+        return self.nodes.keys()
+
+    def get_edge_ids(self) -> List[str]:
+        return self.edges.keys()
+
+    def __post_init__(self):
+        if not self.is_consistent():
+            raise ValueError("The extraction is not consistent.")
+
 
 class StorageNameSpace:
     namespace: str
+    cache: bool
 
-    def __init__(self, namespace: str = "default"):
+    def __init__(self, namespace: str = "default", cache: bool = False):
         self.namespace = namespace
+        self.cache = cache
 
 
 @dataclass
@@ -275,6 +323,42 @@ class KnwlDegreeNode(KnwlNode):
         id (str): The unique identifier of the knowledge node, default is a new UUID.
     """
     degree: int = field(default=0)
+
+
+@dataclass(frozen=True)
+class KnwlDegreeEdge(KnwlEdge):
+    """
+    Represents a knowledge edge in a graph with a degree.
+
+    Attributes:
+        sourceId (str): The ID of the source node.
+        targetId (str): The ID of the target node.
+        chunkIds (str): The ID of the chunk.
+        weight (float): The weight of the edge.
+        description (str): A description of the edge.
+        keywords (List(str)): Keywords associated with the edge.
+        typeName (str): The type name of the edge, default is "KnwlEdge".
+        id (str): The unique identifier of the edge, default is a new UUID.
+        degree (int): The degree of the edge.
+    """
+    degree: int = field(default=0)
+
+
+@dataclass(frozen=True)
+class KnwlRagText:
+    text: str
+    order: int
+
+
+@dataclass(frozen=True)
+class KnwlRagRelation:
+    id: str
+    source: str
+    target: str
+    description: str
+    keywords: List[str]
+    weight: float
+    order: int
 
 
 def get_json_body(content: str) -> Union[str, None]:

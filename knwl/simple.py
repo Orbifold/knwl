@@ -2,6 +2,7 @@ import warnings
 from collections import Counter
 from dataclasses import asdict
 from typing import List
+from urllib.parse import uses_query
 
 from knwl.entities import extract_entities
 from knwl.graphStorage import GraphStorage
@@ -12,7 +13,7 @@ from knwl.prompt import GRAPH_FIELD_SEP, PROMPTS
 from knwl.settings import settings
 from knwl.tokenize import chunk, encode, decode, truncate_list_by_token_size
 from knwl.utils import *
-from knwl.utils import KnwlGraph, KnwlNode
+from knwl.utils import KnwlGraph, KnwlNode, KnwlEdge
 from knwl.vectorStorage import VectorStorage
 
 logger = set_logger()
@@ -151,14 +152,14 @@ class Simple:
             None
         """
 
-        nodes = {hash_with_prefix(n.name, prefix="node-"): {"content": n.name + n.description, "name": n.name, } for n in g.nodes}
+        nodes = {n.id: asdict(n) for n in g.nodes}
         await self.node_vectors.upsert(nodes)
 
         # todo: research the effect of these combinations
-        edges = {hash_with_prefix(e.sourceId + e.targetId, prefix="edge-"): {"sourceId": e.sourceId, "targetId": e.targetId, "content": e.keywords + e.sourceId + e.targetId + e.description, } for e in g.edges}
+        edges = {e.id: asdict(e) for e in g.edges}
         await self.edge_vectors.upsert(edges)
 
-    async def dmerge_extraction_into_knowledge_graph(self, g: KnwlExtraction) -> KnwlGraph:
+    async def merge_extraction_into_knowledge_graph(self, g: KnwlExtraction) -> KnwlGraph:
         """
         Asynchronously merges nodes and edges into the graph.
 
@@ -177,12 +178,12 @@ class Simple:
 
         nodes = await asyncio.gather(*[self.merge_nodes_into_graph(k, v) for k, v in g.nodes.items()])
 
-        edges = await asyncio.gather(*[self.merge_edges_into_graph(k, v) for k, v in g.edges.items()])
+        edges = await asyncio.gather(*[self.merge_edges_into_graph(v) for k, v in g.edges.items()])
 
         # if not len(all_entities_data):  #     logger.warning("Didn't extract any entities, maybe your LLM is not working")  #     return None  # if not len(all_relationships_data):  #     logger.warning(  #         "Didn't extract any relationships, maybe your LLM is not working"  #     )  #     return None  #
         return KnwlGraph(nodes=nodes, edges=edges)
 
-    async def merge_nodes_into_graph(self, entity_id: str, nodes: list[KnwlNode], smart_merge: bool = True) -> KnwlNode:
+    async def merge_nodes_into_graph(self, entity_name: str, nodes: list[KnwlNode], smart_merge: bool = True) -> KnwlNode:
         """
         Merges a list of nodes into the graph for a given entity.
 
@@ -193,34 +194,32 @@ class Simple:
 
         Args:
             smart_merge: A boolean flag indicating whether to use smart merging.
-            entity_id (str): The name of the entity to merge nodes for.
+            entity_name (str): The name of the entity to merge nodes for.
             nodes (list[dict]): A list of dictionaries containing node data to merge. Each dictionary
                                      should have keys 'entity_type', 'description', and 'source_id'.
 
         Returns:
             dict: The merged node data including 'entity_id', 'entity_type', 'description', and 'source_id'.
         """
-        found_types = []
+        # count the most common entity type
+        majority_entity_type = sorted(Counter([dp.type for dp in nodes]).items(), key=lambda x: x[1], reverse=True, )[0][0]
+        entity_id = KnwlNode.hash_keys(entity_name, majority_entity_type)
         found_chunk_ids = []
         found_description = []
 
         found_node = await self.graph_storage.get_node_by_id(entity_id)
         if found_node is not None:
-            found_types.append(found_node.type)
             found_chunk_ids.extend(found_node.chunkIds)
             found_description.append(found_node.description)
 
-        # count the most common entity type
-        # todo: would be better to have separate nodes for each type
-        entity_type = sorted(Counter([dp.type for dp in nodes] + found_types).items(), key=lambda x: x[1], reverse=True, )[0][0]
         unique_descriptions = unique_strings([dp.description for dp in nodes] + found_description)
         chunk_ids = unique_strings([dp.chunkIds for dp in nodes] + [found_chunk_ids])
         compactified_description = await Simple.compactify_summary(entity_id, GRAPH_FIELD_SEP.join(unique_descriptions), smart_merge)
-        node = KnwlNode(name=entity_id, type=entity_type, description=compactified_description, chunkIds=chunk_ids)
+        node = KnwlNode(name=entity_name, type=majority_entity_type, description=compactified_description, chunkIds=chunk_ids)
         await self.graph_storage.upsert_node(entity_id, asdict(node))
         return node
 
-    async def merge_edges_into_graph(self, edge_id: str, edges: list[KnwlEdge], smart_merge: bool = True) -> KnwlEdge:
+    async def merge_edges_into_graph(self, edges: List[KnwlEdge], smart_merge: bool = True) -> KnwlEdge | None:
         """
         Merges multiple edges into the graph between the specified originId and target nodes.
 
@@ -228,7 +227,6 @@ class Simple:
         Otherwise, it creates a new edge with the provided data.
 
         Args:
-            edge_id (str): The name of the edge to merge.
             smart_merge: A boolean flag indicating whether to use smart merging.
             edges (list[dict]): A list of dictionaries containing edge data. Each dictionary should have the keys:
                 - "weight" (float): The weight of the edge.
@@ -243,16 +241,15 @@ class Simple:
                 - "description" (str): The merged description of the edge.
                 - "keywords" (str): The merged keywords of the edge.
         """
+        if edges is None or len(edges) == 0:
+            return None
+        # all the edges have the same source and target
+        source_id: str = edges[0].sourceId
+        target_id: str = edges[0].targetId
         found_weights = []
         found_chunk_ids = []
         found_description = []
         found_keywords = []
-        # the edge_id has shape "(source_id,target_id)", split using regex
-        match = re.match(r"\((.*?),(.*?)\)", edge_id)
-        if match:
-            source_id, target_id = match.groups()
-        else:
-            raise ValueError(f"Invalid edge_id format: {edge_id}")
 
         if await self.graph_storage.edge_exists(source_id, target_id):
             found_edge = await self.graph_storage.get_edge(source_id, target_id)
@@ -308,7 +305,7 @@ class Simple:
         use_prompt = prompt_template.format(**context_base)
         logger.debug(f"Trigger summary: {entity_or_relation_name}")
         # summary = await ollama_chat(use_prompt, max_tokens=summary_max_tokens)
-        summary = await ollama_chat(use_prompt, input=" ".join(descriptions))
+        summary = await ollama_chat(use_prompt, core_input=" ".join(descriptions))
         return summary
 
     async def query(self, query: str, param: QueryParam = QueryParam()):
@@ -325,8 +322,9 @@ class Simple:
         Raises:
             ValueError: If the mode specified in param is unknown.
         """
+        context = None
         if param.mode == "local":
-            response = await self.local_query(query, param)
+            response, context = await self.local_query(query, param)
         elif param.mode == "global":
             response = await self.global_query(query, param)
 
@@ -336,9 +334,9 @@ class Simple:
             response = await self.naive_query(query, param)
         else:
             raise ValueError(f"Unknown mode {param.mode}")
-        return response
+        return response, context
 
-    async def local_query(self, query: str, query_param: QueryParam) -> str:
+    async def local_query(self, query: str, query_param: QueryParam) -> tuple[str, str]:
         """
         Executes a local query and returns the response.
         The local query takes the neighborhood of the hit nodes and uses the low-level keywords to find the most related text units.
@@ -362,7 +360,7 @@ class Simple:
 
         keywords_prompt = PROMPTS["keywords_extraction"].format(query=query)
 
-        result = await ollama_chat(keywords_prompt, input=query, category=CATEGORY_KEYWORD_EXTRACTION)
+        result = await ollama_chat(keywords_prompt, core_input=query, category=CATEGORY_KEYWORD_EXTRACTION)
 
         try:
             keywords_data = json.loads(result)
@@ -385,19 +383,21 @@ class Simple:
         if low_keywords:
             context = await self.get_local_query_context(low_keywords, query_param)
         if query_param.only_need_context:
-            return context
+            return None, context
         if context is None:
             return PROMPTS["fail_response"]
         sys_prompt_temp = PROMPTS["rag_response"]
         sys_prompt = sys_prompt_temp.format(context_data=context, response_type=query_param.response_type)
-        response = await ollama_chat(query, system_prompt=sys_prompt, )
+        response = await ollama_chat(query, system_prompt=sys_prompt)
         if len(response) > len(sys_prompt):
             response = (response.replace(sys_prompt, "").replace("user", "").replace("model", "").replace(query, "").replace("<system>", "").replace("</system>", "").strip())
 
-        return response
+        return response, context
 
     async def get_local_query_context(self, query, query_param: QueryParam) -> str | None:
         """
+        This really is the heart of the whole GraphRAG intelligence.
+
         Asynchronously retrieves the local query context based on the provided query and query parameters.
 
         This function performs the following steps:
@@ -420,25 +420,28 @@ class Simple:
         primary_nodes = await self.get_primary_nodes(query, query_param)
         if primary_nodes is None:
             return None
-        use_text_units = await self.get_graph_rag_texts(primary_nodes)
-        use_relations = await self._find_most_related_edges_from_entities(primary_nodes, query_param)
+        # chunk texts in descending order of importance
+        use_texts = await self.get_graph_rag_texts(primary_nodes)
+        # the relations with endpoint names in descending order of importance
+        use_relations = await self.get_graph_rag_relations(primary_nodes, query_param)
 
-        logger.info(f"Local query uses {len(node_datas)} entites, {len(use_relations)} relations, {len(use_text_units)} text units")
-        entites_section_list = [["id", "entity", "type", "description", "rank"]]
-        for i, n in enumerate(node_datas):
-            entites_section_list.append([i, n["entity_name"], n.get("entity_type", "UNKNOWN"), n.get("description", "UNKNOWN"), n["rank"], ])
+        # ====================== Primary Nodes ==================================
+        entites_section_list = [["id", "entity", "type", "description", "order"]]
+        for i, n in enumerate(primary_nodes):
+            entites_section_list.append([i, n.name, n.type, n.description, n.degree])
         entities_context = list_of_list_to_csv(entites_section_list)
 
-        relations_section_list = [["id", "source", "target", "description", "keywords", "weight", "rank"]]
+        # ====================== Relations ======================================
+        relations_section_list = [["id", "source", "target", "description", "keywords", "weight", "order"]]
         for i, e in enumerate(use_relations):
-            relations_section_list.append([i, e["src_tgt"][0], e["src_tgt"][1], e.description, e.keywords, e.weight, e["rank"], ])
+            relations_section_list.append([i, e.source, e.target, e.description, e.keywords, e.weight, e.order])
         relations_context = list_of_list_to_csv(relations_section_list)
-
+        # ====================== Chunks ========================================
         text_units_section_list = [["id", "content"]]
-        for i, t in enumerate(use_text_units):
-            text_units_section_list.append([i, t["content"]])
+        for i, t in enumerate(use_texts):
+            text_units_section_list.append([i, t.text])
         text_units_context = list_of_list_to_csv(text_units_section_list)
-        return f"""
+        context = f"""
             -----Entities-----
             ```csv
             {entities_context}
@@ -452,6 +455,7 @@ class Simple:
             {text_units_context}
             ```
             """
+        return context
 
     async def get_primary_nodes(self, query: str, query_param: QueryParam) -> List[KnwlDegreeNode] | None:
         """
@@ -475,7 +479,7 @@ class Simple:
         if not len(found):
             return None
         # todo: translation from vector to node not necessary if the vector storage contains the data as well
-        node_datas = await asyncio.gather(*[self.graph_storage.get_node_by_id(r["name"]) for r in found])
+        node_datas = await asyncio.gather(*[self.graph_storage.get_node_by_id(r["id"]) for r in found])
 
         # if the node vector exists but the node isn't in the graph, it's likely that the storage is damaged or not in sync
         if not all([n is not None for n in node_datas]):
@@ -544,7 +548,7 @@ class Simple:
             stats[chunk_id] = sum([chunk_id in v for v in edge_chunk_ids.values()])
         return stats
 
-    async def get_graph_rag_texts(self, primary_nodes: list[KnwlNode]):
+    async def get_graph_rag_texts(self, primary_nodes: list[KnwlNode]) -> List[KnwlRagText]:
         """
         Returns the most relevant paragraphs based on the given primary nodes.
         What makes the paragraphs relevant is defined in the `create_chunk_stats` method.
@@ -561,25 +565,24 @@ class Simple:
         stats = await self.create_chunk_stats(primary_nodes)
         graph_rag_chunks = {}
         for chunk_id, count in stats.items():
-            graph_rag_chunks[chunk_id] = {
-                "count": count,
-                "text": await self.chunks_storage.get_by_id(chunk_id)
-            }
+            chunk = await self.chunks_storage.get_by_id(chunk_id)
+            graph_rag_chunks[chunk_id] = KnwlRagText(order=count, text=chunk["content"])
         # in decreasing order of count
-        graph_rag_texts = sorted(graph_rag_chunks.values(), key=lambda x: x["count"], reverse=True)
+        graph_rag_texts = sorted(graph_rag_chunks.values(), key=lambda x: x.order, reverse=True)
         return graph_rag_texts
 
-    async def _find_most_related_edges_from_entities(self, node_datas: list[dict], query_param: QueryParam):
-        all_related_edges = await asyncio.gather(*[self.graph_storage.get_node_edges(dp["entity_name"]) for dp in node_datas])
-        all_edges = set()
-        for this_edges in all_related_edges:
-            all_edges.update([tuple(sorted(e)) for e in this_edges])
-        all_edges = list(all_edges)
-        all_edges_pack = await asyncio.gather(*[self.graph_storage.get_edge(e[0], e[1]) for e in all_edges])
-        all_edges_degree = await asyncio.gather(*[self.graph_storage.edge_degree(e[0], e[1]) for e in all_edges])
-        all_edges_data = [{"src_tgt": k, "rank": d, **v} for k, v, d in zip(all_edges, all_edges_pack, all_edges_degree) if v is not None]
-        all_edges_data = sorted(all_edges_data, key=lambda x: (x["rank"], x.weight), reverse=True)
-        all_edges_data = truncate_list_by_token_size(all_edges_data, key=lambda x: x.description, max_token_size=query_param.max_token_for_global_context, )
+    async def get_graph_rag_relations(self, node_datas: list[KnwlDegreeNode], query_param: QueryParam) -> List[KnwlRagRelation]:
+        all_attached_edges = await self.graph_storage.get_attached_edges(node_datas)
+        all_edges_degree = await self.graph_storage.get_edge_degrees(all_attached_edges)
+        all_edge_ids = unique_strings([e.id for e in all_attached_edges])
+        edge_endpoint_names = await self.graph_storage.get_semantic_endpoints(all_edge_ids)
+        all_edges_data = [
+            KnwlRagRelation(order=d, source=edge_endpoint_names[e.id][0], target=edge_endpoint_names[e.id][1], keywords=e.keywords, description=e.description, weight=e.weight, id=e.id)
+            for e, d in zip(all_attached_edges, all_edges_degree) if e is not None
+        ]
+        # sort by edge degree and weight descending
+        all_edges_data = sorted(all_edges_data, key=lambda x: (x.order, x.weight), reverse=True)
+        all_edges_data = truncate_list_by_token_size(all_edges_data, key=lambda x: x.description, max_token_size=query_param.max_token_for_global_context)
         return all_edges_data
 
     async def global_query(self, query, query_param: QueryParam) -> str:
@@ -652,7 +655,7 @@ class Simple:
 
         text_units_section_list = [["id", "content"]]
         for i, t in enumerate(use_text_units):
-            text_units_section_list.append([i, t["content"]])
+            text_units_section_list.append([i, t.content])
         text_units_context = list_of_list_to_csv(text_units_section_list)
 
         return f"""

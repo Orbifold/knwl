@@ -28,8 +28,8 @@ class TestBasic:
             'targetId': clean_str(record_attributes[2].upper()),
             'weight': 4.0,
             'description': clean_str(record_attributes[3]),
-            'keywords': clean_str(record_attributes[4]),
-            'chunkIds': chunk_key
+            'keywords': ["k1", "k2", "k3"],
+            'chunkIds': [chunk_key]
         })
 
         result = await convert_record_to_edge(record_attributes, chunk_key)
@@ -51,8 +51,8 @@ class TestBasic:
             'targetId': clean_str(record_attributes[2].upper()),
             'weight': 1.0,
             'description': clean_str(record_attributes[3]),
-            'keywords': clean_str(record_attributes[4]),
-            'chunkIds': chunk_key
+            'keywords': ["A", "B", "D", "K1", "K2", "K3"],
+            'chunkIds': [chunk_key]
         })
 
         result = await convert_record_to_edge(record_attributes, chunk_key)
@@ -72,7 +72,7 @@ class TestBasic:
             'name': clean_str(record_attributes[1].upper()),
             'type': clean_str(record_attributes[2].upper()),
             'description': clean_str(record_attributes[3]),
-            'chunkIds': chunk_key
+            'chunkIds': [chunk_key]
         })
 
         result = await convert_record_to_node(record_attributes, chunk_key)
@@ -127,7 +127,7 @@ class TestBasic:
         assert is_entity(None) == False
 
 
-@pytest.mark.skip("Not relevant for the current implementation")
+# @pytest.mark.skip("Not relevant for the current implementation")
 class TestActualExtraction:
 
     @pytest.mark.asyncio
@@ -140,8 +140,8 @@ class TestActualExtraction:
 
         print(">>", json.dumps(asdict(g), indent=2))
 
-        assert len(g.nodes) == 2
-        assert len(g.edges) == 1
+        assert len(g.nodes) >= 2
+        assert len(g.edges) >= 1
         assert "JOHN" in g.nodes
         assert len(g.nodes["JOHN"]) >= 1
         assert g.nodes["JOHN"][0].type == "PERSON"
@@ -166,6 +166,9 @@ class TestActualExtraction:
     @pytest.mark.asyncio
     async def test_extract_from_text(self):
         text = "John is an artist. He works in a museum in Chelsea. He knows Maria."
-        found = await extract_entities_from_text(text)
+        found: KnwlExtraction = await extract_entities_from_text(text)
+        assert found.is_consistent()
         print()
         print(json.dumps(asdict(found), indent=2))
+        assert len(found.nodes) >= 3
+        assert len(found.edges) >= 1

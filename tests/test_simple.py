@@ -35,13 +35,22 @@ def create_dummy_sources(n=10):
 #     await simple.insert('John is married to Anna.')
 #     await simple.insert('Anna loves John and how he takes care of the family. The have a beautiful daughter named Helena, she is three years old.')
 #     await simple.insert('John has been working for the past ten years on AI and robotics. He knows a lot about the subject.')
-#
-#
-# @pytest.mark.asyncio
-# async def test_query_local():
-#     s = Simple()
-#     found = await s.query("Who is John?", QueryParam(mode="local"))
-#     print(found)
+
+
+@pytest.mark.asyncio
+async def test_query_local():
+    s = Simple()
+    await s.insert('John is married to Anna.')
+    await s.insert('Anna loves John and how he takes care of the family. The have a beautiful daughter named Helena, she is three years old.')
+    await s.insert('John has been working for the past ten years on AI and robotics. He knows a lot about the subject.')
+    answer,ctx = await s.query("Who is John?", QueryParam(mode="local"))
+    print()
+    print("======================== Context ====================================")
+    print(ctx)
+    print("======================== Answer =====================================")
+    print(answer)
+
+
 #
 #
 # @pytest.mark.asyncio
@@ -332,7 +341,7 @@ class TestGraphMerge:
         mocker.patch.object(s, 'merge_nodes_into_graph', return_value=None)
         mocker.patch.object(s, 'merge_edges_into_graph', return_value=None)
 
-        result = await s.dmerge_extraction_into_knowledge_graph(extraction)
+        result = await s.merge_extraction_into_knowledge_graph(extraction)
 
         assert result.nodes == []
         assert result.edges == []
@@ -344,28 +353,27 @@ class TestGraphMerge:
         node2 = KnwlNode(type="Location", description="Paris is a city.", chunkIds=["chunk2"], name="entity2")
         edge1 = KnwlEdge(weight=1.0, sourceId=node1.id, targetId=node2.id, description="Edge 1", keywords=["keyword1"], chunkIds=["chunk1"])
         edge2 = KnwlEdge(weight=2.0, sourceId=node1.id, targetId=node2.id, description="Edge 2", keywords=["keyword2"], chunkIds=["chunk2"])
+        merged_edge = KnwlEdge(weight=3.0, sourceId=node1.id, targetId=node2.id, description="Edge 1 Edge 2", keywords=["keyword1", "keyword2"], chunkIds=["chunk1", "chunk2"])
         extraction = KnwlExtraction(
             nodes={
-                node1.id: [node1],
-                node2.id: [node2]
+                node1.name: [node1],
+                node2.name: [node2]
             },
             edges={
-                edge1.id: [edge1],
-                edge2.id: [edge2]
+                "(entity1,entity2)": [edge1, edge2],
             }
         )
 
         mocker.patch.object(s, 'merge_nodes_into_graph', side_effect=[node1, node2])
-        mocker.patch.object(s, 'merge_edges_into_graph', side_effect=[edge1, edge2])
+        mocker.patch.object(s, 'merge_edges_into_graph', side_effect=[merged_edge])
 
-        result = await s.dmerge_extraction_into_knowledge_graph(extraction)
+        result = await s.merge_extraction_into_knowledge_graph(extraction)
 
         assert len(result.nodes) == 2
         assert result.nodes[0].id == node1.id
         assert result.nodes[1].id == node2.id
-        assert len(result.edges) == 2
-        assert result.edges[0].id == edge1.id
-        assert result.edges[1].id == edge2.id
+        assert len(result.edges) == 1
+        assert result.edges[0].id == merged_edge.id
 
 
 class TestQuery:
