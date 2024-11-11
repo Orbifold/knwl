@@ -20,58 +20,60 @@ def create_dummy_sources(n=10):
     return sources
 
 
-#
-# @pytest.fixture(autouse=True)
-# def skip_all():
-#     pytest.skip('Not real tests.')
-#
-#
-# @pytest.mark.asyncio
-# async def test_ingest():
-#     simple = Simple()
-#     await simple.insert('John lives in the center of Paris.')
-#     # assert len(nodes) == 2
-#     # assert len(edges) == 1
-#     await simple.insert('John is married to Anna.')
-#     await simple.insert('Anna loves John and how he takes care of the family. The have a beautiful daughter named Helena, she is three years old.')
-#     await simple.insert('John has been working for the past ten years on AI and robotics. He knows a lot about the subject.')
+class TestRealCases:
 
+    @pytest.mark.asyncio
+    async def test_query_local(self):
+        s = Simple()
+        await s.insert('John is married to Anna.')
+        await s.insert('Anna loves John and how he takes care of the family. The have a beautiful daughter named Helena, she is three years old.')
+        await s.insert('John has been working for the past ten years on AI and robotics. He knows a lot about the subject.')
+        response = await s.query("Who is John?", QueryParam(mode="local"))
+        print()
+        print("======================== Context ====================================")
+        print(response.context)
+        print("======================== Answer =====================================")
+        print(response.answer)
 
-@pytest.mark.asyncio
-async def test_query_local():
-    s = Simple()
-    await s.insert('John is married to Anna.')
-    await s.insert('Anna loves John and how he takes care of the family. The have a beautiful daughter named Helena, she is three years old.')
-    await s.insert('John has been working for the past ten years on AI and robotics. He knows a lot about the subject.')
-    answer,ctx = await s.query("Who is John?", QueryParam(mode="local"))
-    print()
-    print("======================== Context ====================================")
-    print(ctx)
-    print("======================== Answer =====================================")
-    print(answer)
+    @pytest.mark.asyncio
+    async def test_global_local(self):
+        s = Simple()
+        await s.insert('John is married to Anna.')
+        await s.insert('Anna loves John and how he takes care of the family. The have a beautiful daughter named Helena, she is three years old.')
+        await s.insert('John has been working for the past ten years on AI and robotics. He knows a lot about the subject.')
+        response = await s.query("Who is John?", QueryParam(mode="global"))
+        print()
+        print("======================== Context ====================================")
+        print(response.context)
+        print("======================== Answer =====================================")
+        print(response.answer)
 
+    @pytest.mark.asyncio
+    async def test_naive_local(self):
+        s = Simple()
+        await s.insert('John is married to Anna.')
+        await s.insert('Anna loves John and how he takes care of the family. The have a beautiful daughter named Helena, she is three years old.')
+        await s.insert('John has been working for the past ten years on AI and robotics. He knows a lot about the subject.')
+        response = await s.query("Who is John?", QueryParam(mode="naive"))
+        print()
+        print("======================== Context ====================================")
+        print(response.context)
+        print("======================== Answer =====================================")
+        print(response.answer)
 
-#
-#
-# @pytest.mark.asyncio
-# async def test_query_global():
-#     s = Simple()
-#     found = await s.query("Who is John?", QueryParam(mode="global"))
-#     print(found)
-#
-#
-# @pytest.mark.asyncio
-# async def test_query_naive():
-#     s = Simple()
-#     found = await s.query("Who is John?", QueryParam(mode="naive"))
-#     print(found)
-#
-#
-# @pytest.mark.asyncio
-# async def test_query_hybrid():
-#     s = Simple()
-#     found = await s.query("Who is John?", QueryParam(mode="hybrid"))
-#     print(found)
+    @pytest.mark.asyncio
+    async def test_hybrid_local(self):
+        s = Simple()
+        await s.insert('John is married to Anna.')
+        await s.insert('Anna loves John and how he takes care of the family. The have a beautiful daughter named Helena, she is three years old.')
+        await s.insert('John has been working for the past ten years on AI and robotics. He knows a lot about the subject.')
+        response = await s.query("Who is John?", QueryParam(mode="hybrid"))
+        print()
+        print("======================== Context ====================================")
+        print(response.context)
+        print("======================== Answer =====================================")
+        print(response.answer)
+
 
 class TestDocuments:
     @pytest.mark.asyncio
@@ -524,7 +526,7 @@ class TestChunkStats:
     @pytest.mark.asyncio
     async def test_create_chunk_stats_no_primary_nodes(self):
         s = Simple()
-        result = await s.create_chunk_stats([])
+        result = await s.create_chunk_stats_from_nodes([])
         assert result == {}
 
     @pytest.mark.asyncio
@@ -536,7 +538,7 @@ class TestChunkStats:
         ]
 
         mocker.patch.object(s, 'get_attached_edges', return_value=[])
-        result = await s.create_chunk_stats(primary_nodes)
+        result = await s.create_chunk_stats_from_nodes(primary_nodes)
         assert result == {"chunk1": 0, "chunk2": 0}
 
     @pytest.mark.asyncio
@@ -591,5 +593,5 @@ class TestChunkStats:
         mocker.patch.object(s, 'get_attached_edges', side_effect=get_attached_edges)
         mocker.patch.object(s.graph_storage, 'get_node_by_id', side_effect=get_node_by_id)
 
-        result = await s.create_chunk_stats(primary_nodes)
+        result = await s.create_chunk_stats_from_nodes(primary_nodes)
         assert result == {"chunk1": 2, "chunk3": 1, "chunk4": 1}

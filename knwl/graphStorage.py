@@ -40,7 +40,7 @@ class GraphStorage(StorageNameSpace):
     async node_degree(node_id: str) -> int
         Returns the degree of a node.
 
-    async edge_degree(src_id: str, tgt_id: str) -> int
+    async edge_degree(source_id: str, target_id: str) -> int
         Returns the combined degree of two nodes.
 
     async get_edge(source_or_key: str, target_node_id: str) -> Union[dict, None]
@@ -212,8 +212,8 @@ class GraphStorage(StorageNameSpace):
     async def node_degree(self, node_id: str) -> int:
         return self.graph.degree(node_id)
 
-    async def edge_degree(self, src_id: str, tgt_id: str) -> int:
-        return self.graph.degree(src_id) + self.graph.degree(tgt_id)
+    async def edge_degree(self, source_id: str, target_id: str) -> int:
+        return self.graph.degree(source_id) + self.graph.degree(target_id)
 
     async def get_edge(self, source_node_id: str, target_node_id: str = None) -> Union[KnwlEdge, None]:
         if target_node_id is None:

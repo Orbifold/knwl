@@ -60,7 +60,7 @@ def chunk(content: str, source_key: str = None) -> List[KnwlChunk]:
     return results
 
 
-def truncate_list_by_token_size(list_data: list, key: callable, max_token_size: int):
+def truncate_content(content: str, max_token_size: int):
     """
     Truncate a list of data based on the token size limit.
     This function iterates over the given list and accumulates the token size
@@ -68,9 +68,7 @@ def truncate_list_by_token_size(list_data: list, key: callable, max_token_size: 
     and returns a truncated list when the accumulated token size exceeds the
     specified maximum token size.
     Args:
-        list_data (list): The list of data to be truncated.
-        key (callable): A function that extracts the relevant data from each element
-                        in the list for token size calculation.
+        content (list): The list of data to be truncated.
         max_token_size (int): The maximum allowed token size for the truncated list.
     Returns:
         list: A truncated list where the total token size does not exceed the
@@ -78,10 +76,9 @@ def truncate_list_by_token_size(list_data: list, key: callable, max_token_size: 
     """
 
     if max_token_size <= 0:
-        return []
-    tokens = 0
-    for i, data in enumerate(list_data):
-        tokens += len(encode(key(data)))
-        if tokens > max_token_size:
-            return list_data[:i]
-    return list_data
+        return ""
+    tokens = encode(content)
+    if len(tokens) <= max_token_size:
+        return content
+    else:
+        return decode(tokens[:max_token_size])

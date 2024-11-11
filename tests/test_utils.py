@@ -5,7 +5,7 @@ from hashlib import md5
 import pytest
 
 from knwl.settings import settings
-from knwl.utils import clean_str, pack_messages, split_string_by_multi_markers, KnwlDocument, KnwlChunk, hash_with_prefix, KnwlNode, KnwlEdge
+from knwl.utils import clean_str, pack_messages, split_string_by_multi_markers, KnwlDocument, KnwlChunk, hash_with_prefix, KnwlNode, KnwlEdge, KnwlContext, KnwlRagChunk, KnwlRagNode, KnwlRagEdge
 from knwl.utils import (
     hash_args,
     get_json_body,
@@ -357,3 +357,13 @@ def test_edge_class():
     # id is assigned based on the content
     assert "edge-" in c.id
     assert c.id == KnwlEdge.hash_edge(c)
+
+
+def test_context():
+    ctx = KnwlContext(
+        chunks=[KnwlRagChunk(id="1", text="Some text", order=1)],
+        nodes=[KnwlRagNode(id="1", name="node1", type="type1", description="desc1", order=1)],
+        edges=[KnwlRagEdge(source="1", target="2", description="desc1", order=1, id="1", keywords=["key1"], weight=53.6)],
+    )
+    print()
+    print(ctx)

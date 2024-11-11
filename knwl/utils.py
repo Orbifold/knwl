@@ -307,6 +307,22 @@ class QueryParam:
     # Number of tokens for the entity descriptions
     max_token_for_local_context: int = 4000
 
+    # Whether to return the RAG context
+    return_context = True
+
+    # Whether to return the references
+    return_references = True
+
+
+class KnwlContext:
+    pass
+
+
+@dataclass(frozen=True)
+class KnwlResponse:
+    answer: str = field(default="None supplied")
+    context: KnwlContext = field(default=None)
+
 
 @dataclass(frozen=True)
 class KnwlDegreeNode(KnwlNode):
@@ -346,12 +362,13 @@ class KnwlDegreeEdge(KnwlEdge):
 
 @dataclass(frozen=True)
 class KnwlRagText:
+    id: str
     text: str
     order: int
 
 
 @dataclass(frozen=True)
-class KnwlRagRelation:
+class KnwlRagEdge:
     id: str
     source: str
     target: str
@@ -359,6 +376,86 @@ class KnwlRagRelation:
     keywords: List[str]
     weight: float
     order: int
+
+    @staticmethod
+    def get_header():
+        return ["id", "source", "target", "description", "keywords", "weight"]
+
+    def to_row(self):
+        return "\t".join(
+            [self.id, self.source, self.target, self.description, ", ".join(self.keywords), str(self.weight)]
+        )
+
+
+@dataclass(frozen=True)
+class KnwlRagNode:
+    id: str
+    name: str
+    type: str
+    description: str
+    order: int
+
+    @staticmethod
+    def get_header():
+        return ["id", "name", "type", "description", ]
+
+    def to_row(self):
+        return "\t".join(
+            [self.id, self.name, self.type, self.description]
+        )
+
+
+@dataclass(frozen=True)
+class KnwlRagChunk:
+    id: str
+    text: str
+    order: int
+
+    @staticmethod
+    def get_header():
+        return ["id", "content"]
+
+    def to_row(self):
+        return "\t".join(
+            [self.id, self.text]
+        )
+
+
+@dataclass(frozen=True)
+class KnwlContext:
+    chunks: List[KnwlRagChunk] = field(default_factory=list)
+    nodes: List[KnwlRagNode] = field(default_factory=list)
+    edges: List[KnwlRagEdge] = field(default_factory=list)
+
+    def get_chunk_table(self):
+        return "\n".join(["\t".join(KnwlRagChunk.get_header())] + [chunk.to_row() for chunk in self.chunks])
+
+    def get_nodes_table(self):
+        return "\n".join(["\t".join(KnwlRagNode.get_header())] + [node.to_row() for node in self.nodes])
+
+    def get_edges_table(self):
+        return "\n".join(["\t".join(KnwlRagEdge.get_header())] + [edge.to_row() for edge in self.edges])
+
+    def __str__(self):
+        nodes = f"""
+-----Entities-----
+```csv
+{self.get_nodes_table()}
+```
+            """ if len(self.nodes) > 0 else ""
+        edges = f"""
+-----Relationships-----
+```csv
+{self.get_edges_table()}
+```
+            """ if len(self.edges) > 0 else ""
+        chunks = f"""
+-----Sources-----
+```csv
+{self.get_chunk_table()}
+```
+            """ if len(self.chunks) > 0 else ""
+        return f"""{nodes}{edges}{chunks}"""
 
 
 def get_json_body(content: str) -> Union[str, None]:

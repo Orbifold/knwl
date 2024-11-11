@@ -5,7 +5,7 @@ from knwl.tokenize import (
     encode,
     decode,
     chunk,
-    truncate_list_by_token_size,
+    truncate_content,
 )
 from knwl.utils import KnwlChunk
 
@@ -58,7 +58,7 @@ def test_truncate_list_by_token_size():
     list_data = ["This is a test.", "Another test.", "Yet another test."]
     def key(x): return x
     max_token_size = 10
-    truncated_list = truncate_list_by_token_size(
+    truncated_list = truncate_content(
         list_data, key, max_token_size)
     assert isinstance(truncated_list, list)
     assert len(truncated_list) <= len(list_data)
@@ -68,7 +68,7 @@ def test_truncate_list_by_token_size_with_zero_max_token_size():
     list_data = ["This is a test.", "Another test.", "Yet another test."]
     def key(x): return x
     max_token_size = 0
-    truncated_list = truncate_list_by_token_size(
+    truncated_list = truncate_content(
         list_data, key, max_token_size)
     assert truncated_list == []
 
@@ -77,7 +77,7 @@ def test_truncate_list_by_token_size_with_large_max_token_size():
     list_data = ["This is a test.", "Another test.", "Yet another test."]
     def key(x): return x
     max_token_size = 1000
-    truncated_list = truncate_list_by_token_size(
+    truncated_list = truncate_content(
         list_data, key, max_token_size)
     assert truncated_list == list_data
 
@@ -87,7 +87,7 @@ def test_truncate_list_by_token_size_with_exact_max_token_size():
     def key(x): return x
     max_token_size = len(encode("This is a test.")) + \
         len(encode("Another test."))
-    truncated_list = truncate_list_by_token_size(
+    truncated_list = truncate_content(
         list_data, key, max_token_size)
     assert len(truncated_list) == 2
     assert truncated_list == list_data[:2]
