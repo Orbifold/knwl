@@ -28,19 +28,45 @@ class Simple:
         self.edge_vectors = VectorStorage(namespace="edges")
         self.chunk_vectors = VectorStorage(namespace="chunks")
 
-    async def insert(self, sources: str | List[str], basic_rag: bool = False) -> KnwlGraph | None:
+    async def input(self, text: str, name: str=None, description: str=None):
+        return await self.insert(KnwlInput(text=text, name=name, description=description))
+
+    async def insert(self, sources: str | List[str] | KnwlInput | List[KnwlInput], basic_rag: bool = False) -> KnwlGraph | None:
+        """
+        Inserts sources into the knowledge graph and performs various processing steps.
+
+        Args:
+            sources (str | List[str]): A single source or a list of sources to be inserted.
+            basic_rag (bool, optional): If True, the knowledge graph will not be updated. Defaults to False.
+
+        Returns:
+            KnwlGraph | None: The updated knowledge graph if successful, otherwise None.
+
+        Raises:
+            Exception: If any error occurs during the insertion process.
+
+        The method performs the following steps:
+        1. Saves the sources.
+        2. Creates chunks from the new sources.
+        3. Extracts entities from the chunks.
+        4. Merges the extracted entities into the knowledge graph.
+        5. Merges the updated graph into the vector storage.
+        6. Saves the document, chunks, graph, node vectors, and edge vectors storage.
+
+        Note:
+            If `basic_rag` is True, the method will return None after creating chunks.
+        """
         try:
-            if isinstance(sources, str):
-                sources = [sources]
+            inputs = Simple.convert_to_inputs(sources)
 
             # =================== Sources ========================================
-            new_sources = await self.save_sources(sources)
-            if not len(new_sources):
+            new_documents = await self.save_sources(inputs)
+            if not len(new_documents):
                 return None
             # ====================================================================
 
             # =================== Chunks =========================================
-            new_chunks = await self.create_chunks(new_sources)
+            new_chunks = await self.create_chunks(new_documents)
             # ====================================================================
             if len(new_chunks) == 0 or basic_rag:
                 return None
@@ -68,6 +94,35 @@ class Simple:
                 await self.edge_vectors.save()
             logger.info("Ingestion done")
 
+    @staticmethod
+    def convert_to_inputs(sources: str | List[str] | KnwlInput | List[KnwlInput]) -> List[KnwlInput]:
+        """
+        Converts a list of source strings into a list of KnwlInput objects.
+
+        Args:
+            sources (List[str]): A list of source strings to convert.
+
+        Returns:
+            List[KnwlInput]: A list of KnwlInput objects containing the source strings.
+        """
+        if sources is None:
+            raise ValueError("No sources provided")
+        if isinstance(sources, str):
+            return [KnwlInput(text=sources)]
+        elif isinstance(sources, KnwlInput):
+            return [sources]
+        elif isinstance(sources, list):
+            if not len(sources):
+                raise ValueError("No sources provided")
+            if isinstance(sources[0], str):
+                return [KnwlInput(text=s) for s in sources]
+            elif isinstance(sources[0], KnwlInput):
+                return sources
+            else:
+                raise ValueError(f"Unknown source type '{type(sources[0])}'")
+        else:
+            raise ValueError(f"Unknown source type '{type(sources)}'")
+
     async def create_chunks(self, sources: dict[str, KnwlDocument]) -> dict[str, KnwlChunk]:
         """
         Asynchronously creates and stores chunks from the given sources.
@@ -91,7 +146,7 @@ class Simple:
         """
         given_chunks = {}
         for source_key, source in sources.items():
-            chunks = {hash_with_prefix(u.content, prefix="chunk-"): u for u in chunk(source.content, source_key)}
+            chunks = {KnwlChunk.hash_keys(source.content): u for u in chunk(source.content, source_key)}
             given_chunks.update(chunks)
         new_chunk_keys = await self.chunks_storage.filter_new_ids(list(given_chunks.keys()))
         # the filtered out ones
@@ -106,28 +161,28 @@ class Simple:
         await self.chunk_vectors.upsert({k: {"content": v.content} for k, v in actual_chunks.items()})
         return actual_chunks
 
-    async def save_sources(self, sources: List[str]) -> dict[str, KnwlDocument]:
+    async def save_sources(self, inputs: List[KnwlInput]) -> dict[str, KnwlDocument]:
         """
-        Saves the provided sources if they are not already present in the storage.
+        Saves the provided inputs if they are not already present in the storage.
 
         Args:
-            sources (List[str]): A list of source strings to be saved.
+            inputs (List[str]): A list of source strings to be saved.
 
         Returns:
-            dict[str, KnwlDocument]: A dictionary of new sources that were saved,
+            dict[str, KnwlDocument]: A dictionary of new inputs that were saved,
             where the keys are the hashed source identifiers and the values are
             the corresponding KnwlSource objects.
 
         Raises:
-            ValueError: If the sources list is empty.
+            ValueError: If the inputs list is empty.
 
         Logs:
-            - A warning if all sources are already in the storage.
-            - An info message indicating the number of new sources being inserted.
+            - A warning if all inputs are already in the storage.
+            - An info message indicating the number of new inputs being inserted.
         """
-        if not len(sources):
-            return {}
-        new_sources: dict[str, KnwlDocument] = {hash_with_prefix(c.strip(), prefix="doc-"): KnwlDocument(c.strip()) for c in sources}
+        if not len(inputs):
+            raise ValueError("No sources provided")
+        new_sources: dict[str, KnwlDocument] = {KnwlDocument.hash_keys(c.text, c.name, c.description): KnwlDocument.from_input(c) for c in inputs}
         new_keys = await self.document_storage.filter_new_ids(list(new_sources.keys()))
         new_sources = {k: v for k, v in new_sources.items() if k in new_keys}
         if not len(new_sources):
@@ -307,6 +362,17 @@ class Simple:
         summary = await ollama_chat(use_prompt, core_input=" ".join(descriptions))
         return summary
 
+    async def get_references(self, chunk_ids: List[str]) -> List[KnwlRagReference]:
+        if not len(chunk_ids):
+            return []
+        refs = []
+        for c in chunk_ids:
+            chunk = await self.chunks_storage.get_by_id(c)
+            origin_id = chunk["originId"]
+            doc = await self.document_storage.get_by_id(origin_id)
+            refs.append(KnwlRagReference(id=origin_id, description=doc["description"], name=doc["name"], timestamp=doc["timestamp"]))
+        return refs
+
     async def query(self, query: str, param: QueryParam = QueryParam()) -> KnwlResponse:
         """
         Executes a query based on the specified mode in the QueryParam.
@@ -323,18 +389,18 @@ class Simple:
         """
 
         if param.mode == "local":
-            response = await self.local_query(query, param)
+            response = await self.query_local(query, param)
         elif param.mode == "global":
-            response = await self.global_query(query, param)
+            response = await self.query_global(query, param)
         elif param.mode == "hybrid":
-            response = await self.hybrid_query(query, param)
+            response = await self.query_hybrid(query, param)
         elif param.mode == "naive":
-            response = await self.naive_query(query, param)
+            response = await self.query_naive(query, param)
         else:
             raise ValueError(f"Unknown mode {param.mode}")
         return response
 
-    async def local_query(self, query: str, query_param: QueryParam) -> KnwlResponse:
+    async def query_local(self, query: str, query_param: QueryParam) -> KnwlResponse:
         """
         Executes a local query and returns the response.
         The local query takes the neighborhood of the hit nodes and uses the low-level keywords to find the most related text units.
@@ -437,8 +503,8 @@ class Simple:
         chunk_recs = []
         for i, t in enumerate(use_texts):
             chunk_recs.append(KnwlRagChunk(id=str(i), text=t.text, order=t.order))
-
-        return KnwlContext(nodes=node_recs, edges=edge_recs, chunks=chunk_recs)
+        refs = await self.get_references([c.chunk_id for c in use_texts])
+        return KnwlContext(nodes=node_recs, edges=edge_recs, chunks=chunk_recs, references=refs)
 
     async def get_primary_nodes(self, query: str, query_param: QueryParam) -> List[KnwlDegreeNode] | None:
         """
@@ -554,9 +620,10 @@ class Simple:
         """
         stats = await self.create_chunk_stats_from_nodes(primary_nodes)
         graph_rag_chunks = {}
-        for chunk_id, count in stats.items():
+        for i, v in enumerate(stats.items()):
+            chunk_id, count = v
             chunk = await self.chunks_storage.get_by_id(chunk_id)
-            graph_rag_chunks[chunk_id] = KnwlRagText(order=count, text=chunk["content"])
+            graph_rag_chunks[chunk_id] = KnwlRagText(order=count, text=chunk["content"], id=str(i), chunk_id=chunk_id)
         # in decreasing order of count
         graph_rag_texts = sorted(graph_rag_chunks.values(), key=lambda x: x.order, reverse=True)
         return graph_rag_texts
@@ -590,7 +657,7 @@ class Simple:
         all_edges_data = sorted(all_edges_data, key=lambda x: (x.order, x.weight), reverse=True)
         return all_edges_data
 
-    async def global_query(self, query, query_param: QueryParam) -> KnwlResponse:
+    async def query_global(self, query, query_param: QueryParam) -> KnwlResponse:
         context = None
 
         kw_prompt_temp = PROMPTS["keywords_extraction"]
@@ -695,7 +762,7 @@ class Simple:
         coll = sorted(coll, key=lambda x: x.order, reverse=True)
         return coll
 
-    async def naive_query(self, query, query_param: QueryParam) -> KnwlResponse:
+    async def query_naive(self, query, query_param: QueryParam) -> KnwlResponse:
         """
         Perform a naive query on the chunk vectors and generate a response.
         This is classic RAG without using the knowledge graph.
@@ -725,7 +792,7 @@ class Simple:
 
         return KnwlResponse(answer=response, context=rag_context)
 
-    async def hybrid_query(self, query, query_param: QueryParam) -> KnwlResponse:
+    async def query_hybrid(self, query, query_param: QueryParam) -> KnwlResponse:
         low_level_context = None
         high_level_context = None
 

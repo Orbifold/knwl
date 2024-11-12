@@ -25,15 +25,18 @@ class TestRealCases:
     @pytest.mark.asyncio
     async def test_query_local(self):
         s = Simple()
-        await s.insert('John is married to Anna.')
-        await s.insert('Anna loves John and how he takes care of the family. The have a beautiful daughter named Helena, she is three years old.')
-        await s.insert('John has been working for the past ten years on AI and robotics. He knows a lot about the subject.')
+        await s.input('John is married to Anna.', "Married")
+        await s.input('Anna loves John and how he takes care of the family. The have a beautiful daughter named Helena, she is three years old.', "Family")
+        await s.input('John has been working for the past ten years on AI and robotics. He knows a lot about the subject.', "Work")
         response = await s.query("Who is John?", QueryParam(mode="local"))
         print()
         print("======================== Context ====================================")
         print(response.context)
         print("======================== Answer =====================================")
         print(response.answer)
+        print()
+        print("======================== References =====================================")
+        print(response.context.get_references_table())
 
     @pytest.mark.asyncio
     async def test_global_local(self):

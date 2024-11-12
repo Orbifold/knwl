@@ -174,6 +174,25 @@ class KnwlGraph:
 
 
 @dataclass(frozen=True)
+class KnwlInput:
+    text: str
+    name: str = field(default_factory=lambda: f"Document {datetime.now().isoformat()}")
+    description: str = field(default="")
+    id: str = field(default=None)
+
+    @staticmethod
+    def hash_keys(text: str, name: str = None, description: str = None) -> str:
+        return hash_with_prefix(text + " " + (name or "") + " " + (description or ""), prefix="in-")
+
+
+def __post_init__(self):
+    if self.text is None or len(str.strip(self.text)) == 0:
+        raise ValueError("Content of a KnwlInput cannot be None or empty.")
+    if self.id is None:
+        object.__setattr__(self, "id", KnwlInput.hash_keys(self.text, self.name, self.description))
+
+
+@dataclass(frozen=True)
 class KnwlDocument:
     """
     A (immutable) class representing a source document.
@@ -194,6 +213,10 @@ class KnwlDocument:
     name: str = field(default="")
     typeName: str = "KnwlDocument"
 
+    @staticmethod
+    def from_input(input: KnwlInput):
+        return KnwlDocument(content=input.text, name=input.name, description=input.description)
+
     def update_id(self):
         if self.content is not None and len(str.strip(self.content)) > 0:
             object.__setattr__(self, "id", hash_with_prefix(self.content, prefix="doc-"))
@@ -205,6 +228,10 @@ class KnwlDocument:
             raise ValueError("Content of a KnwlDocument cannot be None or empty.")
         self.update_id()
 
+    @staticmethod
+    def hash_keys(content: str, name: str = None, description: str = None) -> str:
+        return hash_with_prefix(content + " " + (name or "") + " " + (description or ""), prefix="doc-")
+
 
 @dataclass(frozen=True)
 class KnwlChunk:
@@ -215,9 +242,13 @@ class KnwlChunk:
     typeName: str = "KnwlChunk"
     id: str = field(default=None)
 
+    @staticmethod
+    def hash_keys(content: str) -> str:
+        return hash_with_prefix(content, prefix="chunk-")
+
     def update_id(self):
         if self.content is not None and len(str.strip(self.content)) > 0:
-            object.__setattr__(self, "id", hash_with_prefix(self.content, prefix="chunk-"))
+            object.__setattr__(self, "id", KnwlChunk.hash_keys(self.content))
         else:
             object.__setattr__(self, "id", None)
 
@@ -314,16 +345,6 @@ class QueryParam:
     return_references = True
 
 
-class KnwlContext:
-    pass
-
-
-@dataclass(frozen=True)
-class KnwlResponse:
-    answer: str = field(default="None supplied")
-    context: KnwlContext = field(default=None)
-
-
 @dataclass(frozen=True)
 class KnwlDegreeNode(KnwlNode):
     """
@@ -365,6 +386,7 @@ class KnwlRagText:
     id: str
     text: str
     order: int
+    chunk_id: str
 
 
 @dataclass(frozen=True)
@@ -422,10 +444,19 @@ class KnwlRagChunk:
 
 
 @dataclass(frozen=True)
+class KnwlRagReference:
+    id: str
+    name: str
+    description: str
+    timestamp: str
+
+
+@dataclass(frozen=True)
 class KnwlContext:
     chunks: List[KnwlRagChunk] = field(default_factory=list)
     nodes: List[KnwlRagNode] = field(default_factory=list)
     edges: List[KnwlRagEdge] = field(default_factory=list)
+    references: List[KnwlRagReference] = field(default_factory=list)
 
     def get_chunk_table(self):
         return "\n".join(["\t".join(KnwlRagChunk.get_header())] + [chunk.to_row() for chunk in self.chunks])
@@ -435,6 +466,11 @@ class KnwlContext:
 
     def get_edges_table(self):
         return "\n".join(["\t".join(KnwlRagEdge.get_header())] + [edge.to_row() for edge in self.edges])
+
+    def get_references_table(self):
+        return "\n".join(["\t".join(["id", "name", "description", "timestamp"])] + [
+            "\t".join([reference.id, reference.name or "Not set", reference.description or "Not provided", reference.timestamp]) for reference in
+            self.references])
 
     def __str__(self):
         nodes = f"""
@@ -456,6 +492,12 @@ class KnwlContext:
 ```
             """ if len(self.chunks) > 0 else ""
         return f"""{nodes}{edges}{chunks}"""
+
+
+@dataclass(frozen=True)
+class KnwlResponse:
+    answer: str = field(default="None supplied")
+    context: KnwlContext = field(default=None)
 
 
 def get_json_body(content: str) -> Union[str, None]:
