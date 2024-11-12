@@ -383,14 +383,15 @@ class KnwlDegreeEdge(KnwlEdge):
 
 @dataclass(frozen=True)
 class KnwlRagText:
-    id: str
+    index: str
     text: str
     order: int
-    chunk_id: str
+    id: str
 
 
 @dataclass(frozen=True)
 class KnwlRagEdge:
+    index: str
     id: str
     source: str
     target: str
@@ -405,13 +406,14 @@ class KnwlRagEdge:
 
     def to_row(self):
         return "\t".join(
-            [self.id, self.source, self.target, self.description, ", ".join(self.keywords), str(self.weight)]
+            [self.index, self.source, self.target, self.description, ", ".join(self.keywords), str(self.weight)]
         )
 
 
 @dataclass(frozen=True)
 class KnwlRagNode:
     id: str
+    index: str
     name: str
     type: str
     description: str
@@ -423,15 +425,16 @@ class KnwlRagNode:
 
     def to_row(self):
         return "\t".join(
-            [self.id, self.name, self.type, self.description]
+            [self.index, self.name, self.type, self.description]
         )
 
 
 @dataclass(frozen=True)
 class KnwlRagChunk:
-    id: str
+    index: str
     text: str
     order: int
+    id: str
 
     @staticmethod
     def get_header():
@@ -439,16 +442,17 @@ class KnwlRagChunk:
 
     def to_row(self):
         return "\t".join(
-            [self.id, self.text]
+            [self.index, self.text]
         )
 
 
 @dataclass(frozen=True)
 class KnwlRagReference:
-    id: str
+    index: str
     name: str
     description: str
     timestamp: str
+    id: str
 
 
 @dataclass(frozen=True)
@@ -469,11 +473,41 @@ class KnwlContext:
 
     def get_references_table(self):
         return "\n".join(["\t".join(["id", "name", "description", "timestamp"])] + [
-            "\t".join([reference.id, reference.name or "Not set", reference.description or "Not provided", reference.timestamp]) for reference in
+            "\t".join([reference.index, reference.name or "Not set", reference.description or "Not provided", reference.timestamp]) for reference in
             self.references])
 
     def get_documents(self):
         return "\n--Document--\n" + "\n--Document--\n".join([c.text for c in self.chunks])
+
+    @staticmethod
+    def combine(first: 'KnwlContext', second: 'KnwlContext') -> 'KnwlContext':
+        chunks = [c for c in first.chunks]
+        nodes = [n for n in first.nodes]
+        edges = [e for e in first.edges]
+        references = [r for r in first.references]
+        # ================= Chunks ===========================================
+        chunk_ids = [cc.id for cc in chunks]
+        for c in second.chunks:
+            if c.id not in chunk_ids:
+                chunks.append(c)
+        # ================= Nodes  ===========================================
+        node_ids = [cc.id for cc in nodes]
+        for n in second.nodes:
+            if n.id not in node_ids:
+                nodes.append(n)
+        # ================= Edges  ===========================================
+        edge_ids = [cc.id for cc in edges]
+        for e in second.edges:
+            if e.id not in edge_ids:
+                edges.append(e)
+
+        # ================= References  ======================================
+        reference_ids = [cc.id for cc in references]
+        for r in second.references:
+            if r.id not in reference_ids:
+                references.append(r)
+
+        return KnwlContext(chunks=chunks, nodes=nodes, edges=edges, references=references)
 
     def __str__(self):
         nodes = f"""

@@ -23,7 +23,7 @@ def create_dummy_sources(n=10):
 class TestRealCases:
 
     @pytest.mark.asyncio
-    async def test_query_local(self):
+    async def test_local(self):
         s = Simple()
         await s.input('John is married to Anna.', "Married")
         await s.input('Anna loves John and how he takes care of the family. The have a beautiful daughter named Helena, she is three years old.', "Family")
@@ -39,7 +39,7 @@ class TestRealCases:
         print(response.context.get_references_table())
 
     @pytest.mark.asyncio
-    async def test_global_local(self):
+    async def test_global(self):
         s = Simple()
         await s.input('John is married to Anna.', "Married")
         await s.input('Anna loves John and how he takes care of the family. The have a beautiful daughter named Helena, she is three years old.', "Family")
@@ -55,7 +55,7 @@ class TestRealCases:
         print(response.context.get_references_table())
 
     @pytest.mark.asyncio
-    async def test_naive_local(self):
+    async def test_naive(self):
         s = Simple()
         await s.input('John is married to Anna.', "Married")
         await s.input('Anna loves John and how he takes care of the family. The have a beautiful daughter named Helena, she is three years old.', "Family")
@@ -72,18 +72,20 @@ class TestRealCases:
         print(response.context.get_references_table())
 
     @pytest.mark.asyncio
-    async def test_hybrid_local(self):
+    async def test_hybrid(self):
         s = Simple()
-        await s.insert('John is married to Anna.')
-        await s.insert('Anna loves John and how he takes care of the family. The have a beautiful daughter named Helena, she is three years old.')
-        await s.insert('John has been working for the past ten years on AI and robotics. He knows a lot about the subject.')
+        await s.input('John is married to Anna.', "Married")
+        await s.input('Anna loves John and how he takes care of the family. The have a beautiful daughter named Helena, she is three years old.', "Family")
+        await s.input('John has been working for the past ten years on AI and robotics. He knows a lot about the subject.', "Work")
         response = await s.query("Who is John?", QueryParam(mode="hybrid"))
         print()
         print("======================== Context ====================================")
         print(response.context)
         print("======================== Answer =====================================")
         print(response.answer)
-
+        print()
+        print("======================== References =====================================")
+        print(response.context.get_references_table())
 
 class TestDocuments:
     @pytest.mark.asyncio

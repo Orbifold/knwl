@@ -366,11 +366,11 @@ class Simple:
         if not len(chunk_ids):
             return []
         refs = []
-        for c in chunk_ids:
+        for i,c in enumerate(chunk_ids):
             chunk = await self.chunks_storage.get_by_id(c)
             origin_id = chunk["originId"]
             doc = await self.document_storage.get_by_id(origin_id)
-            refs.append(KnwlRagReference(id=origin_id, description=doc["description"], name=doc["name"], timestamp=doc["timestamp"]))
+            refs.append(KnwlRagReference(id=origin_id, index=str(i), description=doc["description"], name=doc["name"], timestamp=doc["timestamp"]))
         return refs
 
     async def query(self, query: str, param: QueryParam = QueryParam()) -> KnwlResponse:
@@ -492,20 +492,20 @@ class Simple:
         # ====================== Primary Nodes ==================================
         node_recs = []
         for i, n in enumerate(primary_nodes):
-            node_recs.append(KnwlRagNode(id=str(i), name=n.name, type=n.type, description=n.description, order=n.degree))
+            node_recs.append(KnwlRagNode(id=n.id, index=str(i), name=n.name, type=n.type, description=n.description, order=n.degree))
 
         # ====================== Relations ======================================
         edge_recs = []
         for i, e in enumerate(use_relations):
-            edge_recs.append(KnwlRagEdge(id=str(i), source=e.source, target=e.target, description=e.description, keywords=e.keywords, weight=e.weight, order=e.order))
+            edge_recs.append(KnwlRagEdge(id=e.id, index=str(i), source=e.source, target=e.target, description=e.description, keywords=e.keywords, weight=e.weight, order=e.order))
 
         # ====================== Chunks ========================================
         chunk_recs = []
         for i, t in enumerate(use_texts):
-            chunk_recs.append(KnwlRagChunk(id=str(i), text=t.text, order=t.order))
+            chunk_recs.append(KnwlRagChunk(id=t.id, index=str(i), text=t.text, order=t.order))
 
         # ====================== References ====================================
-        refs = await self.get_references([c.chunk_id for c in use_texts])
+        refs = await self.get_references([c.id for c in use_texts])
 
         return KnwlContext(nodes=node_recs, edges=edge_recs, chunks=chunk_recs, references=refs)
 
@@ -626,7 +626,7 @@ class Simple:
         for i, v in enumerate(stats.items()):
             chunk_id, count = v
             chunk = await self.chunks_storage.get_by_id(chunk_id)
-            graph_rag_chunks[chunk_id] = KnwlRagText(order=count, text=chunk["content"], id=str(i), chunk_id=chunk_id)
+            graph_rag_chunks[chunk_id] = KnwlRagText(order=count, text=chunk["content"], index=str(i), id=chunk_id)
         # in decreasing order of count
         graph_rag_texts = sorted(graph_rag_chunks.values(), key=lambda x: x.order, reverse=True)
         return graph_rag_texts
@@ -644,7 +644,10 @@ class Simple:
         node_ids = unique_strings([e.sourceId for e in primary_edges] + [e.targetId for e in primary_edges])
         all_nodes = await asyncio.gather(*[self.graph_storage.get_node_by_id(n) for n in node_ids])
         all_degrees = await asyncio.gather(*[self.graph_storage.node_degree(n) for n in node_ids])
-        records = [KnwlRagNode(order=d, name=n.name, type=n.type, description=n.description, id=n.id) for n, d in zip(all_nodes, all_degrees)]
+        records = []
+        for i, v in enumerate(zip(all_nodes, all_degrees)):
+            n, d = v
+            records.append(KnwlRagNode(order=d, name=n.name, type=n.type, description=n.description, id=n.id, index=str(i)))
         return records
 
     async def get_graph_rag_relations(self, node_datas: list[KnwlDegreeNode], query_param: QueryParam) -> List[KnwlRagEdge]:
@@ -652,10 +655,11 @@ class Simple:
         all_edges_degree = await self.graph_storage.get_edge_degrees(all_attached_edges)
         all_edge_ids = unique_strings([e.id for e in all_attached_edges])
         edge_endpoint_names = await self.graph_storage.get_semantic_endpoints(all_edge_ids)
-        all_edges_data = [
-            KnwlRagEdge(order=d, source=edge_endpoint_names[e.id][0], target=edge_endpoint_names[e.id][1], keywords=e.keywords, description=e.description, weight=e.weight, id=e.id)
-            for e, d in zip(all_attached_edges, all_edges_degree) if e is not None
-        ]
+        all_edges_data = []
+        for i, v in enumerate(zip(all_attached_edges, all_edges_degree)):
+            e, d = v
+            if e is not None:
+                all_edges_data.append(KnwlRagEdge(order=d, source=edge_endpoint_names[e.id][0], target=edge_endpoint_names[e.id][1], keywords=e.keywords, description=e.description, weight=e.weight, id=e.id, index=str(i)))
         # sort by edge degree and weight descending
         all_edges_data = sorted(all_edges_data, key=lambda x: (x.order, x.weight), reverse=True)
         return all_edges_data
@@ -666,10 +670,10 @@ class Simple:
         degree_edges = sorted(degree_edges, key=lambda x: (x.degree, x.weight), reverse=True)
         edge_endpoint_ids = unique_strings([e.sourceId for e in vector_edges] + [e.targetId for e in vector_edges])
         edge_endpoint_names = await self.node_id_to_name(edge_endpoint_ids)
-        all_edges_data = [
-            KnwlRagEdge(order=e.degree, source=edge_endpoint_names[e.sourceId], target=edge_endpoint_names[e.targetId], keywords=e.keywords, description=e.description, weight=e.weight, id=e.id)
-            for e in degree_edges if e is not None
-        ]
+        all_edges_data = []
+        for i, e in enumerate(degree_edges):
+            if e is not None:
+                all_edges_data.append(KnwlRagEdge(order=e.degree, source=edge_endpoint_names[e.sourceId], target=edge_endpoint_names[e.targetId], keywords=e.keywords, description=e.description, weight=e.weight, id=e.id, index=str(i)))
         return all_edges_data
 
     async def node_id_to_name(self, node_ids: List[str]) -> dict[str:str]:
@@ -738,22 +742,22 @@ class Simple:
         # ====================== Relations ======================================
         edge_recs = []
         for i, e in enumerate(semantic_edges):
-            edge_recs.append(KnwlRagEdge(id=str(i), source=e.source, target=e.target, description=e.description, keywords=e.keywords, weight=e.weight, order=e.order))
+            edge_recs.append(KnwlRagEdge(index=str(i), id=e.id, source=e.source, target=e.target, description=e.description, keywords=e.keywords, weight=e.weight, order=e.order))
 
         # ====================== Entities ======================================
         node_recs = []
         use_nodes = await self.get_rag_records_from_edges(primary_edges)
         for i, n in enumerate(use_nodes):
-            node_recs.append(KnwlRagNode(id=str(i), name=n.name, type=n.type, description=n.description, order=n.order))
+            node_recs.append(KnwlRagNode(index=str(i), id=n.id, name=n.name, type=n.type, description=n.description, order=n.order))
 
         # ====================== Chunks ========================================
         use_texts = await self.get_rag_texts_from_edges(primary_edges, query_param)
         chunk_recs = []
         for i, t in enumerate(use_texts):
-            chunk_recs.append(KnwlRagChunk(id=str(i), text=t.text, order=t.order))
+            chunk_recs.append(KnwlRagChunk(index=str(i), text=t.text, order=t.order, id=t.id))
 
         # ====================== References ====================================
-        refs = await self.get_references([c.chunk_id for c in use_texts])
+        refs = await self.get_references([c.id for c in use_texts])
 
         return KnwlContext(nodes=node_recs, edges=edge_recs, chunks=chunk_recs, references=refs)
 
@@ -770,7 +774,7 @@ class Simple:
         coll = []
         for i, chunk_id in enumerate(chunk_ids):
             chunk = await self.chunks_storage.get_by_id(chunk_id)
-            coll.append(KnwlRagText(id=str(i), order=stats[chunk_id], text=chunk["content"], chunk_id=chunk_id))
+            coll.append(KnwlRagText(index=str(i), order=stats[chunk_id], text=chunk["content"], id=chunk_id))
 
         coll = sorted(coll, key=lambda x: x.order, reverse=True)
         return coll
@@ -792,8 +796,8 @@ class Simple:
         if not len(rag_chunks):
             return PROMPTS["fail_response"]
         chunks = []
-        for chunk in rag_chunks:
-            chunks.append(KnwlRagChunk(id=chunk["id"], text=truncate_content(chunk["content"], settings.max_tokens), order=0))
+        for i, chunk in enumerate(rag_chunks):
+            chunks.append(KnwlRagChunk(id=chunk["id"], text=truncate_content(chunk["content"], settings.max_tokens), order=0, index=str(i)))
         refs = await self.get_references([c.id for c in chunks])
         context = KnwlContext(chunks=chunks, references=refs)
         if query_param.only_need_context:
@@ -842,7 +846,7 @@ class Simple:
         if hl_keywords:
             high_level_context = await self.get_global_query_context(hl_keywords, query_param)
 
-        context = self.combine_contexts(high_level_context, low_level_context)
+        context = KnwlContext.combine(high_level_context, low_level_context)
 
         if query_param.only_need_context:
             return KnwlResponse(context=context)
@@ -855,57 +859,6 @@ class Simple:
         if len(response) > len(sys_prompt):
             response = (response.replace(sys_prompt, "").replace("user", "").replace("model", "").replace(query, "").replace("<system>", "").replace("</system>", "").strip())
         return KnwlResponse(answer=response, context=context)
-
-    def combine_contexts(self, high_level_context, low_level_context):
-        # Function to extract entities, relationships, and sources from context strings
-
-        def extract_sections(context):
-            entities_match = re.search(r"-----Entities-----\s*```csv\s*(.*?)\s*```", context, re.DOTALL)
-            relationships_match = re.search(r"-----Relationships-----\s*```csv\s*(.*?)\s*```", context, re.DOTALL)
-            sources_match = re.search(r"-----Sources-----\s*```csv\s*(.*?)\s*```", context, re.DOTALL)
-
-            entities = entities_match.group(1) if entities_match else ""
-            relationships = relationships_match.group(1) if relationships_match else ""
-            sources = sources_match.group(1) if sources_match else ""
-
-            return entities, relationships, sources
-
-        # Extract sections from both contexts
-
-        if high_level_context is None:
-            warnings.warn("High Level context is None. Return empty High entity/relationship/source")
-            hl_entities, hl_relationships, hl_sources = "", "", ""
-        else:
-            hl_entities, hl_relationships, hl_sources = extract_sections(high_level_context)
-
-        if low_level_context is None:
-            warnings.warn("Low Level context is None. Return empty Low entity/relationship/source")
-            ll_entities, ll_relationships, ll_sources = "", "", ""
-        else:
-            ll_entities, ll_relationships, ll_sources = extract_sections(low_level_context)
-
-        # Combine and deduplicate the entities
-        combined_entities_set = set(filter(None, hl_entities.strip().split("\n") + ll_entities.strip().split("\n")))
-        combined_entities = "\n".join(combined_entities_set)
-
-        # Combine and deduplicate the relationships
-        combined_relationships_set = set(filter(None, hl_relationships.strip().split("\n") + ll_relationships.strip().split("\n"), ))
-        combined_relationships = "\n".join(combined_relationships_set)
-
-        # Combine and deduplicate the sources
-        combined_sources_set = set(filter(None, hl_sources.strip().split("\n") + ll_sources.strip().split("\n")))
-        combined_sources = "\n".join(combined_sources_set)
-
-        # Format the combined context
-        return f"""
-    -----Entities-----
-    ```csv
-    {combined_entities}
-    -----Relationships-----
-    {combined_relationships}
-    -----Sources-----
-    {combined_sources}
-    """
 
     async def count_documents(self):
         return await self.document_storage.count()
