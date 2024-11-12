@@ -62,7 +62,7 @@ class KnwlNode:
     @staticmethod
     def hash_node(n: 'KnwlNode') -> str:
         # name and type form the primary key
-        return hash_with_prefix(n.name + " " + n.type, prefix="node-")
+        return KnwlNode.hash_keys(n.name, n.type)
 
     @staticmethod
     def hash_keys(name: str, type: str) -> str:
@@ -219,7 +219,7 @@ class KnwlDocument:
 
     def update_id(self):
         if self.content is not None and len(str.strip(self.content)) > 0:
-            object.__setattr__(self, "id", hash_with_prefix(self.content, prefix="doc-"))
+            object.__setattr__(self, "id", self.hash_keys(self.content, self.name, self.description))
         else:
             object.__setattr__(self, "id", None)
 

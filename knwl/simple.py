@@ -157,7 +157,7 @@ class Simple:
             return {}
         logger.info(f"[New Chunks] inserting {len(actual_chunks)} chunk(s)")
 
-        await self.chunks_storage.upsert(actual_chunks)
+        await self.chunks_storage.upsert({k: asdict(v) for k, v in actual_chunks.items()})
         await self.chunk_vectors.upsert({k: {"content": v.content, "id": v.id} for k, v in actual_chunks.items()})
         return actual_chunks
 
@@ -189,7 +189,7 @@ class Simple:
             logger.warning("All sources are already in the storage")
             return {}
         logger.info(f"[New Docs] inserting {len(new_sources)} source(s)")
-        await self.document_storage.upsert(new_sources)
+        await self.document_storage.upsert({k: asdict(v) for k, v in new_sources.items() if k in new_keys})
         return new_sources
 
     async def merge_graph_into_vector_storage(self, g: KnwlGraph):
@@ -366,7 +366,7 @@ class Simple:
         if not len(chunk_ids):
             return []
         refs = []
-        for i,c in enumerate(chunk_ids):
+        for i, c in enumerate(chunk_ids):
             chunk = await self.chunks_storage.get_by_id(c)
             origin_id = chunk["originId"]
             doc = await self.document_storage.get_by_id(origin_id)

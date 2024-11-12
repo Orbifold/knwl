@@ -19,8 +19,6 @@ def dummy_store():
     return storage
 
 
-
-
 @pytest.mark.asyncio
 async def test_all_keys(dummy_store):
     await dummy_store.clear()
@@ -31,10 +29,9 @@ async def test_all_keys(dummy_store):
 
 @pytest.mark.asyncio
 async def test_save_somewhere():
-    settings.in_memory=False
     namespace = random_name()
     settings.working_dir = f"./{random_name()}"
-    storage = JsonStorage(namespace=namespace)
+    storage = JsonStorage(namespace=namespace, cache=True)
     data = {"key1": {"value": "data1"}}
     await storage.upsert(data)
     await storage.save()
@@ -96,8 +93,7 @@ async def test_save_source(dummy_store):
 
 @pytest.mark.asyncio
 async def test_save():
-    settings.in_memory = False
-    store = JsonStorage("dummy")
+    store = JsonStorage("dummy", True)
     await store.clear_cache()
     await store.clear()
 
