@@ -472,6 +472,9 @@ class KnwlContext:
             "\t".join([reference.id, reference.name or "Not set", reference.description or "Not provided", reference.timestamp]) for reference in
             self.references])
 
+    def get_documents(self):
+        return "\n--Document--\n" + "\n--Document--\n".join([c.text for c in self.chunks])
+
     def __str__(self):
         nodes = f"""
 -----Entities-----
@@ -491,6 +494,7 @@ class KnwlContext:
 {self.get_chunk_table()}
 ```
             """ if len(self.chunks) > 0 else ""
+
         return f"""{nodes}{edges}{chunks}"""
 
 

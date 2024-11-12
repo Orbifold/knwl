@@ -60,7 +60,7 @@ def chunk(content: str, source_key: str = None) -> List[KnwlChunk]:
     return results
 
 
-def truncate_content(content: str, max_token_size: int):
+def truncate_content(content: str, max_token_size: int)->str:
     """
     Truncate a list of data based on the token size limit.
     This function iterates over the given list and accumulates the token size

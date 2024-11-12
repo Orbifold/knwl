@@ -28,7 +28,7 @@ class Simple:
         self.edge_vectors = VectorStorage(namespace="edges")
         self.chunk_vectors = VectorStorage(namespace="chunks")
 
-    async def input(self, text: str, name: str=None, description: str=None):
+    async def input(self, text: str, name: str = None, description: str = None):
         return await self.insert(KnwlInput(text=text, name=name, description=description))
 
     async def insert(self, sources: str | List[str] | KnwlInput | List[KnwlInput], basic_rag: bool = False) -> KnwlGraph | None:
@@ -158,7 +158,7 @@ class Simple:
         logger.info(f"[New Chunks] inserting {len(actual_chunks)} chunk(s)")
 
         await self.chunks_storage.upsert(actual_chunks)
-        await self.chunk_vectors.upsert({k: {"content": v.content} for k, v in actual_chunks.items()})
+        await self.chunk_vectors.upsert({k: {"content": v.content, "id": v.id} for k, v in actual_chunks.items()})
         return actual_chunks
 
     async def save_sources(self, inputs: List[KnwlInput]) -> dict[str, KnwlDocument]:
@@ -503,7 +503,10 @@ class Simple:
         chunk_recs = []
         for i, t in enumerate(use_texts):
             chunk_recs.append(KnwlRagChunk(id=str(i), text=t.text, order=t.order))
+
+        # ====================== References ====================================
         refs = await self.get_references([c.chunk_id for c in use_texts])
+
         return KnwlContext(nodes=node_recs, edges=edge_recs, chunks=chunk_recs, references=refs)
 
     async def get_primary_nodes(self, query: str, query_param: QueryParam) -> List[KnwlDegreeNode] | None:
@@ -657,6 +660,25 @@ class Simple:
         all_edges_data = sorted(all_edges_data, key=lambda x: (x.order, x.weight), reverse=True)
         return all_edges_data
 
+    async def get_graph_rag_relations_from_edges(self, vector_edges: List[KnwlEdge]) -> List[KnwlRagEdge]:
+        edge_degrees = await asyncio.gather(*[self.graph_storage.edge_degree(r.sourceId, r.targetId) for r in vector_edges])
+        degree_edges = [KnwlDegreeEdge(degree=d, **asdict(e)) for e, d in zip(vector_edges, edge_degrees)]
+        degree_edges = sorted(degree_edges, key=lambda x: (x.degree, x.weight), reverse=True)
+        edge_endpoint_ids = unique_strings([e.sourceId for e in vector_edges] + [e.targetId for e in vector_edges])
+        edge_endpoint_names = await self.node_id_to_name(edge_endpoint_ids)
+        all_edges_data = [
+            KnwlRagEdge(order=e.degree, source=edge_endpoint_names[e.sourceId], target=edge_endpoint_names[e.targetId], keywords=e.keywords, description=e.description, weight=e.weight, id=e.id)
+            for e in degree_edges if e is not None
+        ]
+        return all_edges_data
+
+    async def node_id_to_name(self, node_ids: List[str]) -> dict[str:str]:
+        mapping = {}
+        for node_id in node_ids:
+            node = await self.graph_storage.get_node_by_id(node_id)
+            mapping[node_id] = node.name
+        return mapping
+
     async def query_global(self, query, query_param: QueryParam) -> KnwlResponse:
         context = None
 
@@ -697,52 +719,43 @@ class Simple:
 
         return KnwlResponse(answer=response, context=context)
 
+    async def get_naive_query_context(self, chunks: List[KnwlRagChunk], query_param: QueryParam):
+        chunk_recs = []
+        for i, t in enumerate(chunks):
+            chunk_recs.append(KnwlRagChunk(id=str(i), text=t.text, order=t.order))
+        return KnwlContext(chunks=chunk_recs)
+
     async def get_global_query_context(self, keywords, query_param: QueryParam):
 
         # ====================== Primary Edge ======================================
         primary_edges = await self.edge_vectors.query(keywords, top_k=query_param.top_k)
         primary_edges = [KnwlEdge(**r) for r in primary_edges]
+
         if not len(primary_edges):
             return None
 
-        edge_degrees = await asyncio.gather(*[self.graph_storage.edge_degree(r.sourceId, r.targetId) for r in primary_edges])
-        degree_edges = [KnwlDegreeEdge(degree=d, **asdict(e)) for e, d in zip(primary_edges, edge_degrees)]
-        degree_edges = sorted(degree_edges, key=lambda x: (x.degree, x.weight), reverse=True)
-
+        semantic_edges = await self.get_graph_rag_relations_from_edges(primary_edges)
         # ====================== Relations ======================================
-        edge_recs = [["id", "source", "target", "description", "keywords", "weight", "order"]]
-        for i, e in enumerate(degree_edges):
-            edge_recs.append([i, e.sourceId, e.targetId, e.description, e.keywords, e.weight, e.degree])
-        relations_context = list_of_list_to_csv(edge_recs)
+        edge_recs = []
+        for i, e in enumerate(semantic_edges):
+            edge_recs.append(KnwlRagEdge(id=str(i), source=e.source, target=e.target, description=e.description, keywords=e.keywords, weight=e.weight, order=e.order))
 
         # ====================== Entities ======================================
-        edge_nodes = await self.get_rag_records_from_edges(primary_edges)
-        node_recs = [["id", "entity", "type", "description", "order"]]
-        for i, n in enumerate(edge_nodes):
-            node_recs.append([i, n.name, n.type, n.description, n.order])
-        entities_context = list_of_list_to_csv(node_recs)
+        node_recs = []
+        use_nodes = await self.get_rag_records_from_edges(primary_edges)
+        for i, n in enumerate(use_nodes):
+            node_recs.append(KnwlRagNode(id=str(i), name=n.name, type=n.type, description=n.description, order=n.order))
 
         # ====================== Chunks ========================================
-        use_texts = await self.get_rag_texts_from_edges(degree_edges, query_param)
-        chunk_recs = [["id", "content"]]
+        use_texts = await self.get_rag_texts_from_edges(primary_edges, query_param)
+        chunk_recs = []
         for i, t in enumerate(use_texts):
-            chunk_recs.append([i, t.text])
-        chunk_context = list_of_list_to_csv(chunk_recs)
+            chunk_recs.append(KnwlRagChunk(id=str(i), text=t.text, order=t.order))
 
-        return f"""
-    -----Entities-----
-    ```csv
-    {entities_context}
-    ```
-    -----Relationships-----
-    ```csv
-    {relations_context}
-    ```
-    -----Sources-----
-    ```csv
-    {chunk_context}
-    ```
-    """
+        # ====================== References ====================================
+        refs = await self.get_references([c.chunk_id for c in use_texts])
+
+        return KnwlContext(nodes=node_recs, edges=edge_recs, chunks=chunk_recs, references=refs)
 
     async def create_description_stats_from_edges(self, primary_edge: list[KnwlEdge], query_param: QueryParam):
         stats = {}
@@ -755,9 +768,9 @@ class Simple:
         stats = await self.create_chunk_stats_from_edges(edges)
         chunk_ids = unique_strings([e.chunkIds for e in edges])
         coll = []
-        for chunk_id in chunk_ids:
+        for i, chunk_id in enumerate(chunk_ids):
             chunk = await self.chunks_storage.get_by_id(chunk_id)
-            coll.append(KnwlRagText(order=stats[chunk_id], text=chunk["content"]))
+            coll.append(KnwlRagText(id=str(i), order=stats[chunk_id], text=chunk["content"], chunk_id=chunk_id))
 
         coll = sorted(coll, key=lambda x: x.order, reverse=True)
         return coll
@@ -775,22 +788,24 @@ class Simple:
             str: The generated response based on the query and parameters. If no results are found, returns a fail response prompt.
         """
         # =========================Standard RAG ===================================
-        chunks = await self.chunk_vectors.query(query, top_k=query_param.top_k)
-        if not len(chunks):
+        rag_chunks = await self.chunk_vectors.query(query, top_k=query_param.top_k)
+        if not len(rag_chunks):
             return PROMPTS["fail_response"]
-        for chunk in chunks:
-            chunk["content"] = truncate_content(chunk["content"], settings.max_tokens)
-        rag_context = "\n--New Chunk--\n".join([c["content"] for c in chunks])
+        chunks = []
+        for chunk in rag_chunks:
+            chunks.append(KnwlRagChunk(id=chunk["id"], text=truncate_content(chunk["content"], settings.max_tokens), order=0))
+        refs = await self.get_references([c.id for c in chunks])
+        context = KnwlContext(chunks=chunks, references=refs)
         if query_param.only_need_context:
-            return KnwlResponse(context=rag_context)
+            return KnwlResponse(context=context)
         sys_prompt_temp = PROMPTS["naive_rag_response"]
-        sys_prompt = sys_prompt_temp.format(content_data=rag_context, response_type=query_param.response_type)
+        sys_prompt = sys_prompt_temp.format(content_data=context.get_documents(), response_type=query_param.response_type)
         response = await ollama_chat(query, system_prompt=sys_prompt, category=CATEGORY_NAIVE_QUERY)
 
         if len(response) > len(sys_prompt):
             response = (response[len(sys_prompt):].replace(sys_prompt, "").replace("user", "").replace("model", "").replace(query, "").replace("<system>", "").replace("</system>", "").strip())
 
-        return KnwlResponse(answer=response, context=rag_context)
+        return KnwlResponse(answer=response, context=context)
 
     async def query_hybrid(self, query, query_param: QueryParam) -> KnwlResponse:
         low_level_context = None
