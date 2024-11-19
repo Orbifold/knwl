@@ -1,3 +1,4 @@
+import json
 from dataclasses import asdict
 from typing import List
 
@@ -88,6 +89,16 @@ class TestRealCases:
         print("======================== References =====================================")
         print(response.context.get_references_table())
 
+    @pytest.mark.asyncio
+    async def test_direct_kg_creation(self):
+        s = Simple()
+        g = await s.create_kg("""
+        Field was born 26 July 1782 in Golden Lane, Dublin, the eldest son of Irish parents who were members of the Church of Ireland. He was baptised on 30 September. His father, Robert Field, earned his living by playing the violin in Dublin theatres. Field first studied the piano under his grandfather (also named John Field), who was a professional organist, and later under Tommaso Giordani. He made his debut at the age of nine, a performance that was well-received, on 24 March 1792 in Dublin. According to an early biographer, W. H. Grattan Flood, Field started composing in Ireland, but no evidence exists to support his claim. Flood also asserted that Field's family moved to Bath, Somerset, in 1793 and lived there for a short time, and this too is considered unlikely by modern researchers. By late 1793, though, the Fields had settled in London, where the young pianist started studying with Muzio Clementi. This arrangement was made possible by Field's father, who was perhaps able to secure the apprenticeship through Giordani, who knew Clementi.
+
+        Field continued giving public performances and soon became famous in London, attracting favourable comments from the press and the local musicians. Around 1795 his performance of a Dussek piano concerto was praised by Haydn. Field continued his studies with Clementi, also helping the Italian with the making and selling of instruments. He also took up violin playing, which he studied under J. P. Solomon. His first published compositions were issued by Clementi in 1795; the first historically important work, Piano Concerto No. 1, H 27, was premiered by the composer in London on 7 February 1799, when he was aged 16. Field's first official opus was a set of three piano sonatas published by (and dedicated to) Clementi in 1801.
+        """)
+        print(json.dumps(g, indent=2))
+
 
 class TestDocuments:
     @pytest.mark.asyncio
@@ -96,11 +107,10 @@ class TestDocuments:
         with pytest.raises(ValueError):
             result = await s.save_sources([])
 
-
     @pytest.mark.asyncio
     async def test_save_sources_all_existing(self, mocker):
         s = Simple()
-        sources = [KnwlInput(text="Source 1" ), KnwlInput(text="Source 2")]
+        sources = [KnwlInput(text="Source 1"), KnwlInput(text="Source 2")]
         mocker.patch.object(s.document_storage, 'filter_new_ids', return_value=[])
         mocker.patch.object(s.document_storage, 'upsert')
         result = await s.save_sources(sources)
@@ -110,7 +120,7 @@ class TestDocuments:
     @pytest.mark.asyncio
     async def test_save_sources_new_sources(self, mocker):
         s = Simple()
-        sources = [KnwlInput(text="Source 1" ), KnwlInput(text="Source 2")]
+        sources = [KnwlInput(text="Source 1"), KnwlInput(text="Source 2")]
         documents = [KnwlDocument.from_input(s) for s in sources]
         new_keys = [d.id for d in documents]
         mocker.patch.object(s.document_storage, 'filter_new_ids', return_value=new_keys)

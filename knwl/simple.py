@@ -11,7 +11,7 @@ from knwl.llm import ollama_chat
 from knwl.logging import set_logger
 from knwl.prompt import GRAPH_FIELD_SEP, PROMPTS
 from knwl.settings import settings
-from knwl.tokenize import chunk, encode, decode, truncate_content
+from knwl.tokenize import chunk, encode, decode, truncate_content, count_tokens
 from knwl.utils import *
 from knwl.utils import KnwlGraph, KnwlNode, KnwlEdge
 from knwl.vectorStorage import VectorStorage
@@ -93,6 +93,64 @@ class Simple:
                 await self.node_vectors.save()
                 await self.edge_vectors.save()
             logger.info("Ingestion done")
+
+    async def create_kg(self, text: str) -> dict | None:
+        chunks = {KnwlChunk.hash_keys(text): KnwlChunk.from_text(text)}
+        extraction: KnwlExtraction = await extract_entities(chunks)
+        return await self.extraction_to_graph(extraction)
+
+    async def extraction_to_graph(self, extraction: KnwlExtraction) -> dict:
+        graph = {
+            "nodes": [],
+            "edges": []
+        }
+        for name in extraction.nodes:
+            nodes = extraction.nodes[name]
+            if len(nodes) > 1:
+                descriptions = " ".join([n.description for n in nodes])
+                if count_tokens(descriptions) > settings.max_tokens:
+                    descriptions = await self.compactify_summary(name, descriptions)
+                majority_entity_type = sorted(Counter([dp.type for dp in nodes]).items(), key=lambda x: x[1], reverse=True, )[0][0]
+                graph["nodes"].append({
+                    "name": name,
+                    "type": majority_entity_type,
+                    "description": descriptions
+                })
+            else:
+                node = nodes[0]
+                graph["nodes"].append({
+                    "name": name,
+                    "type": node.type,
+                    "description": node.description
+                })
+        for name in extraction.edges:
+            edges = extraction.edges[name]
+            match = re.match(r"\((.*?),(.*?)\)", name)
+            if match:
+                source_id, target_id = match.groups()
+                source_id = str.strip(source_id)
+                target_id = str.strip(target_id)
+            else:
+                raise ValueError(f"Invalid edge name '{name}'")
+            if len(edges) > 1:
+                descriptions = " ".join([e.description for e in edges])
+                if count_tokens(descriptions) > settings.max_tokens:
+                    descriptions = await self.compactify_summary(name, descriptions)
+
+                graph["edges"].append({
+                    "sourceId": source_id,
+                    "targetId": target_id,
+                    "description": descriptions
+                })
+            else:
+                edge = edges[0]
+                graph["edges"].append({
+                    "sourceId": source_id,
+                    "targetId": target_id,
+                    "description": edge.description
+                })
+
+        return graph
 
     @staticmethod
     def convert_to_inputs(sources: str | List[str] | KnwlInput | List[KnwlInput]) -> List[KnwlInput]:

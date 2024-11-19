@@ -257,6 +257,11 @@ class KnwlChunk:
             raise ValueError("Content of a KnwlChunk cannot be None or empty.")
         self.update_id()
 
+    @staticmethod
+    def from_text(text: str):
+        from .tokenize import count_tokens
+        return KnwlChunk(tokens=count_tokens(text), content=text)
+
 
 @dataclass(frozen=True)
 class KnwlExtraction:

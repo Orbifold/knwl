@@ -336,7 +336,7 @@ def test_document_class():
     c = KnwlDocument(content="Hello")
     # id is assigned based on the content
     assert "doc-" in c.id
-    assert c.id == hash_with_prefix(c.content, prefix="doc-")
+    assert c.id == KnwlDocument.hash_keys("Hello")
 
 
 def test_node_class():
