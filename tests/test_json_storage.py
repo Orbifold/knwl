@@ -31,7 +31,7 @@ async def test_all_keys(dummy_store):
 async def test_save_somewhere():
     namespace = random_name()
     settings.working_dir = f"./{random_name()}"
-    storage = JsonStorage(namespace=namespace, cache=True)
+    storage = JsonStorage(namespace=namespace, caching=True)
     data = {"key1": {"value": "data1"}}
     await storage.upsert(data)
     await storage.save()

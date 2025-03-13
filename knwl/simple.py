@@ -1,13 +1,11 @@
-import warnings
 from collections import Counter
 from dataclasses import asdict
 from typing import List
-from urllib.parse import uses_query
 
 from knwl.entities import extract_entities
 from knwl.graphStorage import GraphStorage
 from knwl.jsonStorage import JsonStorage
-from knwl.llm import ollama_chat
+from knwl.llm import llm
 from knwl.logging import set_logger
 from knwl.prompt import GRAPH_FIELD_SEP, PROMPTS
 from knwl.settings import settings
@@ -20,6 +18,11 @@ logger = set_logger()
 
 
 class Simple:
+    """
+        This class provides methods for managing and querying a knowledge graph.
+        It includes functionalities for inserting sources, creating chunks, extracting entities, merging data into the knowledge graph, and querying the graph using various modes.
+    """
+
     def __init__(self):
         self.document_storage = JsonStorage(namespace="documents")
         self.chunks_storage = JsonStorage(namespace="chunks")
@@ -29,6 +32,21 @@ class Simple:
         self.chunk_vectors = VectorStorage(namespace="chunks")
 
     async def input(self, text: str, name: str = None, description: str = None):
+        """
+        Processes the input text and inserts it into the database.
+
+        Args:
+            text (str): The input text to be processed.
+            name (str, optional): An optional name associated with the input text. Defaults to None.
+            description (str, optional): An optional description associated with the input text. Defaults to None.
+
+        Returns:
+            Coroutine: A coroutine that resolves to the result of the insert operation.
+        See Also:
+            - :meth:`insert`
+            - :meth:`create_kg`
+
+        """
         return await self.insert(KnwlInput(text=text, name=name, description=description))
 
     async def insert(self, sources: str | List[str] | KnwlInput | List[KnwlInput], basic_rag: bool = False) -> KnwlGraph | None:
@@ -94,16 +112,28 @@ class Simple:
                 await self.edge_vectors.save()
             logger.info("Ingestion done")
 
-    async def create_kg(self, text: str) -> dict | None:
+    async def create_kg(self, text: str) -> KnwlBasicGraph | None:
+        """
+        Utility to return a knowledge graph from the given text.
+        This does not store any data anywhere and it for testing purposes only.
+
+        Args:
+            text (str): The input text from which to create the knowledge graph.
+
+        Returns:
+            dict | None: A dictionary representing the knowledge graph if successful,
+                         or None if the extraction fails.
+        """
         chunks = {KnwlChunk.hash_keys(text): KnwlChunk.from_text(text)}
         extraction: KnwlExtraction = await extract_entities(chunks)
         return await self.extraction_to_graph(extraction)
 
-    async def extraction_to_graph(self, extraction: KnwlExtraction) -> dict:
+    async def extraction_to_graph(self, extraction: KnwlExtraction) -> KnwlBasicGraph:
         graph = {
             "nodes": [],
             "edges": []
         }
+        id_map = {}
         for name in extraction.nodes:
             nodes = extraction.nodes[name]
             if len(nodes) > 1:
@@ -119,6 +149,7 @@ class Simple:
             else:
                 node = nodes[0]
                 graph["nodes"].append({
+                    "id": name,
                     "name": name,
                     "type": node.type,
                     "description": node.description
@@ -150,7 +181,7 @@ class Simple:
                     "description": edge.description
                 })
 
-        return graph
+        return KnwlBasicGraph.from_json_graph(graph)
 
     @staticmethod
     def convert_to_inputs(sources: str | List[str] | KnwlInput | List[KnwlInput]) -> List[KnwlInput]:
@@ -416,8 +447,8 @@ class Simple:
         context_base = {'entity_name': entity_or_relation_name, 'description_list': descriptions}
         use_prompt = prompt_template.format(**context_base)
         logger.debug(f"Trigger summary: {entity_or_relation_name}")
-        # summary = await ollama_chat(use_prompt, max_tokens=summary_max_tokens)
-        summary = await ollama_chat(use_prompt, core_input=" ".join(descriptions))
+        # summary = await  llm.ask(use_prompt, max_tokens=summary_max_tokens)
+        summary = await  llm.ask(use_prompt, core_input=" ".join(descriptions))
         return summary
 
     async def get_references(self, chunk_ids: List[str]) -> List[KnwlRagReference]:
@@ -482,7 +513,7 @@ class Simple:
 
         keywords_prompt = PROMPTS["keywords_extraction"].format(query=query)
 
-        result = await ollama_chat(keywords_prompt, core_input=query, category=CATEGORY_KEYWORD_EXTRACTION)
+        result = await  llm.ask(keywords_prompt, core_input=query, category=CATEGORY_KEYWORD_EXTRACTION)
 
         try:
             keywords_data = json.loads(result)
@@ -510,7 +541,7 @@ class Simple:
             return PROMPTS["fail_response"]
         sys_prompt_temp = PROMPTS["rag_response"]
         sys_prompt = sys_prompt_temp.format(context_data=context, response_type=query_param.response_type)
-        response = await ollama_chat(query, system_prompt=sys_prompt)
+        response = await  llm.ask(query, system_prompt=sys_prompt)
         if len(response) > len(sys_prompt):
             response = (response.replace(sys_prompt, "").replace("user", "").replace("model", "").replace(query, "").replace("<system>", "").replace("</system>", "").strip())
 
@@ -746,7 +777,7 @@ class Simple:
 
         kw_prompt_temp = PROMPTS["keywords_extraction"]
         kw_prompt = kw_prompt_temp.format(query=query)
-        result = await ollama_chat(kw_prompt)
+        result = await  llm.ask(kw_prompt)
 
         try:
             keywords_data = json.loads(result)
@@ -775,7 +806,7 @@ class Simple:
 
         sys_prompt_temp = PROMPTS["rag_response"]
         sys_prompt = sys_prompt_temp.format(context_data=context, response_type=query_param.response_type)
-        response = await ollama_chat(query, system_prompt=sys_prompt, )
+        response = await  llm.ask(query, system_prompt=sys_prompt, )
         if len(response) > len(sys_prompt):
             response = (response.replace(sys_prompt, "").replace("user", "").replace("model", "").replace(query, "").replace("<system>", "").replace("</system>", "").strip())
 
@@ -852,7 +883,7 @@ class Simple:
         # =========================Standard RAG ===================================
         rag_chunks = await self.chunk_vectors.query(query, top_k=query_param.top_k)
         if not len(rag_chunks):
-            return PROMPTS["fail_response"]
+            return KnwlResponse(answer="No vectors found to answer the question.", context=None)
         chunks = []
         for i, chunk in enumerate(rag_chunks):
             chunks.append(KnwlRagChunk(id=chunk["id"], text=truncate_content(chunk["content"], settings.max_tokens), order=0, index=str(i)))
@@ -862,7 +893,7 @@ class Simple:
             return KnwlResponse(context=context)
         sys_prompt_temp = PROMPTS["naive_rag_response"]
         sys_prompt = sys_prompt_temp.format(content_data=context.get_documents(), response_type=query_param.response_type)
-        response = await ollama_chat(query, system_prompt=sys_prompt, category=CATEGORY_NAIVE_QUERY)
+        response = await  llm.ask(query, system_prompt=sys_prompt, category=CATEGORY_NAIVE_QUERY)
 
         if len(response) > len(sys_prompt):
             response = (response[len(sys_prompt):].replace(sys_prompt, "").replace("user", "").replace("model", "").replace(query, "").replace("<system>", "").replace("</system>", "").strip())
@@ -876,7 +907,7 @@ class Simple:
         kw_prompt_temp = PROMPTS["keywords_extraction"]
         kw_prompt = kw_prompt_temp.format(query=query)
 
-        result = await ollama_chat(kw_prompt)
+        result = await  llm.ask(kw_prompt)
         try:
             keywords_data = json.loads(result)
             hl_keywords = keywords_data.get("high_level_keywords", [])
@@ -913,7 +944,7 @@ class Simple:
 
         sys_prompt_temp = PROMPTS["rag_response"]
         sys_prompt = sys_prompt_temp.format(context_data=context, response_type=query_param.response_type)
-        response = await ollama_chat(query, system_prompt=sys_prompt, )
+        response = await  llm.ask(query, system_prompt=sys_prompt, )
         if len(response) > len(sys_prompt):
             response = (response.replace(sys_prompt, "").replace("user", "").replace("model", "").replace(query, "").replace("<system>", "").replace("</system>", "").strip())
         return KnwlResponse(answer=response, context=context)

@@ -1,94 +1,125 @@
 from datetime import datetime
-
 from typing import List
-
-import ollama
 
 from .jsonStorage import JsonStorage
 from .settings import settings
 from .utils import hash_args
 
-# os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
+class LLMCache:
+    """
+    A thin wrapper around a JSON storage object to provide caching functionality for LLM.
+    """
+
+    def __init__(self, namespace: str = "llm", caching: bool = False):
+        self.storage = JsonStorage(namespace, caching)
+
+    async def is_in_cache(self, messages: str | List[str]) -> bool:
+        if isinstance(messages, str):
+            messages = [messages]
+        key = hash_args(settings.llm_model, messages)
+        found = await self.storage.get_by_id(key)
+        return found is not None
+
+    async def get_all_ids(self) -> list[str]:
+        return await self.storage.get_all_ids()
+
+    async def save(self):
+        await self.storage.save()
+
+    async def clear_cache(self):
+        await self.storage.clear_cache()
+
+    async def get_by_id(self, id):
+        return await self.storage.get_by_id(id)
+
+    async def get_by_ids(self, ids, fields=None):
+        return await self.storage.get_by_ids(ids, fields=fields)
+
+    async def filter_new_ids(self, data: list[str]) -> set[str]:
+        return await self.storage.filter_new_ids(data)
+
+    async def upsert(self, data: dict[str, object]):
+        return await self.storage.upsert(data)
+
+
+class OllamaClient:
+    def __init__(self):
+        import ollama
+        self.client = ollama.AsyncClient()
+
+    async def ask(self, messages: List[dict]) -> str:
+        response = await self.client.chat(model=settings.llm_model, messages=messages, options={"temperature": 0.0, "num_ctx": 32768})
+        content = response["message"]["content"]
+        return content
+
+
+class OpenAIClient:
+    def __init__(self):
+        import openai
+        self.client = openai.AsyncClient()
+
+    async def ask(self, messages: List[dict]) -> str:
+        found = await self.client.chat.completions.create(messages=messages, model=settings.llm_model)
+        return found.choices[0].message.content
+
+
+class LLMClient:
+    def __init__(self, cache: LLMCache = None):
+        self.cache = cache
+        if settings.llm_service == "ollama":
+            self.client = OllamaClient()
+        elif settings.llm_service == "openai":
+            self.client = OpenAIClient()
+        else:
+            raise Exception(f"Unknown language service: {settings.llm_service}")
+
+    async def is_cached(self, messages: str | List[str]) -> bool:
+        if self.cache is None:
+            return False
+        return await self.cache.is_in_cache(messages)
+
+    async def ask(self, prompt: str, system_prompt=None, history_messages=None, core_input: str = None, category: str = None, save:bool=True) -> str:
+        if history_messages is None:
+            history_messages = []
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+
+        messages.extend(history_messages)
+        messages.append({"role": "user", "content": prompt})
+        model = settings.llm_model
+
+        if self.cache is not None:
+            key = hash_args(model, messages)
+            found = await self.cache.get_by_id(key)
+            if found is not None:
+                return found["content"]
+        # effectively asking the model
+        answer = await self.client.ask(messages)
+
+        # caching update, the 'save' flag is used to overrule the default behavior of saving the response
+        if save:
+            await self.cache.upsert(
+                {
+                    "key": {
+                        "timestamp": datetime.now().isoformat(),
+                        "prompt": prompt,
+                        "input": core_input,
+                        "messages": len(messages),
+                        "content": answer,
+                        "category": category,
+                        "model": settings.llm_model,
+                    }
+                }
+            )
+        return answer
+
+    @staticmethod
+    def hash_args(*args):
+        return hash_args(*args)
+
 
 # note that LangChain has a ton of caching mechanisms in place: https://python.langchain.com/docs/integrations/llm_caching
-ollama_cache = JsonStorage(namespace="ollama", cache=settings.cache_ollama)
-
-ollama_client = ollama.AsyncClient()
-
-
-async def is_in_cache(messages: str | List[str]):
-    if isinstance(messages, str):
-        messages = [messages]
-    key = hash_args(settings.ollamna_model, messages)
-    found = await ollama_cache.get_by_id(key)
-    return found is not None
-
-
-async def ollama_chat(prompt, system_prompt=None, history_messages=None, core_input: str = None, category: str = None, **kwargs) -> str:
-    """
-    Asynchronously interacts with the Ollama chat model, utilizing a caching mechanism to store and retrieve responses.
-
-    Args:
-        category:
-        prompt (str): The user's input to be sent to the chat model.
-        system_prompt (str, optional): An optional system-level prompt to guide the chat model. Defaults to None.
-        history_messages (list, optional): A list of previous messages to provide context to the chat model. Defaults to an empty list.
-        core_input (str, optional): An optional input string corresponding to the initial input. This is added to the cache to make it easier to detect the initial input rather than the directive prompt. Defaults to None.
-        **kwargs: Additional keyword arguments to be passed to the chat model.
-
-    Returns:
-        str: The content of the response from the chat model.
-
-    Caching:
-        - Checks the cache for a stored response using a hash of the model and messages.
-        - If a cached response is found, it is returned.
-        - If no cached response is found, the chat model is queried, and the response is cached.
-        - The cache is saved based on certain conditions (e.g., every 10th entry).
-
-    Raises:
-        Any exceptions raised by the Ollama client or cache operations.
-    """
-    if history_messages is None:
-        history_messages = []
-    messages = []
-    if system_prompt:
-        messages.append({"role": "system", "content": system_prompt})
-
-    messages.extend(history_messages)
-    messages.append({"role": "user", "content": prompt})
-
-    # cache lookup
-    key = hash_args(settings.ollamna_model, messages)
-    found = await ollama_cache.get_by_id(key)
-    if found is not None:
-        return found["content"]
-
-    response = await ollama_client.chat(model=settings.ollamna_model, messages=messages, **kwargs)
-
-    content = response["message"]["content"]
-
-    # cache update
-    await ollama_cache.upsert(
-        {
-            key: {
-                "timestamp": datetime.now().isoformat(),
-                "prompt": prompt,
-                "input": core_input,
-                "messages": len(messages),
-                "content": content,
-                "category": category,
-                "model": settings.ollamna_model,
-            }
-        }
-    )
-    await ollama_cache.save()
-    # save cache
-    # save = kwargs.get("save", None)
-    # if save is None:
-    #     count = await ollama_cache.count()
-    #     if count == 1 or count % 10 == 0:
-    #         await ollama_cache.save()
-    # else:
-    #     if save:
-    #         await ollama_cache.save()
-    return content
+llm_cache = LLMCache(caching=settings.llm_caching)
+llm = LLMClient(llm_cache)

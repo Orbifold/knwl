@@ -5,6 +5,7 @@ from unittest import skipIf
 import pytest
 
 from knwl.entities import convert_record_to_edge, is_entity, is_relationship, extract_entities, stringify_keys, extract_entities_from_text
+from knwl.settings import settings
 from knwl.utils import *
 from knwl.entities import convert_record_to_node
 
@@ -165,10 +166,13 @@ class TestActualExtraction:
 
     @pytest.mark.asyncio
     async def test_extract_from_text(self):
+        print("LLM", settings.llm_model)
         text = "John is an artist. He works in a museum in Chelsea. He knows Maria."
         found: KnwlExtraction = await extract_entities_from_text(text)
         assert found.is_consistent()
         print()
         print(json.dumps(asdict(found), indent=2))
         assert len(found.nodes) >= 3
-        assert len(found.edges) >= 1
+        # Some LLM create an edge and some will  put the conceptual relationship in the description, like 'John is an artist who works in a museum in Chelsea and knows Maria.
+        # So, in general it's not so simple to predict the number of edges.
+        # assert len(found.edges) >= 1

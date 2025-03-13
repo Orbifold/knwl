@@ -78,7 +78,7 @@ async def test_get_node_edges(test_storage):
 @pytest.mark.asyncio
 async def test_save():
 
-    store = GraphStorage(namespace=random_name(), cache=True)
+    store = GraphStorage(namespace=random_name(), caching=True)
     await store.upsert_node("node1", {"description": "value1"})
     await store.save()
     file_path = store.file_path

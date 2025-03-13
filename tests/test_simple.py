@@ -3,13 +3,13 @@ from dataclasses import asdict
 from typing import List
 
 import pytest
+from faker import Faker
 
 import knwl
 from knwl.prompt import GRAPH_FIELD_SEP
 from knwl.simple import Simple
 from knwl.tokenize import count_tokens
 from knwl.utils import KnwlExtraction, KnwlNode, KnwlDocument, hash_with_prefix, KnwlChunk, KnwlEdge, QueryParam, KnwlInput
-from faker import Faker
 
 faker = Faker()
 
@@ -97,7 +97,8 @@ class TestRealCases:
 
         Field continued giving public performances and soon became famous in London, attracting favourable comments from the press and the local musicians. Around 1795 his performance of a Dussek piano concerto was praised by Haydn. Field continued his studies with Clementi, also helping the Italian with the making and selling of instruments. He also took up violin playing, which he studied under J. P. Solomon. His first published compositions were issued by Clementi in 1795; the first historically important work, Piano Concerto No. 1, H 27, was premiered by the composer in London on 7 February 1799, when he was aged 16. Field's first official opus was a set of three piano sonatas published by (and dedicated to) Clementi in 1801.
         """)
-        print(json.dumps(g, indent=2))
+        print(json.dumps(asdict(g), indent=2))
+        g.write_graphml("field.graphml")
 
 
 class TestDocuments:
@@ -272,7 +273,7 @@ class TestGraphMerge:
         mocker.patch('knwl.simple.decode', return_value=description)
         mocker.patch('knwl.simple.settings', summary_max=1, max_tokens=len(tokens))
         mocker.patch('knwl.simple.PROMPTS', {"summarize_entity_descriptions": "Summarize: {entity_name} {description_list}"})
-        mocker.patch('knwl.simple.ollama_chat', return_value="John is a software engineer living in Paris.")
+        mocker.patch('knwl.simple.query', return_value="John is a software engineer living in Paris.")
         result = await Simple.compactify_summary("John", description, smart_merge=True)
         assert result == "John is a software engineer living in Paris."
 
@@ -284,7 +285,7 @@ class TestGraphMerge:
         mocker.patch('knwl.simple.decode', return_value=description)
         mocker.patch('knwl.simple.settings', summary_max=1, max_tokens=len(tokens))
         mocker.patch('knwl.simple.PROMPTS', {"summarize_entity_descriptions": "Summarize: {entity_name} {description_list}"})
-        mocker.patch('knwl.simple.ollama_chat', return_value="John is a software engineer living in Paris who likes to travel.")
+        mocker.patch('knwl.simple.llm.ask', return_value="John is a software engineer living in Paris who likes to travel.")
         result = await Simple.compactify_summary("John", description, smart_merge=True)
         assert result == "John is a software engineer living in Paris who likes to travel."
 

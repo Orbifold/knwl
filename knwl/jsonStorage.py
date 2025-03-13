@@ -4,15 +4,14 @@ from dataclasses import asdict
 from typing import cast
 
 from knwl.settings import get_config
-from knwl.settings import settings
 from knwl.utils import KnwlChunk, KnwlDocument, load_json, logger, write_json, StorageNameSpace
 
 
 class JsonStorage(StorageNameSpace):
-    def __init__(self, namespace: str = "default", cache: bool = False):
-        super().__init__(namespace, cache)
+    def __init__(self, namespace: str = "default", caching: bool = False):
+        super().__init__(namespace, caching)
 
-        if self.cache:
+        if self.caching:
             self.file_path = os.path.join(get_config("working_dir"), f"json_{self.namespace}", "data.json")
             self.parent_path = os.path.dirname(self.file_path)
             self.data = load_json(self.file_path) or {}
@@ -27,8 +26,7 @@ class JsonStorage(StorageNameSpace):
         return list(self.data.keys())
 
     async def save(self):
-
-        if self.cache:
+        if self.caching:
             os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
             write_json(self.data, self.file_path)
 
@@ -43,13 +41,14 @@ class JsonStorage(StorageNameSpace):
             OSError: If an error occurs during file removal.
         """
 
-        if self.cache and os.path.exists(self.parent_path):
+        if self.caching and os.path.exists(self.parent_path):
             shutil.rmtree(self.parent_path)
 
     async def get_by_id(self, id):
         return self.data.get(id, None)
 
     async def get_by_ids(self, ids, fields=None):
+
         if fields is None:
             return [self.data.get(id, None) for id in ids]
         return [({k: v for k, v in self.data[id].items() if k in fields} if self.data.get(id, None) else None) for id in ids]
@@ -69,10 +68,13 @@ class JsonStorage(StorageNameSpace):
             else:
                 left_data[k] = cast(dict, left_data[k])
             self.data.update(left_data)
+            await self.save()
             return left_data
 
     async def clear(self):
         self.data = {}
+        if self.caching and os.path.exists(self.file_path):
+            os.remove(self.file_path)
 
     async def count(self):
         return len(self.data)

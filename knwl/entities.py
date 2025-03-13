@@ -1,8 +1,8 @@
 from collections import defaultdict
-from typing import Dict, cast, List
-import networkx as nx
+from typing import Dict
+
 from knwl.prompt import PROMPTS
-from .llm import ollama_chat
+from .llm import llm
 from .settings import settings
 from .utils import *
 from .utils import KnwlNode
@@ -84,7 +84,7 @@ async def process_chunk(chunk_key: str, chunk: KnwlChunk) -> KnwlExtraction | No
     The function performs the following steps:
         1. Checks if the chunk content is empty or contains only whitespace, or if the token count is zero.
         2. Constructs prompts for entity extraction and continuation.
-        3. Uses the `ollama_chat` function to generate responses based on the prompts.
+        3. Uses the `llm.ask` function to generate responses based on the prompts.
         4. Iteratively gleans additional information until a maximum number of iterations is reached or a stopping condition is met.
         5. Splits the final result into records and processes each record to identify entities and relationships.
         6. Converts records to entities or relationships and adds them to the respective dictionaries.
@@ -121,19 +121,19 @@ async def extract_entities_from_text(text: str, chunk_key: str = None) -> KnwlEx
 
     context_base = dict(tuple_delimiter=PROMPTS["DEFAULT_TUPLE_DELIMITER"], record_delimiter=PROMPTS["DEFAULT_RECORD_DELIMITER"], completion_delimiter=PROMPTS["DEFAULT_COMPLETION_DELIMITER"], entity_types=",".join(PROMPTS["DEFAULT_ENTITY_TYPES"]), )
     final_prompt = entity_extract_prompt.format(**context_base, input_text=text)
-    final_result = await ollama_chat(final_prompt, core_input=text, category=CATEGORY_KEYWORD_EXTRACTION)
+    final_result = await llm.ask(final_prompt, core_input=text, category=CATEGORY_KEYWORD_EXTRACTION)
 
     history = pack_messages(final_prompt, final_result)
     entity_extract_max_gleaning = settings.entity_extract_max_gleaning
     for now_glean_index in range(entity_extract_max_gleaning):
-        glean_result = await ollama_chat(continue_prompt, history_messages=history, category=CATEGORY_GLEANING)
+        glean_result = await  llm.ask(continue_prompt, history_messages=history, category=CATEGORY_GLEANING)
 
         history += pack_messages(continue_prompt, glean_result)
         final_result += glean_result
         if now_glean_index == entity_extract_max_gleaning - 1:
             break
 
-        if_loop_result: str = await ollama_chat(if_loop_prompt, history_messages=history, category=CATEGORY_NEED_MORE)
+        if_loop_result: str = await  llm.ask(if_loop_prompt, history_messages=history, category=CATEGORY_NEED_MORE)
         if_loop_result = if_loop_result.strip().strip('"').strip("'").lower()
         if if_loop_result != "yes":
             break
@@ -175,6 +175,10 @@ async def extract_entities_from_text(text: str, chunk_key: str = None) -> KnwlEx
     corrected_edges = {}
     for key in edges:
         for e in edges[key]:
+
+            if e.sourceId not in node_map or e.targetId not in node_map:
+                #  happens if the LLM creates edges to entities that are not in the graph
+                continue
             if key not in corrected_edges:
                 corrected_edges[key] = []
             source_id = node_map[e.sourceId]

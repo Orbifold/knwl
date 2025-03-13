@@ -9,8 +9,11 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from functools import wraps
 from hashlib import md5
-from typing import Any, Union, Literal, List, TypeVar, Callable, Dict
+from typing import Any, Union, Literal, List
 from uuid import uuid4
+
+import networkx as nx
+
 from .logging import logger
 
 CATEGORY_KEYWORD_EXTRACTION = "Keywords Extraction"
@@ -316,11 +319,11 @@ class KnwlExtraction:
 
 class StorageNameSpace:
     namespace: str
-    cache: bool
+    caching: bool
 
-    def __init__(self, namespace: str = "default", cache: bool = False):
+    def __init__(self, namespace: str = "default", caching: bool = False):
         self.namespace = namespace
-        self.cache = cache
+        self.caching = caching
 
 
 @dataclass
@@ -540,7 +543,7 @@ class KnwlContext:
 @dataclass(frozen=True)
 class KnwlResponse:
     answer: str = field(default="None supplied")
-    context: KnwlContext = field(default=None)
+    context: KnwlContext|None = field(default=None)
 
 
 def get_json_body(content: str) -> Union[str, None]:
@@ -773,3 +776,76 @@ def list_of_list_to_csv(data: list[list]):
 def save_data_to_file(data, file_name):
     with open(file_name, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
+
+
+@dataclass
+class KnwlBasicNode:
+    id: str = field(default=str(uuid4()))
+    name: str = field(default="")
+    type: str = field(default="UNKNOWN")
+    description: str = field(default="")
+    typeName: str = "KnwlBasicNode"
+
+
+@dataclass
+class KnwlBasicEdge:
+    sourceId: str
+    targetId: str
+    id: str = field(default=str(uuid4()))
+    description: str = field(default="")
+    typeName: str = "KnwlBasicEdge"
+
+
+@dataclass
+class KnwlBasicGraph:
+    """
+    This is in essence a JSON graph structure.
+    """
+    nodes: List[KnwlBasicNode]
+    edges: List[KnwlBasicEdge]
+    id: str = field(default=str(uuid4()))
+    typeName: str = "KnwlBasicGraph"
+
+    def is_consistent(self) -> bool:
+        """
+        Check if the graph is consistent: all the edge endpoints are in the node list.
+        """
+        node_ids = self.get_node_ids()
+
+        for edge in self.edges:
+            if edge.sourceId not in node_ids:
+                logger.error(f"Source node {edge.sourceId} of edge {edge.id} is not in the node list.")
+                return False
+            if edge.targetId not in node_ids:
+                logger.error(f"Target node {edge.targetId} of edge {edge.id} is not in the node list.")
+                return False
+        return True
+
+    def get_node_ids(self) -> List[str]:
+        return [node.id for node in self.nodes]
+
+    def get_edge_ids(self) -> List[str]:
+        return [edge.id for edge in self.edges]
+
+    def __post_init__(self):
+        if not self.is_consistent():
+            raise ValueError("The graph is not consistent.")
+
+    def to_nx_graph(self):
+        G = nx.Graph()
+        for node in self.nodes:
+            G.add_node(node.id, name=node.name, type=node.type, description=node.description)
+        for edge in self.edges:
+            G.add_edge(edge.sourceId, edge.targetId, description=edge.description)
+        return G
+
+    def write_graphml(self, file_name):
+        G = self.to_nx_graph()
+        nx.write_graphml(G, file_name)
+
+    @staticmethod
+    def from_json_graph(json_graph):
+
+        nodes = [KnwlBasicNode(**node) for node in json_graph["nodes"]]
+        edges = [KnwlBasicEdge(**edge) for edge in json_graph["edges"]]
+        return KnwlBasicGraph(nodes=nodes, edges=edges)

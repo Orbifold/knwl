@@ -13,14 +13,21 @@ class Settings:
         self.tokenize_model = "gpt-4o-mini"
         self.tokenize_size = 1024
         self.tokenize_overlap = 128
+
         # o7 is qwen2.5:7b with larger context window, o14 is similarly qwen2.5:14b
-        self.ollamna_model = "o14"
+        # self.llm_model = "o14"
+        # self.llm_model = "qwen2.5:7b"
+        # self.llm_service = "ollama"
+
+        self.llm_model = "gpt-4o-mini"
+        self.llm_service = "openai"
+
         self.entity_extract_max_gleaning = 1
         self.max_tokens = 32768
         self.summary_max = 20
         self.logging_enabled = False
         self.in_memory = True
-        self.cache_ollama = True
+        self.llm_caching = True
 
     def update(self, **kwargs):
         """

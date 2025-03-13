@@ -84,9 +84,9 @@ class GraphStorage(StorageNameSpace):
     file_path: str | None
     parent_path: str | None
 
-    def __init__(self, namespace: str = "default", cache: bool = False):
-        super().__init__(namespace, cache)
-        if self.cache:
+    def __init__(self, namespace: str = "default", caching: bool = False):
+        super().__init__(namespace, caching)
+        if self.caching:
             self.file_path = os.path.join(settings.working_dir, f"graphdb_{self.namespace}", f"data.graphml")
             self.parent_path = os.path.dirname(self.file_path)
             os.makedirs(self.parent_path, exist_ok=True)
@@ -149,7 +149,7 @@ class GraphStorage(StorageNameSpace):
         nx.write_graphml(graph, file_name)
 
     async def save(self):
-        if self.cache:
+        if self.caching:
             GraphStorage.write(self.graph, self.file_path)
 
     async def node_exists(self, node_id: str) -> bool:
@@ -367,7 +367,7 @@ class GraphStorage(StorageNameSpace):
 
     async def clear(self):
         self.graph.clear()
-        if self.cache:
+        if self.caching:
             await self.save()
 
     async def node_count(self):
@@ -418,5 +418,5 @@ class GraphStorage(StorageNameSpace):
         return self.graph.get_edge_data(source_node_id, target_node_id).get("weight", 1.0)
 
     async def unsave(self) -> None:
-        if os.path.exists(self.file_path) and self.cache:
+        if os.path.exists(self.file_path) and self.caching:
             shutil.rmtree(self.parent_path)

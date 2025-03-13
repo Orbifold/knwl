@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "knwl"
-version = "0.1.0"
+version = "0.2.0"
 description = ""
 authors = ["Swa <swa@orbifold.net>"]
 readme = "README.md"
@@ -14,7 +14,7 @@ transformers = "^4.46.1"
 tiktoken = "^0.8.0"
 pyvis = "^0.3.2"
 tenacity = "^9.0.0"
-ollama = "^0.3.3"
+ollama = "^0.4.7"
 openai = "^1.53.0"
 chromadb = "^0.5.16"
 
