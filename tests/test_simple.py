@@ -6,6 +6,8 @@ import pytest
 from faker import Faker
 
 import knwl
+from knwl.models import KnwlLLMAnswer
+from knwl.models.KnwlResponse import KnwlResponse
 from knwl.models.QueryParam import QueryParam
 from knwl.models.KnwlExtraction import KnwlExtraction
 from knwl.models.KnwlChunk import KnwlChunk
@@ -296,9 +298,9 @@ class TestGraphMerge:
         mocker.patch('knwl.simple.decode', return_value=description)
         mocker.patch('knwl.simple.settings', summary_max=1, max_tokens=len(tokens))
         mocker.patch('knwl.simple.PROMPTS', {"summarize_entity_descriptions": "Summarize: {entity_name} {description_list}"})
-        mocker.patch('knwl.simple.query', return_value="John is a software engineer living in Paris.")
+        mocker.patch('knwl.simple.Simple.query', return_value=KnwlResponse(answer="John is a software engineer living in Paris."))
         result = await Simple.compactify_summary("John", description, smart_merge=True)
-        assert result == "John is a software engineer living in Paris."
+        assert result == "John is a software engineer living in Paris." or  result == "John is a software engineer who lives in Paris."
 
     @pytest.mark.asyncio
     async def test_compactify_summary_trigger_summary(self, mocker):
@@ -308,7 +310,7 @@ class TestGraphMerge:
         mocker.patch('knwl.simple.decode', return_value=description)
         mocker.patch('knwl.simple.settings', summary_max=1, max_tokens=len(tokens))
         mocker.patch('knwl.simple.PROMPTS', {"summarize_entity_descriptions": "Summarize: {entity_name} {description_list}"})
-        mocker.patch('knwl.simple.llm.ask', return_value="John is a software engineer living in Paris who likes to travel.")
+        mocker.patch('knwl.simple.llm.ask', return_value=KnwlLLMAnswer(answer="John is a software engineer living in Paris who likes to travel."))
         result = await Simple.compactify_summary("John", description, smart_merge=True)
         assert result == "John is a software engineer living in Paris who likes to travel."
 

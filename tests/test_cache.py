@@ -26,5 +26,6 @@ async def test_llm_cache():
     assert cached_item.messages == [{"role": "user", "content": "hello"}]
     assert await cache.is_in_cache("hello", "ollama", "qwen2.5:14b")
     assert not await cache.is_in_cache("hello again", "ollama", "qwen2.5:14b")
+    assert not await cache.is_in_cache("hello", "ollama", "another_model")
     await cache.delete(a)
     assert not await cache.is_in_cache("hello", "ollama", "qwen2.5:14b")

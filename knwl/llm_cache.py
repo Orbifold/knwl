@@ -36,7 +36,7 @@ class LLMCache:
     async def clear_cache(self):
         await self.storage.clear_cache()
 
-    async def get_by_id(self, id):
+    async def get_by_id(self, id:str):
         d = await self.storage.get_by_id(id)
         if d is None:
             return None

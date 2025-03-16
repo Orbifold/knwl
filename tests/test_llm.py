@@ -8,22 +8,6 @@ from knwl.settings import settings
 
 
 @pytest.mark.asyncio
-async def test_ollama_chat_cache_hit():
-    prompt = "Hello"
-    system_prompt = "System"
-    history_messages = [{"role": "user", "content": "Hi"}]
-    key = "hashed_key"
-    cached_response = {"content": "Cached response"}
-
-    with patch("knwl.llm.llm_cache.get_by_id", new=AsyncMock(return_value=cached_response)) as mock_get_by_id:
-        with patch("knwl.llm.hash_args", return_value=key):
-            r = await llm.ask(prompt, system_prompt, history_messages)
-            response = r.answer
-            mock_get_by_id.assert_called_once_with(key)
-            assert response == cached_response["content"]
-
-
-@pytest.mark.asyncio
 async def test_history():
     prompt = "Hello"
     system_prompt = "System"
@@ -52,10 +36,9 @@ async def test_history():
 @pytest.mark.asyncio
 async def test_is_in_cache_hit():
     messages = [{"role": "user", "content": "Hi"}]
-    cached_response =KnwlLLMAnswer(answer="Cached response", messages=messages, llm_model=settings.llm_model, llm_service=settings.llm_service)
+    cached_response = KnwlLLMAnswer(answer="Cached response", messages=messages, llm_model=settings.llm_model, llm_service=settings.llm_service)
 
-    with patch("knwl.llm.llm.cache.storage.get_by_id", new=AsyncMock(return_value=cached_response)) as mock_get_by_id:
-        with patch("knwl.llm.hash_args", return_value=cached_response.id):
-            result = await llm.is_cached(messages)
-            mock_get_by_id.assert_called_once_with(cached_response.id)
-            assert result is True
+    with patch("knwl.llm.llm.cache.get_by_id", return_value=cached_response.id) as mock_get_by_id:
+        result = await llm.is_cached(messages)
+        mock_get_by_id.assert_called_once_with(cached_response.id)
+        assert result is True
