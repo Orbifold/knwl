@@ -1,4 +1,3 @@
-import dataclasses
 import time
 from collections import Counter
 from dataclasses import asdict
@@ -36,7 +35,7 @@ from knwl.vectorStorage import VectorStorage
 logger = set_logger()
 
 
-class Simple:
+class Knwl:
     """
         This class provides methods for managing and querying a knowledge graph.
         It includes functionalities for inserting sources, creating chunks, extracting entities, merging data into the knowledge graph, and querying the graph using various modes.
@@ -94,7 +93,7 @@ class Simple:
             If `basic_rag` is True, the method will return None after creating chunks.
         """
         try:
-            inputs = Simple.convert_to_inputs(sources)
+            inputs = Knwl.convert_to_inputs(sources)
 
             # =================== Sources ========================================
             new_documents = await self.save_sources(inputs)
@@ -376,7 +375,7 @@ class Simple:
 
         unique_descriptions = unique_strings([dp.description for dp in nodes] + found_description)
         chunk_ids = unique_strings([dp.chunkIds for dp in nodes] + [found_chunk_ids])
-        compactified_description = await Simple.compactify_summary(entity_id, GRAPH_FIELD_SEP.join(unique_descriptions), smart_merge)
+        compactified_description = await Knwl.compactify_summary(entity_id, GRAPH_FIELD_SEP.join(unique_descriptions), smart_merge)
         node = KnwlNode(name=entity_name, type=majority_entity_type, description=compactified_description, chunkIds=chunk_ids)
         await self.graph_storage.upsert_node(entity_id, asdict(node))
         return node
@@ -424,7 +423,7 @@ class Simple:
         unique_descriptions = unique_strings([dp.description for dp in edges] + found_description)
         keywords = sorted(unique_strings([dp.keywords for dp in edges] + [found_keywords]))  # sorting is just for convenience
         chunk_ids = unique_strings([dp.chunkIds for dp in edges] + [found_chunk_ids])
-        compactified_description = await Simple.compactify_summary(str((source_id, target_id)), GRAPH_FIELD_SEP.join(unique_descriptions), smart_merge)
+        compactified_description = await Knwl.compactify_summary(str((source_id, target_id)), GRAPH_FIELD_SEP.join(unique_descriptions), smart_merge)
         for need_insert_id in [source_id, target_id]:
             if not (await self.graph_storage.node_exists(need_insert_id)):
                 # logger.warning(f"Node {need_insert_id} referenced by an edge and not found, creating a new node")
@@ -511,7 +510,6 @@ class Simple:
             end_time = time.time()
             if isinstance(response, str):
                 response = KnwlResponse(answer=response)
-            response = dataclasses.replace(response, timing=round(end_time - start_time, 2))
             return response
         except Exception as e:
             logger.error(f"Error during query: {e}")
@@ -538,7 +536,7 @@ class Simple:
             str: The response generated from the query. If an error occurs during processing, a failure response is returned.
         """
         context = None
-
+        start_time = time.time()
         keywords_prompt = PROMPTS["keywords_extraction"].format(query=query)
 
         r = await  llm.ask(keywords_prompt, core_input=query, category=CATEGORY_KEYWORD_EXTRACTION)
@@ -563,6 +561,7 @@ class Simple:
                 return PROMPTS["fail_response"]
         if low_keywords:
             context = await self.get_local_query_context(low_keywords, query_param)
+        rag_time = round(time.time() - start_time, 2)
         if query_param.only_need_context:
             return KnwlResponse(context=context)
         if context is None:
@@ -574,7 +573,7 @@ class Simple:
         if len(response) > len(sys_prompt):
             response = (response.replace(sys_prompt, "").replace("user", "").replace("model", "").replace(query, "").replace("<system>", "").replace("</system>", "").strip())
 
-        return KnwlResponse(answer=response, context=context)
+        return KnwlResponse(answer=response, context=context, rag_time=rag_time, llm_time=r.timing)
 
     async def get_local_query_context(self, query, query_param: QueryParam) -> KnwlContext | None:
         """
@@ -705,7 +704,7 @@ class Simple:
         Returns:
             dict[str, int]: A dictionary where the keys are chunk IDs and the values are the counts of how many times each chunk appears in the edges.
         """
-        primary_chunk_ids = Simple.get_chunk_ids(primary_nodes)
+        primary_chunk_ids = Knwl.get_chunk_ids(primary_nodes)
         all_edges = await self.get_attached_edges(primary_nodes)
         node_map = {n.id: n for n in primary_nodes}
         edge_chunk_ids = {}
@@ -803,6 +802,7 @@ class Simple:
 
     async def query_global(self, query, query_param: QueryParam) -> KnwlResponse:
         context = None
+        start_time = time.time()
 
         kw_prompt_temp = PROMPTS["keywords_extraction"]
         kw_prompt = kw_prompt_temp.format(query=query)
@@ -828,7 +828,7 @@ class Simple:
                 return PROMPTS["fail_response"]
         if keywords:
             context = await self.get_global_query_context(keywords, query_param)
-
+        rag_time = round(time.time() - start_time, 2)
         if query_param.only_need_context:
             return KnwlResponse(context=context)
         if context is None:
@@ -841,7 +841,7 @@ class Simple:
         if len(response) > len(sys_prompt):
             response = (response.replace(sys_prompt, "").replace("user", "").replace("model", "").replace(query, "").replace("<system>", "").replace("</system>", "").strip())
 
-        return KnwlResponse(answer=response, context=context)
+        return KnwlResponse(answer=response, context=context, rag_time=rag_time, llm_time=a.timing)
 
     async def get_naive_query_context(self, chunks: List[KnwlRagChunk], query_param: QueryParam):
         chunk_recs = []
@@ -912,7 +912,9 @@ class Simple:
             str: The generated response based on the query and parameters. If no results are found, returns a fail response prompt.
         """
         # =========================Standard RAG ===================================
+        start_time = time.time()
         rag_chunks = await self.chunk_vectors.query(query, top_k=query_param.top_k)
+
         if not len(rag_chunks):
             return KnwlResponse(answer="No vectors found to answer the question.", context=None)
         chunks = []
@@ -920,8 +922,12 @@ class Simple:
             chunks.append(KnwlRagChunk(id=chunk["id"], text=truncate_content(chunk["content"], settings.max_tokens), order=0, index=str(i)))
         refs = await self.get_references([c.id for c in chunks])
         context = KnwlContext(chunks=chunks, references=refs)
+
+        rag_time = round(time.time() - start_time, 2)
+
         if query_param.only_need_context:
-            return KnwlResponse(context=context)
+            return KnwlResponse(context=context, rag_time=rag_time, llm_time=0.0)
+
         sys_prompt_temp = PROMPTS["naive_rag_response"]
         sys_prompt = sys_prompt_temp.format(content_data=context.get_documents(), response_type=query_param.response_type)
         r = await  llm.ask(query, system_prompt=sys_prompt, category=CATEGORY_NAIVE_QUERY)
@@ -929,7 +935,7 @@ class Simple:
         if len(response) > len(sys_prompt):
             response = (response[len(sys_prompt):].replace(sys_prompt, "").replace("user", "").replace("model", "").replace(query, "").replace("<system>", "").replace("</system>", "").strip())
 
-        return KnwlResponse(answer=response, context=context)
+        return KnwlResponse(answer=response, context=context, rag_time=rag_time, llm_time=r.timing)
 
     async def query_hybrid(self, query, query_param: QueryParam) -> KnwlResponse:
         low_level_context = None
@@ -937,6 +943,7 @@ class Simple:
 
         kw_prompt_temp = PROMPTS["keywords_extraction"]
         kw_prompt = kw_prompt_temp.format(query=query)
+        start_time = time.time()
 
         r = await  llm.ask(kw_prompt)
         result = r.answer
@@ -968,9 +975,10 @@ class Simple:
             high_level_context = await self.get_global_query_context(hl_keywords, query_param)
 
         context = KnwlContext.combine(high_level_context, low_level_context)
+        rag_time = round(time.time() - start_time, 2)
 
         if query_param.only_need_context:
-            return KnwlResponse(context=context)
+            return KnwlResponse(context=context, rag_time=rag_time, llm_time=0.0)
         if context is None:
             return PROMPTS["fail_response"]
 
@@ -980,7 +988,7 @@ class Simple:
         response = r.answer
         if len(response) > len(sys_prompt):
             response = (response.replace(sys_prompt, "").replace("user", "").replace("model", "").replace(query, "").replace("<system>", "").replace("</system>", "").strip())
-        return KnwlResponse(answer=response, context=context)
+        return KnwlResponse(answer=response, context=context, llm_time=r.timing, rag_time=rag_time)
 
     async def count_documents(self):
         return await self.document_storage.count()

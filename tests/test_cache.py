@@ -13,7 +13,7 @@ async def test_llm_cache():
         "llm_model": "qwen2.5:14b",
         "llm_service": "ollama",
         "answer": "world",
-        "timing": 20.0
+        "total_time": 20.0
     }
     a = KnwlLLMAnswer(**d)
     id = await cache.upsert(a)

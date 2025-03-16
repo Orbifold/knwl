@@ -16,7 +16,7 @@ from knwl.models.KnwlInput import KnwlInput
 from knwl.models.KnwlEdge import KnwlEdge
 from knwl.models.KnwlNode import KnwlNode
 from knwl.prompt import GRAPH_FIELD_SEP
-from knwl.simple import Simple
+from knwl.knwl import Knwl
 from knwl.tokenize import count_tokens
 from knwl.utils import hash_with_prefix
 
@@ -35,7 +35,7 @@ class TestRealCases:
 
     @pytest.mark.asyncio
     async def test_local(self):
-        s = Simple()
+        s = Knwl()
         await s.input('John is married to Anna.', "Married")
         await s.input('Anna loves John and how he takes care of the family. The have a beautiful daughter named Helena, she is three years old.', "Family")
         await s.input('John has been working for the past ten years on AI and robotics. He knows a lot about the subject.', "Work")
@@ -50,12 +50,11 @@ class TestRealCases:
         print("======================== References =====================================")
         print(response.context.get_references_table())
         print("======================== Timing =====================================")
-        # print(f"llm: {response.timing}s")
-        print(f"total: {response.timing}s")
+        print(f"timing: {response.total_time}s [{response.rag_time}s rag, {response.llm_time}s llm]")
 
     @pytest.mark.asyncio
     async def test_global(self):
-        s = Simple()
+        s = Knwl()
         await s.input('John is married to Anna.', "Married")
         await s.input('Anna loves John and how he takes care of the family. The have a beautiful daughter named Helena, she is three years old.', "Family")
         await s.input('John has been working for the past ten years on AI and robotics. He knows a lot about the subject.', "Work")
@@ -69,15 +68,14 @@ class TestRealCases:
         print("======================== References =====================================")
         print(response.context.get_references_table())
         print("======================== Timing =====================================")
-        # print(f"llm: {response.timing}s")
-        print(f"total: {response.timing}s")
+        # print(f"llm: {response.total_time}s")
+        print(f"total: {response.total_time}s")
         print("======================== Timing =====================================")
-        # print(f"llm: {response.timing}s")
-        print(f"total: {response.timing}s")
+        print(f"timing: {response.total_time}s [{response.rag_time}s rag, {response.llm_time}s llm]")
 
     @pytest.mark.asyncio
     async def test_naive(self):
-        s = Simple()
+        s = Knwl()
         await s.input('John is married to Anna.', "Married")
         await s.input('Anna loves John and how he takes care of the family. The have a beautiful daughter named Helena, she is three years old.', "Family")
         await s.input('John has been working for the past ten years on AI and robotics. He knows a lot about the subject.', "Work")
@@ -92,12 +90,11 @@ class TestRealCases:
         print("======================== References =====================================")
         print(response.context.get_references_table())
         print("======================== Timing =====================================")
-        # print(f"llm: {response.timing}s")
-        print(f"total: {response.timing}s")
+        print(f"timing: {response.total_time}s [{response.rag_time}s rag, {response.llm_time}s llm]")
 
     @pytest.mark.asyncio
     async def test_hybrid(self):
-        s = Simple()
+        s = Knwl()
         await s.input('John is married to Anna.', "Married")
         await s.input('Anna loves John and how he takes care of the family. The have a beautiful daughter named Helena, she is three years old.', "Family")
         await s.input('John has been working for the past ten years on AI and robotics. He knows a lot about the subject.', "Work")
@@ -111,12 +108,12 @@ class TestRealCases:
         print("======================== References =====================================")
         print(response.context.get_references_table())
         print("======================== Timing =====================================")
-        # print(f"llm: {response.timing}s")
-        print(f"total: {response.timing}s")
+        print(f"timing: {response.total_time}s [{response.rag_time}s rag, {response.llm_time}s llm]")
+
 
     @pytest.mark.asyncio
     async def test_direct_kg_creation(self):
-        s = Simple()
+        s = Knwl()
         g = await s.create_kg("""
         Field was born 26 July 1782 in Golden Lane, Dublin, the eldest son of Irish parents who were members of the Church of Ireland. He was baptised on 30 September. His father, Robert Field, earned his living by playing the violin in Dublin theatres. Field first studied the piano under his grandfather (also named John Field), who was a professional organist, and later under Tommaso Giordani. He made his debut at the age of nine, a performance that was well-received, on 24 March 1792 in Dublin. According to an early biographer, W. H. Grattan Flood, Field started composing in Ireland, but no evidence exists to support his claim. Flood also asserted that Field's family moved to Bath, Somerset, in 1793 and lived there for a short time, and this too is considered unlikely by modern researchers. By late 1793, though, the Fields had settled in London, where the young pianist started studying with Muzio Clementi. This arrangement was made possible by Field's father, who was perhaps able to secure the apprenticeship through Giordani, who knew Clementi.
 
@@ -129,13 +126,13 @@ class TestRealCases:
 class TestDocuments:
     @pytest.mark.asyncio
     async def test_save_sources_empty(self):
-        s = Simple()
+        s = Knwl()
         with pytest.raises(ValueError):
             result = await s.save_sources([])
 
     @pytest.mark.asyncio
     async def test_save_sources_all_existing(self, mocker):
-        s = Simple()
+        s = Knwl()
         sources = [KnwlInput(text="Source 1"), KnwlInput(text="Source 2")]
         mocker.patch.object(s.document_storage, 'filter_new_ids', return_value=[])
         mocker.patch.object(s.document_storage, 'upsert')
@@ -145,7 +142,7 @@ class TestDocuments:
 
     @pytest.mark.asyncio
     async def test_save_sources_new_sources(self, mocker):
-        s = Simple()
+        s = Knwl()
         sources = [KnwlInput(text="Source 1"), KnwlInput(text="Source 2")]
         documents = [KnwlDocument.from_input(s) for s in sources]
         new_keys = [d.id for d in documents]
@@ -161,13 +158,13 @@ class TestDocuments:
 class TestChunks:
     @pytest.mark.asyncio
     async def test_create_chunks_empty_sources(self):
-        s = Simple()
+        s = Knwl()
         result = await s.create_chunks({})
         assert result == {}
 
     @pytest.mark.asyncio
     async def test_create_chunks_all_existing(self, mocker):
-        s = Simple()
+        s = Knwl()
         sources = {
             "source1": KnwlDocument(content="Content 1"),
             "source2": KnwlDocument(content="Content 2")
@@ -187,7 +184,7 @@ class TestChunks:
 
     @pytest.mark.asyncio
     async def test_create_chunks_new_chunks(self, mocker):
-        s = Simple()
+        s = Knwl()
         sources = create_dummy_documents(2)
         # chunks are the same as sources since the content is small
         new_chunks = [KnwlChunk(content=s.content, originId=k, tokens=count_tokens(s.content)) for k, s in sources.items()]
@@ -207,7 +204,7 @@ class TestGraphMerge:
 
     @pytest.mark.asyncio
     async def test_merge_nodes_into_graph_no_existing_node(self, mocker):
-        s = Simple()
+        s = Knwl()
         entity_name = "entity1"
         nodes = [
             KnwlNode(type="Person", description="John is a software engineer.", chunkIds=["chunk1"], name=entity_name),
@@ -217,7 +214,7 @@ class TestGraphMerge:
         mocker.patch.object(s.graph_storage, 'get_node_by_id', return_value=None)
         mocker.patch.object(s.graph_storage, 'upsert_node')
         # mocker.patch('knwl.simple.split_string_by_multi_markers', side_effect=lambda x, y: x.split(y[0]))
-        mocker.patch('knwl.simple.Simple.compactify_summary', return_value="John is a software engineer. John lives in Paris.")
+        mocker.patch('knwl.simple.Knwl.compactify_summary', return_value="John is a software engineer. John lives in Paris.")
 
         result = await s.merge_nodes_into_graph(entity_name, nodes)
 
@@ -229,7 +226,7 @@ class TestGraphMerge:
 
     @pytest.mark.asyncio
     async def test_merge_nodes_into_graph_existing_node(self, mocker):
-        s = Simple()
+        s = Knwl()
         entity_name = "entity1"
         nodes = [
             KnwlNode(type="Person", description="John is a software engineer.", chunkIds=["chunk1"], name=entity_name),
@@ -245,7 +242,7 @@ class TestGraphMerge:
         mocker.patch.object(s.graph_storage, 'get_node_by_id', return_value=existing_node)
         mocker.patch.object(s.graph_storage, 'upsert_node')
         mocker.patch('knwl.simple.split_string_by_multi_markers', side_effect=lambda x, y: x.split(y[0]))
-        mocker.patch('knwl.simple.Simple.compactify_summary', return_value="John is a software engineer. John lives in Paris. John likes to travel.")
+        mocker.patch('knwl.simple.Knwl.compactify_summary', return_value="John is a software engineer. John lives in Paris. John likes to travel.")
 
         result = await s.merge_nodes_into_graph(entity_name, nodes)
 
@@ -257,7 +254,7 @@ class TestGraphMerge:
 
     @pytest.mark.asyncio
     async def test_merge_nodes_into_graph_different_types(self, mocker):
-        s = Simple()
+        s = Knwl()
         entity_name = "entity1"
         nodes = [
             KnwlNode(type="Person", description="John is a software engineer.", chunkIds=["chunk1"], name=entity_name),
@@ -274,7 +271,7 @@ class TestGraphMerge:
         mocker.patch.object(s.graph_storage, 'get_node_by_id', return_value=existing_node)
         mocker.patch.object(s.graph_storage, 'upsert_node')
         # mocker.patch('knwl.simple.split_string_by_multi_markers', side_effect=lambda x, y: x.split(y[0]))
-        mocker.patch('knwl.simple.Simple.compactify_summary', return_value="John is a software engineer. John lives in Paris. John likes to travel.")
+        mocker.patch('knwl.simple.Knwl.compactify_summary', return_value="John is a software engineer. John lives in Paris. John likes to travel.")
 
         result = await s.merge_nodes_into_graph(entity_name, nodes)
 
@@ -287,7 +284,7 @@ class TestGraphMerge:
     @pytest.mark.asyncio
     async def test_compactify_summary_no_smart_merge(self):
         description = f"John is a software engineer.{GRAPH_FIELD_SEP}John lives in Paris."
-        result = await Simple.compactify_summary("John", description, smart_merge=False)
+        result = await Knwl.compactify_summary("John", description, smart_merge=False)
         assert result == "John is a software engineer. John lives in Paris."
 
     @pytest.mark.asyncio
@@ -298,8 +295,8 @@ class TestGraphMerge:
         mocker.patch('knwl.simple.decode', return_value=description)
         mocker.patch('knwl.simple.settings', summary_max=1, max_tokens=len(tokens))
         mocker.patch('knwl.simple.PROMPTS', {"summarize_entity_descriptions": "Summarize: {entity_name} {description_list}"})
-        mocker.patch('knwl.simple.Simple.query', return_value=KnwlResponse(answer="John is a software engineer living in Paris."))
-        result = await Simple.compactify_summary("John", description, smart_merge=True)
+        mocker.patch('knwl.simple.Knwl.query', return_value=KnwlResponse(answer="John is a software engineer living in Paris."))
+        result = await Knwl.compactify_summary("John", description, smart_merge=True)
         assert result == "John is a software engineer living in Paris." or  result == "John is a software engineer who lives in Paris."
 
     @pytest.mark.asyncio
@@ -311,12 +308,12 @@ class TestGraphMerge:
         mocker.patch('knwl.simple.settings', summary_max=1, max_tokens=len(tokens))
         mocker.patch('knwl.simple.PROMPTS', {"summarize_entity_descriptions": "Summarize: {entity_name} {description_list}"})
         mocker.patch('knwl.simple.llm.ask', return_value=KnwlLLMAnswer(answer="John is a software engineer living in Paris who likes to travel."))
-        result = await Simple.compactify_summary("John", description, smart_merge=True)
+        result = await Knwl.compactify_summary("John", description, smart_merge=True)
         assert result == "John is a software engineer living in Paris who likes to travel."
 
     @pytest.mark.asyncio
     async def test_merge_edges_into_graph_no_existing_edge(self, mocker):
-        s = Simple()
+        s = Knwl()
         edge_id = "(source1,target1)"
         edges = [
             KnwlEdge(weight=1.0, sourceId="source1", targetId="target1", description="Edge 1", keywords=["keyword1"], chunkIds=["chunk1"]),
@@ -327,7 +324,7 @@ class TestGraphMerge:
         mocker.patch.object(s.graph_storage, 'upsert_edge')
         mocker.patch.object(s.graph_storage, 'node_exists', return_value=True)
         mocker.patch('knwl.simple.split_string_by_multi_markers', side_effect=lambda x, y: x.split(y[0]))
-        mocker.patch('knwl.simple.Simple.compactify_summary', return_value="Edge 1 Edge 2")
+        mocker.patch('knwl.simple.Knwl.compactify_summary', return_value="Edge 1 Edge 2")
 
         result = await s.merge_edges_into_graph(edges)
 
@@ -341,7 +338,7 @@ class TestGraphMerge:
 
     @pytest.mark.asyncio
     async def test_merge_edges_into_graph_existing_edge(self, mocker):
-        s = Simple()
+        s = Knwl()
         edges = [
             KnwlEdge(weight=1.0, sourceId="source1", targetId="target1", description="Edge 1", keywords=["keyword1"], chunkIds=["chunk1"]),
             KnwlEdge(weight=2.0, sourceId="source1", targetId="target1", description="Edge 2", keywords=["keyword2"], chunkIds=["chunk2"])
@@ -359,7 +356,7 @@ class TestGraphMerge:
         mocker.patch.object(s.graph_storage, 'get_edge', return_value=existing_edge)
         mocker.patch.object(s.graph_storage, 'upsert_edge')
         mocker.patch.object(s.graph_storage, 'node_exists', return_value=True)
-        mocker.patch('knwl.simple.Simple.compactify_summary', return_value="Edge 1 Edge 2 Existing edge")
+        mocker.patch('knwl.simple.Knwl.compactify_summary', return_value="Edge 1 Edge 2 Existing edge")
 
         result = await s.merge_edges_into_graph(edges)
 
@@ -373,7 +370,7 @@ class TestGraphMerge:
 
     @pytest.mark.asyncio
     async def test_merge_edges_into_graph_missing_nodes(self, mocker):
-        s = Simple()
+        s = Knwl()
         edge_id = "(source1,target1)"
         edges = [
             KnwlEdge(weight=1.0, sourceId="source1", targetId="target1", description="Edge 1", keywords=["keyword1"], chunkIds=["chunk1"]),
@@ -385,14 +382,14 @@ class TestGraphMerge:
         mocker.patch.object(s.graph_storage, 'node_exists', side_effect=[False, False])
         mocker.patch.object(s.graph_storage, 'upsert_node')
         mocker.patch('knwl.simple.split_string_by_multi_markers', side_effect=lambda x, y: x.split(y[0]))
-        mocker.patch('knwl.simple.Simple.compactify_summary', return_value="Edge 1 Edge 2")
+        mocker.patch('knwl.simple.Knwl.compactify_summary', return_value="Edge 1 Edge 2")
 
         with pytest.raises(ValueError):
             result = await s.merge_edges_into_graph(edges)
 
     @pytest.mark.asyncio
     async def test_merge_extraction_into_knowledge_graph_no_nodes_or_edges(self, mocker):
-        s = Simple()
+        s = Knwl()
         extraction = KnwlExtraction(nodes={}, edges={})
 
         mocker.patch.object(s, 'merge_nodes_into_graph', return_value=None)
@@ -405,7 +402,7 @@ class TestGraphMerge:
 
     @pytest.mark.asyncio
     async def test_merge_extraction_into_knowledge_graph_with_multiple_nodes_and_edges(self, mocker):
-        s = Simple()
+        s = Knwl()
         node1 = KnwlNode(type="Person", description="John is a software engineer.", chunkIds=["chunk1"], name="entity1")
         node2 = KnwlNode(type="Location", description="Paris is a city.", chunkIds=["chunk2"], name="entity2")
         edge1 = KnwlEdge(weight=1.0, sourceId=node1.id, targetId=node2.id, description="Edge 1", keywords=["keyword1"], chunkIds=["chunk1"])
@@ -436,7 +433,7 @@ class TestGraphMerge:
 class TestQuery:
     @pytest.mark.asyncio
     async def test_get_local_query_context_no_results(self, mocker):
-        s = Simple()
+        s = Knwl()
         query = "test query"
         query_param = QueryParam(top_k=5)
 
@@ -446,7 +443,7 @@ class TestQuery:
 
     @pytest.mark.asyncio
     async def test_get_primary_nodes_no_results(self, mocker):
-        s = Simple()
+        s = Knwl()
         query = "test query"
         query_param = QueryParam(top_k=5)
 
@@ -456,7 +453,7 @@ class TestQuery:
 
     @pytest.mark.asyncio
     async def test_get_primary_nodes_some_missing_nodes(self, mocker):
-        s = Simple()
+        s = Knwl()
         query = "test query"
         query_param = QueryParam(top_k=5)
         found = [{"name": "node1", "id": "node1"}, {"name": "node2", "id": "node2"}]
@@ -473,11 +470,11 @@ class TestQuery:
         assert len(result) == 1
         assert result[0].name == "node1"
         assert result[0].degree == 3
-        knwl.simple.logger.warning.assert_called_once_with("Some nodes are missing, maybe the storage is damaged")
+        knwl.knwl.logger.warning.assert_called_once_with("Some nodes are missing, maybe the storage is damaged")
 
     @pytest.mark.asyncio
     async def test_get_primary_nodes_all_nodes_present(self, mocker):
-        s = Simple()
+        s = Knwl()
         query = "test query"
         query_param = QueryParam(top_k=5)
         found = [{"name": "node1", "id": "node1"}, {"name": "node2", "id": "node2"}]
@@ -501,13 +498,13 @@ class TestQuery:
 
     @pytest.mark.asyncio
     async def test_get_attached_edges_no_nodes(self):
-        s = Simple()
+        s = Knwl()
         result = await s.get_attached_edges([])
         assert result == []
 
     @pytest.mark.asyncio
     async def test_get_attached_edges_with_nodes(self, mocker):
-        s = Simple()
+        s = Knwl()
         query_param = QueryParam()
         nodes = [
             KnwlNode(name="node1", type="Person", description="Description 1", chunkIds=["chunk1"]),
@@ -531,7 +528,7 @@ class TestQuery:
 
     @pytest.mark.asyncio
     async def test_get_attached_edges_some_missing_edges(self, mocker):
-        s = Simple()
+        s = Knwl()
         query_param = QueryParam()
         nodes = [
             KnwlNode(name="node1", type="Person", description="Description 1", chunkIds=["chunk1"]),
@@ -559,7 +556,7 @@ class TestQuery:
         doc1 = "John is a software engineer and he is 34 years old."
         doc2 = "The QZ3 theory is about quantum topology and it is a new approach to quantum mechanics."
         doc3 = "The z1-function computes the inverse Riemann zeta function."
-        s = Simple()
+        s = Knwl()
 
         await s.insert([doc1, doc2, doc3], basic_rag=True)
         assert await s.count_documents() == 3
@@ -580,13 +577,13 @@ class TestQuery:
 class TestChunkStats:
     @pytest.mark.asyncio
     async def test_create_chunk_stats_no_primary_nodes(self):
-        s = Simple()
+        s = Knwl()
         result = await s.create_chunk_stats_from_nodes([])
         assert result == {}
 
     @pytest.mark.asyncio
     async def test_create_chunk_stats_no_edges(self, mocker):
-        s = Simple()
+        s = Knwl()
         primary_nodes = [
             KnwlNode(name="node1", type="Person", description="Description 1", chunkIds=["chunk1"]),
             KnwlNode(name="node2", type="Location", description="Description 2", chunkIds=["chunk2"])
@@ -598,7 +595,7 @@ class TestChunkStats:
 
     @pytest.mark.asyncio
     async def test_create_chunk_stats_with_edges(self, mocker):
-        s = Simple()
+        s = Knwl()
         # primary nodes: node1, node2 found in chunk1
         # (3)--(1)--(2)
         # (4)_/

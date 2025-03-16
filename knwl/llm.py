@@ -57,6 +57,8 @@ class LLMClient:
                 return found
         # effectively asking the model
         answer: KnwlLLMAnswer = await self.client.ask(messages)
+        answer.category = category
+        answer.input = core_input
         # caching update, the 'save' flag is used to overrule the default behavior of saving the response
         if save:
             await self.cache.upsert(answer)
