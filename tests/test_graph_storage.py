@@ -4,10 +4,12 @@ from dataclasses import asdict
 
 import pytest
 
+from knwl.models.KnwlEdge import KnwlEdge
+from knwl.models.KnwlNode import KnwlNode
 from knwl.graphStorage import GraphStorage
 
 from knwl.settings import settings
-from knwl.utils import random_name, KnwlEdge, KnwlNode
+from knwl.utils import random_name
 
 
 @pytest.fixture

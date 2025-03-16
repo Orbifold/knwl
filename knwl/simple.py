@@ -1,3 +1,5 @@
+import dataclasses
+import time
 from collections import Counter
 from dataclasses import asdict
 from typing import List
@@ -7,11 +9,28 @@ from knwl.graphStorage import GraphStorage
 from knwl.jsonStorage import JsonStorage
 from knwl.llm import llm
 from knwl.logging import set_logger
+from knwl.models.KnwlBasicGraph import KnwlBasicGraph
+from knwl.models.KnwlChunk import KnwlChunk
+from knwl.models.KnwlContext import KnwlContext
+from knwl.models.KnwlDegreeEdge import KnwlDegreeEdge
+from knwl.models.KnwlDegreeNode import KnwlDegreeNode
+from knwl.models.KnwlDocument import KnwlDocument
+from knwl.models.KnwlEdge import KnwlEdge
+from knwl.models.KnwlExtraction import KnwlExtraction
+from knwl.models.KnwlGraph import KnwlGraph
+from knwl.models.KnwlInput import KnwlInput
+from knwl.models.KnwlNode import KnwlNode
+from knwl.models.KnwlRagChunk import KnwlRagChunk
+from knwl.models.KnwlRagEdge import KnwlRagEdge
+from knwl.models.KnwlRagNode import KnwlRagNode
+from knwl.models.KnwlRagReference import KnwlRagReference
+from knwl.models.KnwlRagText import KnwlRagText
+from knwl.models.KnwlResponse import KnwlResponse
+from knwl.models.QueryParam import QueryParam
 from knwl.prompt import GRAPH_FIELD_SEP, PROMPTS
 from knwl.settings import settings
 from knwl.tokenize import chunk, encode, decode, truncate_content, count_tokens
 from knwl.utils import *
-from knwl.utils import KnwlGraph, KnwlNode, KnwlEdge
 from knwl.vectorStorage import VectorStorage
 
 logger = set_logger()
@@ -449,7 +468,7 @@ class Simple:
         logger.debug(f"Trigger summary: {entity_or_relation_name}")
         # summary = await  llm.ask(use_prompt, max_tokens=summary_max_tokens)
         summary = await  llm.ask(use_prompt, core_input=" ".join(descriptions))
-        return summary
+        return summary.answer
 
     async def get_references(self, chunk_ids: List[str]) -> List[KnwlRagReference]:
         if not len(chunk_ids):
@@ -476,18 +495,27 @@ class Simple:
         Raises:
             ValueError: If the mode specified in param is unknown.
         """
+        try:
+            start_time = time.time()
 
-        if param.mode == "local":
-            response = await self.query_local(query, param)
-        elif param.mode == "global":
-            response = await self.query_global(query, param)
-        elif param.mode == "hybrid":
-            response = await self.query_hybrid(query, param)
-        elif param.mode == "naive":
-            response = await self.query_naive(query, param)
-        else:
-            raise ValueError(f"Unknown mode {param.mode}")
-        return response
+            if param.mode == "local":
+                response = await self.query_local(query, param)
+            elif param.mode == "global":
+                response = await self.query_global(query, param)
+            elif param.mode == "hybrid":
+                response = await self.query_hybrid(query, param)
+            elif param.mode == "naive":
+                response = await self.query_naive(query, param)
+            else:
+                response = KnwlResponse(answer=f"Unknown mode {param.mode}")
+            end_time = time.time()
+            if isinstance(response, str):
+                response = KnwlResponse(answer=response)
+            response = dataclasses.replace(response, timing=round(end_time - start_time, 2))
+            return response
+        except Exception as e:
+            logger.error(f"Error during query: {e}")
+            return KnwlResponse(answer=e.args[0])
 
     async def query_local(self, query: str, query_param: QueryParam) -> KnwlResponse:
         """
@@ -513,8 +541,8 @@ class Simple:
 
         keywords_prompt = PROMPTS["keywords_extraction"].format(query=query)
 
-        result = await  llm.ask(keywords_prompt, core_input=query, category=CATEGORY_KEYWORD_EXTRACTION)
-
+        r = await  llm.ask(keywords_prompt, core_input=query, category=CATEGORY_KEYWORD_EXTRACTION)
+        result = r.answer
         try:
             keywords_data = json.loads(result)
             low_keywords = keywords_data.get("low_level_keywords", [])
@@ -541,7 +569,8 @@ class Simple:
             return PROMPTS["fail_response"]
         sys_prompt_temp = PROMPTS["rag_response"]
         sys_prompt = sys_prompt_temp.format(context_data=context, response_type=query_param.response_type)
-        response = await  llm.ask(query, system_prompt=sys_prompt)
+        r = await  llm.ask(query, system_prompt=sys_prompt)
+        response = r.answer
         if len(response) > len(sys_prompt):
             response = (response.replace(sys_prompt, "").replace("user", "").replace("model", "").replace(query, "").replace("<system>", "").replace("</system>", "").strip())
 
@@ -777,7 +806,8 @@ class Simple:
 
         kw_prompt_temp = PROMPTS["keywords_extraction"]
         kw_prompt = kw_prompt_temp.format(query=query)
-        result = await  llm.ask(kw_prompt)
+        found = await  llm.ask(kw_prompt)
+        result = found.answer
 
         try:
             keywords_data = json.loads(result)
@@ -806,7 +836,8 @@ class Simple:
 
         sys_prompt_temp = PROMPTS["rag_response"]
         sys_prompt = sys_prompt_temp.format(context_data=context, response_type=query_param.response_type)
-        response = await  llm.ask(query, system_prompt=sys_prompt, )
+        a = await  llm.ask(query, system_prompt=sys_prompt, )
+        response = a.answer
         if len(response) > len(sys_prompt):
             response = (response.replace(sys_prompt, "").replace("user", "").replace("model", "").replace(query, "").replace("<system>", "").replace("</system>", "").strip())
 
@@ -893,8 +924,8 @@ class Simple:
             return KnwlResponse(context=context)
         sys_prompt_temp = PROMPTS["naive_rag_response"]
         sys_prompt = sys_prompt_temp.format(content_data=context.get_documents(), response_type=query_param.response_type)
-        response = await  llm.ask(query, system_prompt=sys_prompt, category=CATEGORY_NAIVE_QUERY)
-
+        r = await  llm.ask(query, system_prompt=sys_prompt, category=CATEGORY_NAIVE_QUERY)
+        response = r.answer
         if len(response) > len(sys_prompt):
             response = (response[len(sys_prompt):].replace(sys_prompt, "").replace("user", "").replace("model", "").replace(query, "").replace("<system>", "").replace("</system>", "").strip())
 
@@ -907,7 +938,8 @@ class Simple:
         kw_prompt_temp = PROMPTS["keywords_extraction"]
         kw_prompt = kw_prompt_temp.format(query=query)
 
-        result = await  llm.ask(kw_prompt)
+        r = await  llm.ask(kw_prompt)
+        result = r.answer
         try:
             keywords_data = json.loads(result)
             hl_keywords = keywords_data.get("high_level_keywords", [])
@@ -944,7 +976,8 @@ class Simple:
 
         sys_prompt_temp = PROMPTS["rag_response"]
         sys_prompt = sys_prompt_temp.format(context_data=context, response_type=query_param.response_type)
-        response = await  llm.ask(query, system_prompt=sys_prompt, )
+        r = await  llm.ask(query, system_prompt=sys_prompt, )
+        response = r.answer
         if len(response) > len(sys_prompt):
             response = (response.replace(sys_prompt, "").replace("user", "").replace("model", "").replace(query, "").replace("<system>", "").replace("</system>", "").strip())
         return KnwlResponse(answer=response, context=context)

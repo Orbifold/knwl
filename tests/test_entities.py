@@ -1,13 +1,15 @@
-import json
 from dataclasses import asdict
-from unittest import skipIf
 
 import pytest
 
-from knwl.entities import convert_record_to_edge, is_entity, is_relationship, extract_entities, stringify_keys, extract_entities_from_text
+from knwl.entities import convert_record_to_edge, is_entity, is_relationship, extract_entities, extract_entities_from_text
+from knwl.entities import convert_record_to_node
+from knwl.models.KnwlChunk import KnwlChunk
+from knwl.models.KnwlEdge import KnwlEdge
+from knwl.models.KnwlExtraction import KnwlExtraction
+from knwl.models.KnwlNode import KnwlNode
 from knwl.settings import settings
 from knwl.utils import *
-from knwl.entities import convert_record_to_node
 
 
 class TestBasic:

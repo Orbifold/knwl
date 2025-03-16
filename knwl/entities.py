@@ -1,12 +1,19 @@
 from collections import defaultdict
 from typing import Dict
 
+from .models.KnwlExtraction import KnwlExtraction
+
+from .models.KnwlChunk import KnwlChunk
+
+from .models.KnwlEdge import KnwlEdge
+
+from .models.KnwlNode import KnwlNode
 from knwl.prompt import PROMPTS
 from .llm import llm
 from .settings import settings
 from .utils import *
-from .utils import KnwlNode
-
+from .models.KnwlNode import KnwlNode
+import networkx as nx
 
 async def extract_entities(chunks: Dict[str, KnwlChunk]) -> KnwlExtraction | None:
     """
@@ -121,19 +128,21 @@ async def extract_entities_from_text(text: str, chunk_key: str = None) -> KnwlEx
 
     context_base = dict(tuple_delimiter=PROMPTS["DEFAULT_TUPLE_DELIMITER"], record_delimiter=PROMPTS["DEFAULT_RECORD_DELIMITER"], completion_delimiter=PROMPTS["DEFAULT_COMPLETION_DELIMITER"], entity_types=",".join(PROMPTS["DEFAULT_ENTITY_TYPES"]), )
     final_prompt = entity_extract_prompt.format(**context_base, input_text=text)
-    final_result = await llm.ask(final_prompt, core_input=text, category=CATEGORY_KEYWORD_EXTRACTION)
-
+    final_answer = await llm.ask(final_prompt, core_input=text, category=CATEGORY_KEYWORD_EXTRACTION)
+    final_result = final_answer.answer
     history = pack_messages(final_prompt, final_result)
     entity_extract_max_gleaning = settings.entity_extract_max_gleaning
     for now_glean_index in range(entity_extract_max_gleaning):
-        glean_result = await  llm.ask(continue_prompt, history_messages=history, category=CATEGORY_GLEANING)
+        glean_answer = await  llm.ask(continue_prompt, history_messages=history, category=CATEGORY_GLEANING)
+        glean_result = glean_answer.answer
 
         history += pack_messages(continue_prompt, glean_result)
         final_result += glean_result
         if now_glean_index == entity_extract_max_gleaning - 1:
             break
 
-        if_loop_result: str = await  llm.ask(if_loop_prompt, history_messages=history, category=CATEGORY_NEED_MORE)
+        if_loop_answer = await  llm.ask(if_loop_prompt, history_messages=history, category=CATEGORY_NEED_MORE)
+        if_loop_result = if_loop_answer.answer
         if_loop_result = if_loop_result.strip().strip('"').strip("'").lower()
         if if_loop_result != "yes":
             break

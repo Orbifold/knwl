@@ -1,46 +1,10 @@
-from datetime import datetime
+import time
 from typing import List
 
-from .jsonStorage import JsonStorage
+from knwl.llm_cache import LLMCache
+from .models import KnwlLLMAnswer
 from .settings import settings
 from .utils import hash_args
-
-
-class LLMCache:
-    """
-    A thin wrapper around a JSON storage object to provide caching functionality for LLM.
-    """
-
-    def __init__(self, namespace: str = "llm", caching: bool = False):
-        self.storage = JsonStorage(namespace, caching)
-
-    async def is_in_cache(self, messages: str | List[str]) -> bool:
-        if isinstance(messages, str):
-            messages = [messages]
-        key = hash_args(settings.llm_model, messages)
-        found = await self.storage.get_by_id(key)
-        return found is not None
-
-    async def get_all_ids(self) -> list[str]:
-        return await self.storage.get_all_ids()
-
-    async def save(self):
-        await self.storage.save()
-
-    async def clear_cache(self):
-        await self.storage.clear_cache()
-
-    async def get_by_id(self, id):
-        return await self.storage.get_by_id(id)
-
-    async def get_by_ids(self, ids, fields=None):
-        return await self.storage.get_by_ids(ids, fields=fields)
-
-    async def filter_new_ids(self, data: list[str]) -> set[str]:
-        return await self.storage.filter_new_ids(data)
-
-    async def upsert(self, data: dict[str, object]):
-        return await self.storage.upsert(data)
 
 
 class OllamaClient:
@@ -48,10 +12,12 @@ class OllamaClient:
         import ollama
         self.client = ollama.AsyncClient()
 
-    async def ask(self, messages: List[dict]) -> str:
+    async def ask(self, messages: List[dict]) -> KnwlLLMAnswer:
+        start_time = time.time()
         response = await self.client.chat(model=settings.llm_model, messages=messages, options={"temperature": 0.0, "num_ctx": 32768})
+        end_time = time.time()
         content = response["message"]["content"]
-        return content
+        return KnwlLLMAnswer(answer=content, messages=messages, timing=round(end_time - start_time, 2), llm_model=settings.llm_model, llm_service=settings.llm_service)
 
 
 class OpenAIClient:
@@ -59,9 +25,12 @@ class OpenAIClient:
         import openai
         self.client = openai.AsyncClient()
 
-    async def ask(self, messages: List[dict]) -> str:
+    async def ask(self, messages: List[dict]) -> KnwlLLMAnswer:
+        start_time = time.time()
         found = await self.client.chat.completions.create(messages=messages, model=settings.llm_model)
-        return found.choices[0].message.content
+        end_time = time.time()
+        content = found.choices[0].message.content
+        return KnwlLLMAnswer(answer=content, messages=messages, timing=round(end_time - start_time, 2), llm_model=settings.llm_model, llm_service=settings.llm_service)
 
 
 class LLMClient:
@@ -74,12 +43,27 @@ class LLMClient:
         else:
             raise Exception(f"Unknown language service: {settings.llm_service}")
 
-    async def is_cached(self, messages: str | List[str]) -> bool:
+    async def is_cached(self, messages: str | List[str] | List[dict]) -> bool:
         if self.cache is None:
             return False
-        return await self.cache.is_in_cache(messages)
+        return await self.cache.is_in_cache(messages, settings.llm_service, settings.llm_model)
 
-    async def ask(self, prompt: str, system_prompt=None, history_messages=None, core_input: str = None, category: str = None, save:bool=True) -> str:
+    async def ask(self, prompt: str, system_prompt=None, history_messages=None, core_input: str = None, category: str = None, save: bool = True) -> KnwlLLMAnswer:
+        messages = self.assemble_messages(prompt, system_prompt, history_messages)
+
+        if self.cache is not None:
+            found = await self.cache.get(messages, settings.llm_service,  settings.llm_model)
+            if found is not None:
+                return found
+        # effectively asking the model
+        answer: KnwlLLMAnswer = await self.client.ask(messages)
+        # caching update, the 'save' flag is used to overrule the default behavior of saving the response
+        if save:
+            await self.cache.upsert(answer)
+        return answer
+
+    @staticmethod
+    def assemble_messages(prompt: str, system_prompt=None, history_messages=None) -> List[dict]:
         if history_messages is None:
             history_messages = []
         messages = []
@@ -88,32 +72,7 @@ class LLMClient:
 
         messages.extend(history_messages)
         messages.append({"role": "user", "content": prompt})
-        model = settings.llm_model
-
-        if self.cache is not None:
-            key = hash_args(model, messages)
-            found = await self.cache.get_by_id(key)
-            if found is not None:
-                return found["content"]
-        # effectively asking the model
-        answer = await self.client.ask(messages)
-
-        # caching update, the 'save' flag is used to overrule the default behavior of saving the response
-        if save:
-            await self.cache.upsert(
-                {
-                    "key": {
-                        "timestamp": datetime.now().isoformat(),
-                        "prompt": prompt,
-                        "input": core_input,
-                        "messages": len(messages),
-                        "content": answer,
-                        "category": category,
-                        "model": settings.llm_model,
-                    }
-                }
-            )
-        return answer
+        return messages
 
     @staticmethod
     def hash_args(*args):

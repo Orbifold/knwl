@@ -5,10 +5,11 @@ import shutil
 import pytest
 import os
 
+from knwl.models.KnwlDocument import KnwlDocument
 from knwl.jsonStorage import JsonStorage
 from knwl.settings import settings
 
-from knwl.utils import random_name, load_json, write_json, KnwlDocument
+from knwl.utils import random_name, load_json, write_json
 
 
 @pytest.fixture

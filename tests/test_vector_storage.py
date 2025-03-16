@@ -3,9 +3,10 @@ import asyncio
 import pytest
 import os
 
+from knwl.models.KnwlDocument import KnwlDocument
 from knwl.settings import settings
 
-from knwl.utils import load_json, random_name, write_json, KnwlDocument
+from knwl.utils import load_json, random_name, write_json
 
 from knwl.vectorStorage import VectorStorage
 

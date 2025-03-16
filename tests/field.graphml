@@ -1,0 +1,112 @@
+<?xml version='1.0' encoding='utf-8'?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd">
+  <key id="d3" for="edge" attr.name="description" attr.type="string" />
+  <key id="d2" for="node" attr.name="description" attr.type="string" />
+  <key id="d1" for="node" attr.name="type" attr.type="string" />
+  <key id="d0" for="node" attr.name="name" attr.type="string" />
+  <graph edgedefault="undirected">
+    <node id="JOHN FIELD">
+      <data key="d0">JOHN FIELD</data>
+      <data key="d1">PERSON</data>
+      <data key="d2">John Field, born on July 26, 1782, in Dublin, was an Irish pianist and composer who studied under his grandfather and Tommaso Giordani and later became famous in London for his performances and compositions.</data>
+    </node>
+    <node id="ROBERT FIELD">
+      <data key="d0">ROBERT FIELD</data>
+      <data key="d1">PERSON</data>
+      <data key="d2">Robert Field was John Field's father and earned a living playing the violin in Dublin theatres. He secured an apprenticeship for his son with Muzio Clementi through Tommaso Giordani.</data>
+    </node>
+    <node id="GOLDEN LANE, DUBLIN">
+      <data key="d0">GOLDEN LANE, DUBLIN</data>
+      <data key="d1">GEO</data>
+      <data key="d2">Golden Lane is a location in Dublin where John Field was born on July 26, 1782.</data>
+    </node>
+    <node id="DUBLIN">
+      <data key="d0">DUBLIN</data>
+      <data key="d1">GEO</data>
+      <data key="d2">Dublin is the city where John Field spent his early years and made his debut performance at the age of nine.</data>
+    </node>
+    <node id="BATH, SOMERSET">
+      <data key="d0">BATH, SOMERSET</data>
+      <data key="d1">GEO</data>
+      <data key="d2">Bath, Somerset is a location mentioned in historical accounts but considered unlikely by modern researchers to be where the Fields lived for a short time.</data>
+    </node>
+    <node id="LONDON">
+      <data key="d0">LONDON</data>
+      <data key="d1">GEO</data>
+      <data key="d2">London is where John Field settled after Dublin and became famous for his performances and compositions.</data>
+    </node>
+    <node id="CHURCH OF IRELAND">
+      <data key="d0">CHURCH OF IRELAND</data>
+      <data key="d1">ORGANIZATION</data>
+      <data key="d2">The Church of Ireland is an organization mentioned in the context of John Field's parents being its members.</data>
+    </node>
+    <node id="MUZIO CLEMENTI">
+      <data key="d0">MUZIO CLEMENTI</data>
+      <data key="d1">PERSON</data>
+      <data key="d2">Muzio Clementi was a teacher to John Field, with whom he also collaborated on instrument making and selling. He published some of Field's early compositions.</data>
+    </node>
+    <node id="TOMMASO GIORDANI">
+      <data key="d0">TOMMASO GIORDANI</data>
+      <data key="d1">PERSON</data>
+      <data key="d2">Tommaso Giordani was a professional organist who taught the young John Field and introduced him to Muzio Clementi.</data>
+    </node>
+    <node id="W. H. GRATTAN FLOOD">
+      <data key="d0">W. H. GRATTAN FLOOD</data>
+      <data key="d1">PERSON</data>
+      <data key="d2">W. H. Grattan Flood is an early biographer of John Field who claimed that Field started composing in Ireland, though this claim is not supported by evidence.</data>
+    </node>
+    <node id="J. P. SOLOMON">
+      <data key="d0">J. P. SOLOMON</data>
+      <data key="d1">PERSON</data>
+      <data key="d2">J. P. Solomon was a violinist under whom John Field studied the violin.</data>
+    </node>
+    <node id="JOHN FIELD'S GRANDFATHER">
+      <data key="d0">JOHN FIELD'S GRANDFATHER</data>
+      <data key="d1">PERSON</data>
+      <data key="d2">John Field's grandfather taught him piano and laid the foundation for his musical education.</data>
+    </node>
+    <node id="HAYDN">
+      <data key="d0">HAYDN</data>
+      <data key="d1">PERSON</data>
+      <data key="d2">Haydn praised John Field's performance of a Dussek piano concerto around 1795, indicating recognition from prominent musicians.</data>
+    </node>
+    <node id="DUSSEK PIANO CONCERTO">
+      <data key="d0">DUSSEK PIANO CONCERTO</data>
+      <data key="d1">EVENT</data>
+      <data key="d2">A piano concerto by Dussek that was performed and praised by Haydn in the early career of John Field.</data>
+    </node>
+    <node id="PIANO CONCERTO NO. 1, H 27">
+      <data key="d0">PIANO CONCERTO NO. 1, H 27</data>
+      <data key="d1">EVENT</data>
+      <data key="d2">Piano Concerto No. 1, H 27 is an important historical work by John Field that he premiered in London on February 7, 1799, at age 16.</data>
+    </node>
+    <node id="PREMIERE OF PIANO CONCERTO NO. 1, H 27">
+      <data key="d0">PREMIERE OF PIANO CONCERTO NO. 1, H 27</data>
+      <data key="d1">EVENT</data>
+      <data key="d2">The premiere of John Field's Piano Concerto No. 1, H 27 took place in London on February 7, 1799, marking a significant milestone in his career.</data>
+    </node>
+    <node id="FIELD’S FIRST OFFICIAL OPUS PUBLICATION">
+      <data key="d0">FIELD’S FIRST OFFICIAL OPUS PUBLICATION</data>
+      <data key="d1">EVENT</data>
+      <data key="d2">John Field's first official opus was a set of three piano sonatas published by Muzio Clementi and dedicated to him in 1801.</data>
+    </node>
+    <edge source="JOHN FIELD" target="ROBERT FIELD">
+      <data key="d3">Robert Field, John's father, secured an apprenticeship for him with Muzio Clementi through his connections.</data>
+    </edge>
+    <edge source="JOHN FIELD" target="TOMMASO GIORDANI">
+      <data key="d3">Giordani taught the young John Field and introduced him to Muzio Clementi.</data>
+    </edge>
+    <edge source="JOHN FIELD" target="MUZIO CLEMENTI">
+      <data key="d3">Clementi was a teacher for John Field and published some of his early works.</data>
+    </edge>
+    <edge source="JOHN FIELD" target="HAYDN">
+      <data key="d3">John Field's performance of a Dussek piano concerto was praised by Haydn around 1795.</data>
+    </edge>
+    <edge source="JOHN FIELD" target="DUSSEK PIANO CONCERTO">
+      <data key="d3">John Field performed the Dussek Piano Concerto, which received praise from Haydn.</data>
+    </edge>
+    <edge source="DUBLIN" target="LONDON">
+      <data key="d3">John Field moved from Dublin to London where he became famous in the music scene.</data>
+    </edge>
+  </graph>
+</graphml>

@@ -1,11 +1,21 @@
 import asyncio
 import json
+from dataclasses import asdict
 from hashlib import md5
 
 import pytest
 
+from knwl.models import KnwlLLMAnswer
+from knwl.models.KnwlRagChunk import KnwlRagChunk
+from knwl.models.KnwlRagEdge import KnwlRagEdge
+from knwl.models.KnwlContext import KnwlContext
+from knwl.models.KnwlRagNode import KnwlRagNode
+from knwl.models.KnwlChunk import KnwlChunk
+from knwl.models.KnwlDocument import KnwlDocument
+from knwl.models.KnwlEdge import KnwlEdge
+from knwl.models.KnwlNode import KnwlNode
 from knwl.settings import settings
-from knwl.utils import clean_str, pack_messages, split_string_by_multi_markers, KnwlDocument, KnwlChunk, hash_with_prefix, KnwlNode, KnwlEdge, KnwlContext, KnwlRagChunk, KnwlRagNode, KnwlRagEdge
+from knwl.utils import clean_str, pack_messages, split_string_by_multi_markers, hash_with_prefix
 from knwl.utils import (
     hash_args,
     get_json_body,
@@ -357,4 +367,9 @@ def test_edge_class():
     # id is assigned based on the content
     assert "edge-" in c.id
     assert c.id == KnwlEdge.hash_edge(c)
+
+
+def test_args_hash():
+    a = KnwlLLMAnswer(messages=[{"content": "Hello"}], llm_service="ollama", llm_model="qwen2.5:14b")
+    print(asdict(a))
 

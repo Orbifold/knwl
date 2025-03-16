@@ -7,7 +7,7 @@ from knwl.tokenize import (
     chunk,
     truncate_content,
 )
-from knwl.utils import KnwlChunk
+from knwl.models.KnwlChunk import KnwlChunk
 
 
 def test_encode_string_by_tiktoken():

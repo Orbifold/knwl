@@ -2,7 +2,7 @@ from typing import List
 
 import tiktoken
 from .settings import settings
-from .utils import KnwlChunk
+from .models.KnwlChunk import KnwlChunk
 
 ENCODER = None
 

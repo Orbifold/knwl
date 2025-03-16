@@ -5,7 +5,7 @@ import chromadb
 import pandas as pd
 
 from knwl.settings import settings
-from knwl.utils import StorageNameSpace
+from knwl.models.StorageNameSpace import StorageNameSpace
 
 
 class VectorStorage(StorageNameSpace):

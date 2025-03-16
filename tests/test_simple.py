@@ -6,10 +6,17 @@ import pytest
 from faker import Faker
 
 import knwl
+from knwl.models.QueryParam import QueryParam
+from knwl.models.KnwlExtraction import KnwlExtraction
+from knwl.models.KnwlChunk import KnwlChunk
+from knwl.models.KnwlDocument import KnwlDocument
+from knwl.models.KnwlInput import KnwlInput
+from knwl.models.KnwlEdge import KnwlEdge
+from knwl.models.KnwlNode import KnwlNode
 from knwl.prompt import GRAPH_FIELD_SEP
 from knwl.simple import Simple
 from knwl.tokenize import count_tokens
-from knwl.utils import KnwlExtraction, KnwlNode, KnwlDocument, hash_with_prefix, KnwlChunk, KnwlEdge, QueryParam, KnwlInput
+from knwl.utils import hash_with_prefix
 
 faker = Faker()
 
@@ -31,6 +38,7 @@ class TestRealCases:
         await s.input('Anna loves John and how he takes care of the family. The have a beautiful daughter named Helena, she is three years old.', "Family")
         await s.input('John has been working for the past ten years on AI and robotics. He knows a lot about the subject.', "Work")
         response = await s.query("Who is John?", QueryParam(mode="local"))
+
         print()
         print("======================== Context ====================================")
         print(response.context)
@@ -39,6 +47,9 @@ class TestRealCases:
         print()
         print("======================== References =====================================")
         print(response.context.get_references_table())
+        print("======================== Timing =====================================")
+        # print(f"llm: {response.timing}s")
+        print(f"total: {response.timing}s")
 
     @pytest.mark.asyncio
     async def test_global(self):
@@ -55,6 +66,12 @@ class TestRealCases:
         print()
         print("======================== References =====================================")
         print(response.context.get_references_table())
+        print("======================== Timing =====================================")
+        # print(f"llm: {response.timing}s")
+        print(f"total: {response.timing}s")
+        print("======================== Timing =====================================")
+        # print(f"llm: {response.timing}s")
+        print(f"total: {response.timing}s")
 
     @pytest.mark.asyncio
     async def test_naive(self):
@@ -72,6 +89,9 @@ class TestRealCases:
         print()
         print("======================== References =====================================")
         print(response.context.get_references_table())
+        print("======================== Timing =====================================")
+        # print(f"llm: {response.timing}s")
+        print(f"total: {response.timing}s")
 
     @pytest.mark.asyncio
     async def test_hybrid(self):
@@ -88,6 +108,9 @@ class TestRealCases:
         print()
         print("======================== References =====================================")
         print(response.context.get_references_table())
+        print("======================== Timing =====================================")
+        # print(f"llm: {response.timing}s")
+        print(f"total: {response.timing}s")
 
     @pytest.mark.asyncio
     async def test_direct_kg_creation(self):

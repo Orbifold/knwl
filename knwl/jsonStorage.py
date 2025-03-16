@@ -3,8 +3,11 @@ import shutil
 from dataclasses import asdict
 from typing import cast
 
+from knwl.models.KnwlChunk import KnwlChunk
+from knwl.models.KnwlDocument import KnwlDocument
+from knwl.models.StorageNameSpace import StorageNameSpace
 from knwl.settings import get_config
-from knwl.utils import KnwlChunk, KnwlDocument, load_json, logger, write_json, StorageNameSpace
+from knwl.utils import load_json, logger, write_json
 
 
 class JsonStorage(StorageNameSpace):
@@ -78,3 +81,10 @@ class JsonStorage(StorageNameSpace):
 
     async def count(self):
         return len(self.data)
+
+    async def delete_by_id(self, id: str):
+        if id in self.data:
+            del self.data[id]
+            await self.save()
+            return True
+        return False
