@@ -3,20 +3,21 @@ from dataclasses import asdict
 from typing import List
 
 import pytest
+import pytest_asyncio
 from faker import Faker
 
 import knwl
+from knwl.knwl import Knwl
 from knwl.models import KnwlLLMAnswer
-from knwl.models.KnwlResponse import KnwlResponse
-from knwl.models.QueryParam import QueryParam
-from knwl.models.KnwlExtraction import KnwlExtraction
 from knwl.models.KnwlChunk import KnwlChunk
 from knwl.models.KnwlDocument import KnwlDocument
-from knwl.models.KnwlInput import KnwlInput
 from knwl.models.KnwlEdge import KnwlEdge
+from knwl.models.KnwlExtraction import KnwlExtraction
+from knwl.models.KnwlInput import KnwlInput
 from knwl.models.KnwlNode import KnwlNode
+from knwl.models.KnwlResponse import KnwlResponse
+from knwl.models.QueryParam import QueryParam
 from knwl.prompt import GRAPH_FIELD_SEP
-from knwl.knwl import Knwl
 from knwl.tokenize import count_tokens
 from knwl.utils import hash_with_prefix
 
@@ -32,14 +33,17 @@ def create_dummy_documents(n=10):
 
 
 class TestRealCases:
+    @pytest_asyncio.fixture
+    async def knwl(cls):
+        cls.knwl = Knwl()
+        await cls.knwl.input('John is married to Anna.', "Married")
+        await cls.knwl.input('Anna loves John and how he takes care of the family. The have a beautiful daughter named Helena, she is three years old.', "Family")
+        await cls.knwl.input('John has been working for the past ten years on AI and robotics. He knows a lot about the subject.', "Work")
+        return cls.knwl
 
     @pytest.mark.asyncio
-    async def test_local(self):
-        s = Knwl()
-        await s.input('John is married to Anna.', "Married")
-        await s.input('Anna loves John and how he takes care of the family. The have a beautiful daughter named Helena, she is three years old.', "Family")
-        await s.input('John has been working for the past ten years on AI and robotics. He knows a lot about the subject.', "Work")
-        response = await s.query("Who is John?", QueryParam(mode="local"))
+    async def test_local(self, knwl):
+        response = await knwl.query("Who is John?", QueryParam(mode="local"))
 
         print()
         print("======================== Context ====================================")
@@ -53,12 +57,8 @@ class TestRealCases:
         print(f"timing: {response.total_time}s [{response.rag_time}s rag, {response.llm_time}s llm]")
 
     @pytest.mark.asyncio
-    async def test_global(self):
-        s = Knwl()
-        await s.input('John is married to Anna.', "Married")
-        await s.input('Anna loves John and how he takes care of the family. The have a beautiful daughter named Helena, she is three years old.', "Family")
-        await s.input('John has been working for the past ten years on AI and robotics. He knows a lot about the subject.', "Work")
-        response = await s.query("Who is John?", QueryParam(mode="global"))
+    async def test_global(self, knwl):
+        response = await knwl.query("Who is John?", QueryParam(mode="global"))
         print()
         print("======================== Context ====================================")
         print(response.context)
@@ -74,12 +74,8 @@ class TestRealCases:
         print(f"timing: {response.total_time}s [{response.rag_time}s rag, {response.llm_time}s llm]")
 
     @pytest.mark.asyncio
-    async def test_naive(self):
-        s = Knwl()
-        await s.input('John is married to Anna.', "Married")
-        await s.input('Anna loves John and how he takes care of the family. The have a beautiful daughter named Helena, she is three years old.', "Family")
-        await s.input('John has been working for the past ten years on AI and robotics. He knows a lot about the subject.', "Work")
-        response = await s.query("Who is John?", QueryParam(mode="naive"))
+    async def test_naive(self, knwl):
+        response = await knwl.query("Who is John?", QueryParam(mode="naive"))
         print()
         print("======================== Context ====================================")
         print(response.context.get_documents())
@@ -93,12 +89,8 @@ class TestRealCases:
         print(f"timing: {response.total_time}s [{response.rag_time}s rag, {response.llm_time}s llm]")
 
     @pytest.mark.asyncio
-    async def test_hybrid(self):
-        s = Knwl()
-        await s.input('John is married to Anna.', "Married")
-        await s.input('Anna loves John and how he takes care of the family. The have a beautiful daughter named Helena, she is three years old.', "Family")
-        await s.input('John has been working for the past ten years on AI and robotics. He knows a lot about the subject.', "Work")
-        response = await s.query("Who is John?", QueryParam(mode="hybrid"))
+    async def test_hybrid(self, knwl):
+        response = await knwl.query("Who is John?", QueryParam(mode="hybrid"))
         print()
         print("======================== Context ====================================")
         print(response.context)
@@ -111,6 +103,7 @@ class TestRealCases:
         print(f"timing: {response.total_time}s [{response.rag_time}s rag, {response.llm_time}s llm]")
 
 
+class TestGraphCreation:
     @pytest.mark.asyncio
     async def test_direct_kg_creation(self):
         s = Knwl()
@@ -119,8 +112,11 @@ class TestRealCases:
 
         Field continued giving public performances and soon became famous in London, attracting favourable comments from the press and the local musicians. Around 1795 his performance of a Dussek piano concerto was praised by Haydn. Field continued his studies with Clementi, also helping the Italian with the making and selling of instruments. He also took up violin playing, which he studied under J. P. Solomon. His first published compositions were issued by Clementi in 1795; the first historically important work, Piano Concerto No. 1, H 27, was premiered by the composer in London on 7 February 1799, when he was aged 16. Field's first official opus was a set of three piano sonatas published by (and dedicated to) Clementi in 1801.
         """)
-        print(json.dumps(asdict(g), indent=2))
+        # print(json.dumps(asdict(g), indent=2))
         g.write_graphml("field.graphml")
+        print()
+        # print("======================== Timing =====================================")
+        # print(f"timing: {g.total_time}s [{g.rag_time}s rag, {g.llm_time}s llm]")
 
 
 class TestDocuments:
@@ -297,7 +293,7 @@ class TestGraphMerge:
         mocker.patch('knwl.simple.PROMPTS', {"summarize_entity_descriptions": "Summarize: {entity_name} {description_list}"})
         mocker.patch('knwl.simple.Knwl.query', return_value=KnwlResponse(answer="John is a software engineer living in Paris."))
         result = await Knwl.compactify_summary("John", description, smart_merge=True)
-        assert result == "John is a software engineer living in Paris." or  result == "John is a software engineer who lives in Paris."
+        assert result == "John is a software engineer living in Paris." or result == "John is a software engineer who lives in Paris."
 
     @pytest.mark.asyncio
     async def test_compactify_summary_trigger_summary(self, mocker):

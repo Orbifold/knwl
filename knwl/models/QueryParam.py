@@ -1,10 +1,12 @@
 from dataclasses import dataclass
 from typing import Literal
 
+QueryModes = Literal["local", "global", "hybrid", "naive"]
+
 
 @dataclass
 class QueryParam:
-    mode: Literal["local", "global", "hybrid", "naive"] = "global"
+    mode: QueryModes = "global"
 
     only_need_context: bool = False
 

@@ -1,14 +1,13 @@
+from dataclasses import dataclass, field
+from typing import List
+from uuid import uuid4
+
 from knwl.models.KnwlEdge import KnwlEdge
 from knwl.models.KnwlNode import KnwlNode
 from knwl.utils import get_endpoint_ids
 
 
-from dataclasses import dataclass, field
-from typing import List
-from uuid import uuid4
-
-
-@dataclass(frozen=True)
+@dataclass(frozen=False)
 class KnwlExtraction:
     """
     A class used to represent a Knowledge Extraction.
@@ -48,6 +47,20 @@ class KnwlExtraction:
                 return False
         return True
 
+    def make_consistent(self):
+        """
+        Make the graph consistent: remove edges with endpoints that are not in the node list.
+        """
+        node_ids = self.get_node_ids()
+        edge_ids = self.get_edge_ids()
+        new_edges = {}
+        for edge in self.edges:
+            source_id, target_id = get_endpoint_ids(edge)
+            if source_id is not None and target_id is not None:
+                if source_id in node_ids and target_id in node_ids:
+                    new_edges[edge] = self.edges[edge]
+        self.edges = new_edges
+
     def get_node_ids(self) -> List[str]:
         return self.nodes.keys()
 
@@ -56,4 +69,5 @@ class KnwlExtraction:
 
     def __post_init__(self):
         if not self.is_consistent():
-            raise ValueError("The extraction is not consistent.")
+            print("Warning: the extracted graph is not consistent, fixing this.")
+            self.make_consistent()

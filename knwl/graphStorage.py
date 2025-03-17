@@ -247,7 +247,7 @@ class GraphStorage(StorageNameSpace):
         Returns:
             List[KnwlEdge] | None: A list of KnwlEdge objects if the node exists, None otherwise.
         """
-        if self.node_exists(source_node_id):
+        if await self.node_exists(source_node_id):
             tuples = list(self.graph.edges(source_node_id))
 
             raw = [{"sourceId": t[0], "targetId": t[1], **self.graph.get_edge_data(t[0], t[1], {})} for t in tuples]
