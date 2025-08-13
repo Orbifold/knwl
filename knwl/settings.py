@@ -16,7 +16,6 @@ class Settings:
 
         # o7 is qwen2.5:7b with larger context window, o14 is similarly qwen2.5:14b
         self.llm_model = "gemma3:4b"
-        # self.llm_model = "phi4"
         self.llm_service = "ollama"
 
         # self.llm_model = "gpt-4o-mini"

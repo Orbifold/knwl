@@ -1,7 +1,7 @@
 from dataclasses import asdict
 from typing import List
 
-from knwl.jsonStorage import JsonStorage
+from knwl.storage.json_storage import JsonStorage
 from knwl.models import KnwlLLMAnswer
 
 

@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+
 from typing import Literal
 
 QueryModes = Literal["local", "global", "hybrid", "naive"]

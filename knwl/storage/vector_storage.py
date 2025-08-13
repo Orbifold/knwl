@@ -5,10 +5,15 @@ import chromadb
 import pandas as pd
 
 from knwl.settings import settings
-from knwl.models.StorageNameSpace import StorageNameSpace
+from knwl.storage.storage_base import StorageBase
 
 
-class VectorStorage(StorageNameSpace):
+class VectorStorage(StorageBase):
+    """
+    Basic vector storage based on ChromaDB.
+    The embedding is the default all-MiniLM-L6-v2, which is a 384-dimensional embedding.
+    This is a shallow embedding, so it is not suitable for all purposes.
+    """
     metadata: list[str]
 
     def __init__(self, namespace: str = "default", metadata=None, caching: bool = False):
@@ -25,6 +30,10 @@ class VectorStorage(StorageNameSpace):
         self.collection = self.client.get_or_create_collection(name=self.namespace)
 
     async def query(self, query: str, top_k: int = 1) -> list[dict]:
+        """
+        Note that Chroma has auto-embedding based on all-MiniLM-L6-v2, so you don't need to provide embeddings.
+        The `query_texts` is auto=transformed using this model. The embedding dimension is only 384, so it really is rather shallow for most purposes.
+        """
         if len(self.metadata) > 0:
             found = self.collection.query(query_texts=query, n_results=top_k, include=["documents", "metadatas"])
         else:

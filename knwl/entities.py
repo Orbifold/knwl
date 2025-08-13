@@ -1,19 +1,17 @@
 from collections import defaultdict
 from typing import Dict
 
-from .models.KnwlExtraction import KnwlExtraction
+import networkx as nx
 
-from .models.KnwlChunk import KnwlChunk
-
-from .models.KnwlEdge import KnwlEdge
-
-from .models.KnwlNode import KnwlNode
 from knwl.prompt import PROMPTS
 from .llm import llm
+from .models.KnwlChunk import KnwlChunk
+from .models.KnwlEdge import KnwlEdge
+from .models.KnwlExtraction import KnwlExtraction
+from .models.KnwlNode import KnwlNode
 from .settings import settings
 from .utils import *
-from .models.KnwlNode import KnwlNode
-import networkx as nx
+
 
 async def extract_entities(chunks: Dict[str, KnwlChunk]) -> KnwlExtraction | None:
     """

@@ -5,17 +5,17 @@ import sys
 sys.path.append('..')
 from knwl import Knwl, QueryParam, QueryModes, settings
 
-s = Knwl()
+knwl = Knwl()
 
 
 async def set_facts():
-    await s.input('John is married to Anna.', "Married")
-    await s.input('Anna loves John and how he takes care of the family. The have a beautiful daughter named Helena, she is three years old.', "Family")
-    await s.input('John has been working for the past ten years on AI and robotics. He knows a lot about the subject.', "Work")
+    await knwl.input('John is married to Anna.', "Married")
+    await knwl.input('Anna loves John and how he takes care of the family. The have a beautiful daughter named Helena, she is three years old.', "Family")
+    await knwl.input('John has been working for the past ten years on AI and robotics. He knows a lot about the subject.', "Work")
 
 
 async def query(mode: QueryModes):
-    r = await s.query("Who is John?", QueryParam(mode=mode))
+    r = await knwl.query("Who is John?", QueryParam(mode=mode))
     with open(f"{settings.llm_model}-{mode}.txt", 'w') as f:
         f.write(r.answer)
     with open('speed.txt', 'a') as f:

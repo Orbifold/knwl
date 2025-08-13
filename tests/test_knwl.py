@@ -1,10 +1,10 @@
-import json
 from dataclasses import asdict
 from typing import List
 
 import pytest
 import pytest_asyncio
 from faker import Faker
+from rich import print
 
 # Mark entire module as requiring LLM integration
 # All tests in this module will be skipped in CI environments
@@ -49,17 +49,7 @@ class TestRealCases:
     @pytest.mark.llm
     async def test_local(self, knwl):
         response = await knwl.query("Who is John?", QueryParam(mode="local"))
-
-        print()
-        print("======================== Context ====================================")
-        print(response.context)
-        print("======================== Answer =====================================")
-        print(response.answer)
-        print()
-        print("======================== References =====================================")
-        print(response.context.get_references_table())
-        print("======================== Timing =====================================")
-        print(f"timing: {response.total_time}s [{response.rag_time}s rag, {response.llm_time}s llm]")
+        response.print()
 
     @pytest.mark.asyncio
     @pytest.mark.llm

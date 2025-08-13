@@ -4,8 +4,8 @@ from dataclasses import asdict
 from typing import List
 
 from knwl.entities import extract_entities
-from knwl.graphStorage import GraphStorage
-from knwl.jsonStorage import JsonStorage
+from knwl.storage.graph_storage import GraphStorage
+from knwl.storage.json_storage import JsonStorage
 from knwl.llm import llm
 from knwl.logging import set_logger
 from knwl.models.KnwlBasicGraph import KnwlBasicGraph
@@ -30,7 +30,7 @@ from knwl.prompt import GRAPH_FIELD_SEP, PROMPTS
 from knwl.settings import settings
 from knwl.tokenize import chunk, encode, decode, truncate_content, count_tokens
 from knwl.utils import *
-from knwl.vectorStorage import VectorStorage
+from knwl.storage.vector_storage import VectorStorage
 
 logger = set_logger()
 
@@ -509,7 +509,7 @@ class Knwl:
                 response = KnwlResponse(answer=f"Unknown mode {param.mode}")
             end_time = time.time()
             if isinstance(response, str):
-                response = KnwlResponse(answer=response)
+                response = KnwlResponse(answer=response, question=query)
             return response
         except Exception as e:
             logger.error(f"Error during query: {e}")
@@ -573,7 +573,7 @@ class Knwl:
         if len(response) > len(sys_prompt):
             response = (response.replace(sys_prompt, "").replace("user", "").replace("model", "").replace(query, "").replace("<system>", "").replace("</system>", "").strip())
 
-        return KnwlResponse(answer=response, context=context, rag_time=rag_time, llm_time=r.timing)
+        return KnwlResponse(question=query, answer=response, context=context, rag_time=rag_time, llm_time=r.timing)
 
     async def get_local_query_context(self, query, query_param: QueryParam) -> KnwlContext | None:
         """

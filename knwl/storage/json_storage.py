@@ -5,12 +5,15 @@ from typing import cast
 
 from knwl.models.KnwlChunk import KnwlChunk
 from knwl.models.KnwlDocument import KnwlDocument
-from knwl.models.StorageNameSpace import StorageNameSpace
+from knwl.storage.storage_base import StorageBase
 from knwl.settings import get_config
 from knwl.utils import load_json, logger, write_json
 
 
-class JsonStorage(StorageNameSpace):
+class JsonStorage(StorageBase):
+    """
+    Basic JSON storage for caching data in a JSON file.
+    """
     def __init__(self, namespace: str = "default", caching: bool = False):
         super().__init__(namespace, caching)
 

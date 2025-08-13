@@ -1,87 +1,24 @@
 import shutil
 from dataclasses import asdict
-from typing import cast, Dict, Any, Tuple
+from typing import cast
 from uuid import uuid4
 
 import networkx as nx
 
-from knwl.models.StorageNameSpace import StorageNameSpace
+from knwl.storage.storage_base import StorageBase
 from knwl.models.KnwlEdge import KnwlEdge
 from knwl.models.KnwlNode import KnwlNode
 from knwl.settings import settings
 from knwl.utils import *
 
 
-class GraphStorage(StorageNameSpace):
+class GraphStorage(StorageBase):
     """
     A class to handle storage and manipulation of an undirected graph using NetworkX.
         - the id of nodes and edges is a uuid4 string but one could also use the combination name+type as a primary key.
         - the graph is stringly type with in/out based on KnwlNode and KnwlEdge dataclasses, the underlying storage is however based on a dictionary. In this sense, this is a semantic layer (business data rather than storage data) above the actual graph storage.
 
-    Methods
-    -------
-    load(file_name: str) -> nx.Graph | None
-        Static method to load a graph from a GraphML file.
 
-    write(graph: nx.Graph, file_name: str)
-        Static method to write a graph to a GraphML file.
-
-    __post_init__()
-        Initializes the GraphStorage instance, loading a pre-existing graph if available.
-
-    async save()
-        Asynchronously saves the current graph to a file.
-
-    async node_exists(node_id: str) -> bool
-        Checks if a node exists in the graph.
-
-    async edge_exists(source_or_key: str, target_node_id: str) -> bool
-        Checks if an edge exists between two nodes in the graph.
-
-    async get_node_by_id(node_id: str) -> Union[dict, None]
-        Retrieves the attributes of a node.
-
-    async node_degree(node_id: str) -> int
-        Returns the degree of a node.
-
-    async edge_degree(source_id: str, target_id: str) -> int
-        Returns the combined degree of two nodes.
-
-    async get_edge(source_or_key: str, target_node_id: str) -> Union[dict, None]
-        Retrieves the attributes of an edge.
-
-    async get_node_edges(source_or_key: str)
-        Retrieves all edges connected to a node.
-
-    async upsert_node(node_id: str, node_data: object)
-        Inserts or updates a node with the given data.
-
-    async upsert_edge(source_or_key: str, target_node_id: str, edge_data: object)
-        Inserts or updates an edge with the given data.
-
-    async clear()
-        Clears the graph and removes the associated file.
-
-    async node_count() -> int
-        Returns the number of nodes in the graph.
-
-    async edge_count() -> int
-        Returns the number of edges in the graph.
-
-    async remove_node(node_id: str)
-        Removes a node from the graph.
-
-    async remove_edge(source_or_key: str, target_node_id: str)
-        Removes an edge from the graph.
-
-    async get_nodes() -> list
-        Returns a list of all nodes in the graph.
-
-    async get_edges() -> list
-        Returns a list of all edges in the graph.
-
-    async get_edge_weight(source_or_key: str, target_node_id: str) -> Union[float, None]
-        Retrieves the weight of an edge if it exists.
     """
     graph: nx.Graph
 
