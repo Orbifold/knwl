@@ -1,0 +1,90 @@
+import json
+import os
+
+import chromadb
+import pandas as pd
+
+from knwl.settings import settings
+from knwl.storage.storage_base import StorageBase
+from knwl.storage.vector_storage import VectorStorage
+
+
+class ChromaStorage(VectorStorage):
+    """
+    Straightforward vector storage based on ChromaDB.
+    The embedding is the default all-MiniLM-L6-v2, which is a 384-dimensional embedding.
+    This is a shallow embedding, so it is not suitable for all purposes.
+
+    The `metadata` parameter allows you to specify additional metadata fields to store with each document.
+    Only the metadata fields specified in the `metadata` list will be stored with the documents.
+    """
+    metadata: list[str]
+
+    def __init__(self, namespace: str = "default", metadata=None, caching: bool = False):
+        super().__init__(namespace, caching)
+        if metadata is None:
+            metadata = []
+        self.metadata = metadata
+
+        if self.caching:
+            self.client = chromadb.PersistentClient(path=os.path.join(settings.working_dir, f"vectordb_{self.namespace}"))
+        else:
+            self.client = chromadb.Client()
+
+        self.collection = self.client.get_or_create_collection(name=self.namespace)
+
+    async def query(self, query: str, top_k: int = 1) -> list[dict]:
+        """
+        Note that Chroma has auto-embedding based on all-MiniLM-L6-v2, so you don't need to provide embeddings.
+        The `query_texts` is auto=transformed using this model. The embedding dimension is only 384, so it really is rather shallow for most purposes.
+        """
+        if len(self.metadata) > 0:
+            found = self.collection.query(query_texts=query, n_results=top_k, include=["documents", "metadatas"])
+        else:
+            found = self.collection.query(query_texts=query, n_results=top_k, include=["documents"])
+        if found is None:
+            return []
+        coll = []
+        for item in found["documents"][0]:
+            coll.append(json.loads(item))
+        return coll
+
+    async def upsert(self, data: dict[str, dict]):
+        for key, value in data.items():
+            if value is None:
+                continue
+            if isinstance(value, dict):
+                str_value = json.dumps(value)
+            else:
+                str_value = value
+            if len(self.metadata) > 0:
+                metadata = {k: value.get(k, None) for k in self.metadata}
+                self.collection.upsert(ids=key, documents=str_value, metadatas=metadata)
+            else:
+                self.collection.upsert(ids=key, documents=str_value)
+        return data
+
+    async def clear(self):
+        self.client.delete_collection(self.namespace)
+        self.collection = self.client.get_or_create_collection(name=self.namespace)
+
+    async def count(self):
+        return self.collection.count()
+
+    async def get_ids(self):
+        ids_only_result = self.collection.get(include=[])
+        return ids_only_result['ids']
+
+    async def to_dataframe(self) -> pd.DataFrame:
+        data = self.collection.get(include=["documents", "metadatas", "embeddings"])
+        documents = [json.loads(doc) for doc in data["documents"]]
+        metadatas = data["metadatas"]
+        df = pd.DataFrame(documents)
+        if metadatas:
+            meta_df = pd.DataFrame(metadatas)
+            df = pd.concat([df, meta_df], axis=1)
+        return df
+
+    async def save(self):
+        # happens automatically
+        pass

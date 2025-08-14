@@ -9,8 +9,6 @@ from functools import wraps
 from hashlib import md5
 from typing import Any, Union, List
 
-
-
 from .logging import logger
 
 CATEGORY_KEYWORD_EXTRACTION = "Keywords Extraction"
@@ -37,7 +35,6 @@ def unique_strings(ar: List[str] | List[List[str]]) -> List[str]:
         return list(set(ar))
     else:
         return list(set(ar))
-
 
 
 def get_json_body(content: str) -> Union[str, None]:
@@ -272,5 +269,22 @@ def save_data_to_file(data, file_name):
         json.dump(data, f, ensure_ascii=False, indent=4)
 
 
-
-
+def get_info() -> dict:
+    """
+    Retrieves project information from the `pyproject.toml` file.
+    """
+    import toml
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    pyproject_path = os.path.join(current_dir, "..", "pyproject.toml")
+    with open(pyproject_path, 'r') as file:
+        pyproject_data = toml.load(file)
+    version = pyproject_data["project"]["version"]
+    name = pyproject_data["project"]["name"]
+    author = pyproject_data["project"]["authors"][0]
+    description = pyproject_data["project"]["description"]
+    return {
+        "name": name,
+        "version": version,
+        "author": author,
+        "description": description,
+    }

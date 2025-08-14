@@ -1,8 +1,6 @@
 from collections import defaultdict
 from typing import Dict
 
-import networkx as nx
-
 from knwl.prompt import PROMPTS
 from .llm import llm
 from .models.KnwlChunk import KnwlChunk
@@ -35,7 +33,9 @@ async def extract_entities(chunks: Dict[str, KnwlChunk]) -> KnwlExtraction | Non
         return None
 
     # use_llm_func is wrapped in ascynio.Semaphore, limiting max_async callings
-    results: List[KnwlExtraction] = await asyncio.gather(*[process_chunk(k, v) for k, v in chunk_list])
+    results: List[KnwlExtraction] = await asyncio.gather(
+        *[process_chunk(k, v) for k, v in chunk_list]
+    )
     if results is None:
         return None
     nodes = defaultdict(list)
@@ -53,7 +53,9 @@ async def extract_entities(chunks: Dict[str, KnwlChunk]) -> KnwlExtraction | Non
             edges[k].extend(v)
     # the defaultdict is not very friendly to json serialization
     # event with this, the key of a relationship is a tuple, which is not json serializable
-    g = KnwlExtraction(nodes={k: v for k, v in nodes.items()}, edges={k: v for k, v in edges.items()})
+    g = KnwlExtraction(
+        nodes={k: v for k, v in nodes.items()}, edges={k: v for k, v in edges.items()}
+    )
     if len(g.nodes) == 0 and len(g.edges) == 0:
         return None
     return g
@@ -106,7 +108,9 @@ async def process_chunk(chunk_key: str, chunk: KnwlChunk) -> KnwlExtraction | No
     return g
 
 
-async def extract_entities_from_text(text: str, chunk_key: str = None) -> KnwlExtraction:
+async def extract_entities_from_text(
+        text: str, chunk_key: str = None
+) -> KnwlExtraction:
     """
 
     This extract the entities and relationships from the given tet.
@@ -124,14 +128,23 @@ async def extract_entities_from_text(text: str, chunk_key: str = None) -> KnwlEx
     continue_prompt = PROMPTS["entity_continue_extraction"]
     if_loop_prompt = PROMPTS["entity_if_loop_extraction"]
 
-    context_base = dict(tuple_delimiter=PROMPTS["DEFAULT_TUPLE_DELIMITER"], record_delimiter=PROMPTS["DEFAULT_RECORD_DELIMITER"], completion_delimiter=PROMPTS["DEFAULT_COMPLETION_DELIMITER"], entity_types=",".join(PROMPTS["DEFAULT_ENTITY_TYPES"]), )
+    context_base = dict(
+        tuple_delimiter=PROMPTS["DEFAULT_TUPLE_DELIMITER"],
+        record_delimiter=PROMPTS["DEFAULT_RECORD_DELIMITER"],
+        completion_delimiter=PROMPTS["DEFAULT_COMPLETION_DELIMITER"],
+        entity_types=",".join(PROMPTS["DEFAULT_ENTITY_TYPES"]),
+    )
     final_prompt = entity_extract_prompt.format(**context_base, input_text=text)
-    final_answer = await llm.ask(final_prompt, core_input=text, category=CATEGORY_KEYWORD_EXTRACTION)
+    final_answer = await llm.ask(
+        final_prompt, core_input=text, category=CATEGORY_KEYWORD_EXTRACTION
+    )
     final_result = final_answer.answer
     history = pack_messages(final_prompt, final_result)
     entity_extract_max_gleaning = settings.entity_extract_max_gleaning
     for now_glean_index in range(entity_extract_max_gleaning):
-        glean_answer = await  llm.ask(continue_prompt, history_messages=history, category=CATEGORY_GLEANING)
+        glean_answer = await llm.ask(
+            continue_prompt, history_messages=history, category=CATEGORY_GLEANING
+        )
         glean_result = glean_answer.answer
 
         history += pack_messages(continue_prompt, glean_result)
@@ -139,13 +152,18 @@ async def extract_entities_from_text(text: str, chunk_key: str = None) -> KnwlEx
         if now_glean_index == entity_extract_max_gleaning - 1:
             break
 
-        if_loop_answer = await  llm.ask(if_loop_prompt, history_messages=history, category=CATEGORY_NEED_MORE)
+        if_loop_answer = await llm.ask(
+            if_loop_prompt, history_messages=history, category=CATEGORY_NEED_MORE
+        )
         if_loop_result = if_loop_answer.answer
         if_loop_result = if_loop_result.strip().strip('"').strip("'").lower()
         if if_loop_result != "yes":
             break
 
-    records = split_string_by_multi_markers(final_result, [context_base["record_delimiter"], context_base["completion_delimiter"]])
+    records = split_string_by_multi_markers(
+        final_result,
+        [context_base["record_delimiter"], context_base["completion_delimiter"]],
+    )
 
     nodes: dict[str, List[KnwlNode]] = {}
     edges: dict[str, List[KnwlEdge]] = {}
@@ -155,7 +173,9 @@ async def extract_entities_from_text(text: str, chunk_key: str = None) -> KnwlEx
         if record is None:
             continue
         record = record.group(1)
-        record_attributes = split_string_by_multi_markers(record, [context_base["tuple_delimiter"]])
+        record_attributes = split_string_by_multi_markers(
+            record, [context_base["tuple_delimiter"]]
+        )
 
         if is_entity(record_attributes):
             node: KnwlNode = await convert_record_to_node(record_attributes, chunk_key)
@@ -163,7 +183,11 @@ async def extract_entities_from_text(text: str, chunk_key: str = None) -> KnwlEx
                 nodes[node.name] = [node]
             else:
                 coll = nodes[node.name]
-                found = [e for e in coll if e.type == node.type and e.description == node.description]
+                found = [
+                    e
+                    for e in coll
+                    if e.type == node.type and e.description == node.description
+                ]
                 if len(found) == 0:
                     coll.append(node)
             node_map[node.name] = node.id
@@ -175,7 +199,11 @@ async def extract_entities_from_text(text: str, chunk_key: str = None) -> KnwlEx
                 edges[edge_key] = [edge]
             else:
                 coll = edges[edge_key]
-                found = [e for e in coll if e.description == edge.description and e.keywords == edge.keywords]
+                found = [
+                    e
+                    for e in coll
+                    if e.description == edge.description and e.keywords == edge.keywords
+                ]
                 if len(found) == 0:
                     coll.append(edge)
     # the edge endpoints are the names and not the ids
@@ -190,18 +218,46 @@ async def extract_entities_from_text(text: str, chunk_key: str = None) -> KnwlEx
                 corrected_edges[key] = []
             source_id = node_map[e.sourceId]
             target_id = node_map[e.targetId]
-            corrected_edge = KnwlEdge(sourceId=source_id, targetId=target_id, description=e.description, keywords=e.keywords, weight=e.weight, chunkIds=e.chunkIds)
+            corrected_edge = KnwlEdge(
+                sourceId=source_id,
+                targetId=target_id,
+                description=e.description,
+                keywords=e.keywords,
+                weight=e.weight,
+                chunkIds=e.chunkIds,
+            )
             corrected_edges[key].append(corrected_edge)
     return KnwlExtraction(nodes=nodes, edges=corrected_edges)
 
 
-async def extract_graph_from_text(text: str) -> nx.Graph:
+async def extract_graph_from_text(text: str) -> dict:
+    """
+    Extracts a JSON entity-relation graph from the given text.
+    """
     nodes, edges = await extract_entities_from_text(text)
-    G = nx.Graph()
+
+    G = {"nodes": [], "edges": []}
     for node in nodes:
-        G.add_node(node)
+        G["nodes"].append(
+            {
+                "id": node.id,
+                "name": node.name,
+                "type": node.type,
+                "description": node.description,
+                "chunkIds": node.chunkIds,
+            }
+        )
     for edge in edges:
-        G.add_edge(edge[0], edge[1])
+        G["edges"].append(
+            {
+                "source": edge.sourceId,
+                "target": edge.targetId,
+                "description": edge.description,
+                "keywords": edge.keywords,
+                "weight": edge.weight,
+                "chunkIds": edge.chunkIds,
+            }
+        )
     return G
 
 
@@ -217,7 +273,7 @@ def is_entity(record: list[str]):
     """
     if record is None:
         return False
-    return len(record) >= 4 and record[0] == 'entity'
+    return len(record) >= 4 and record[0] == "entity"
 
 
 def is_relationship(record: list[str]):
@@ -232,10 +288,12 @@ def is_relationship(record: list[str]):
     """
     if record is None:
         return False
-    return len(record) >= 5 and record[0] == 'relationship'
+    return len(record) >= 5 and record[0] == "relationship"
 
 
-async def convert_record_to_node(record: list[str], chunk_key: str = None) -> KnwlNode | None:
+async def convert_record_to_node(
+        record: list[str], chunk_key: str = None
+) -> KnwlNode | None:
     """
     Extracts and cleans entity information from a list of record attributes.
     Args:
@@ -253,10 +311,18 @@ async def convert_record_to_node(record: list[str], chunk_key: str = None) -> Kn
     entity_type = clean_str(record[2].upper())
     entity_description = clean_str(record[3])
     entity_chunk_id = chunk_key
-    return KnwlNode(name=entity_name, type=entity_type, description=entity_description, chunkIds=[entity_chunk_id])
+    return KnwlNode(
+        name=entity_name,
+        type=entity_type,
+        description=entity_description,
+        chunkIds=[entity_chunk_id],
+    )
 
 
-async def convert_record_to_edge(record: list[str], chunk_key: str, ) -> KnwlEdge:
+async def convert_record_to_edge(
+        record: list[str],
+        chunk_key: str,
+) -> KnwlEdge:
     """
     Converts a record to a KnwlRelationship object.
     Args:
@@ -281,5 +347,12 @@ async def convert_record_to_edge(record: list[str], chunk_key: str, ) -> KnwlEdg
 
     edge_keywords = [clean_str(u) for u in clean_str(record[4]).split(",")]
     edge_chunk_id = chunk_key
-    weight = (float(record[-1]) if is_float_regex(record[-1]) else 1.0)
-    return KnwlEdge(sourceId=source, targetId=target, description=edge_description, keywords=edge_keywords, weight=weight, chunkIds=[edge_chunk_id])
+    weight = float(record[-1]) if is_float_regex(record[-1]) else 1.0
+    return KnwlEdge(
+        sourceId=source,
+        targetId=target,
+        description=edge_description,
+        keywords=edge_keywords,
+        weight=weight,
+        chunkIds=[edge_chunk_id],
+    )
