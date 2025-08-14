@@ -104,11 +104,54 @@ async def process_chunk(chunk_key: str, chunk: KnwlChunk) -> KnwlExtraction | No
         return None
 
     content = chunk.content
-    g: KnwlExtraction = await extract_entities_from_text(content, chunk_key)
+    g: KnwlExtraction = await extract_graph_elements_from_text(content, chunk_key)
     return g
 
 
-async def extract_entities_from_text(
+async def fast_entity_extraction_from_text(text: str) -> list[KnwlNode]:
+    """
+    Extract entities from the given text without gleaning or relationships.
+    It does try to merge multiple entities with the same name.
+    Mostly for experimentation and CLI, it is not used in the actual graph RAG flow.
+    """
+    entity_extraction_prompt = PROMPTS["fast_entity_extraction"]
+    context_base = dict(
+        tuple_delimiter=PROMPTS["DEFAULT_TUPLE_DELIMITER"],
+        record_delimiter=PROMPTS["DEFAULT_RECORD_DELIMITER"],
+        completion_delimiter=PROMPTS["DEFAULT_COMPLETION_DELIMITER"],
+        entity_types=",".join(PROMPTS["DEFAULT_ENTITY_TYPES"]),
+    )
+    final_prompt = entity_extraction_prompt.format(**context_base, input_text=text)
+    # print(final_prompt)
+    final_answer = await llm.ask(
+        final_prompt, core_input=text, category=CATEGORY_KEYWORD_EXTRACTION
+    )
+    final_result = final_answer.answer
+    records = split_string_by_multi_markers(
+        final_result,
+        [context_base["record_delimiter"], context_base["completion_delimiter"]],
+    )
+    nodes = []
+    for record in records:
+        record = re.search(r"\((.*)\)", record)
+        if record is None:
+            continue
+        record = record.group(1)
+        record_attributes = split_string_by_multi_markers(
+            record, [context_base["tuple_delimiter"]]
+        )
+        node: KnwlNode = KnwlNode(
+            name=record_attributes[0],
+            type=record_attributes[1].replace('<','').replace('>',''),
+            description=record_attributes[2],
+            chunkIds=[],
+        )
+        nodes.append(node)
+    # print([node.name for node in nodes])
+    return nodes
+
+
+async def extract_graph_elements_from_text(
         text: str, chunk_key: str = None
 ) -> KnwlExtraction:
     """
@@ -124,7 +167,7 @@ async def extract_entities_from_text(
     Returns:
 
     """
-    entity_extract_prompt = PROMPTS["entity_extraction"]
+    elements_extract_prompt = PROMPTS["elements_extraction"]
     continue_prompt = PROMPTS["entity_continue_extraction"]
     if_loop_prompt = PROMPTS["entity_if_loop_extraction"]
 
@@ -134,7 +177,7 @@ async def extract_entities_from_text(
         completion_delimiter=PROMPTS["DEFAULT_COMPLETION_DELIMITER"],
         entity_types=",".join(PROMPTS["DEFAULT_ENTITY_TYPES"]),
     )
-    final_prompt = entity_extract_prompt.format(**context_base, input_text=text)
+    final_prompt = elements_extract_prompt.format(**context_base, input_text=text)
     final_answer = await llm.ask(
         final_prompt, core_input=text, category=CATEGORY_KEYWORD_EXTRACTION
     )
@@ -234,7 +277,7 @@ async def extract_graph_from_text(text: str) -> dict:
     """
     Extracts a JSON entity-relation graph from the given text.
     """
-    nodes, edges = await extract_entities_from_text(text)
+    nodes, edges = await extract_graph_elements_from_text(text)
 
     G = {"nodes": [], "edges": []}
     for node in nodes:
@@ -310,12 +353,11 @@ async def convert_record_to_node(
         return None
     entity_type = clean_str(record[2].upper())
     entity_description = clean_str(record[3])
-    entity_chunk_id = chunk_key
     return KnwlNode(
         name=entity_name,
         type=entity_type,
         description=entity_description,
-        chunkIds=[entity_chunk_id],
+        chunkIds=[chunk_key] if chunk_key else [],
     )
 
 

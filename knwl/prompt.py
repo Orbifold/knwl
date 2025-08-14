@@ -5,11 +5,12 @@ PROMPTS = {}
 PROMPTS["DEFAULT_TUPLE_DELIMITER"] = "<|>"
 PROMPTS["DEFAULT_RECORD_DELIMITER"] = "##"
 PROMPTS["DEFAULT_COMPLETION_DELIMITER"] = "<|COMPLETE|>"
-PROMPTS["process_tickers"] = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
 
 PROMPTS["DEFAULT_ENTITY_TYPES"] = ["organization", "person", "geo", "event"]
 
-PROMPTS["fast_entity_extraction"] = """-Goal-
+PROMPTS[
+    "fast_entity_extraction"
+] = """-Goal-
 Given a text document that is potentially relevant to this activity and a list of entity types, identify all entities of those types from the text and all relationships among the identified entities.
 
 -Steps-
@@ -67,9 +68,11 @@ Text: {input_text}
 ######################
 Output:
 """
-
+# ============================================================================================
+# Full entity-relation extraction
+# ============================================================================================
 PROMPTS[
-    "entity_extraction"
+    "elements_extraction"
 ] = """-Goal-
 Given a text document that is potentially relevant to this activity and a list of entity types, identify all entities of those types from the text and all relationships among the identified entities.
 
@@ -177,7 +180,9 @@ Text: {input_text}
 Output:
 """
 
-PROMPTS["summarize_entity_descriptions"] = """You are a helpful assistant responsible for generating a comprehensive summary of the data provided below.
+PROMPTS[
+    "summarize_entity_descriptions"
+] = """You are a helpful assistant responsible for generating a comprehensive summary of the data provided below.
 Given one or two entities, and a list of descriptions, all related to the same entity or group of entities.
 Please concatenate all of these into a single, comprehensive description. Make sure to include information collected from all the descriptions.
 If the provided descriptions are contradictory, please resolve the contradictions and provide a single, coherent summary.
@@ -191,14 +196,20 @@ Description List: {description_list}
 Output:
 """
 
-PROMPTS["entity_continue_extraction"] = """MANY entities were missed in the last extraction.  Add them below using the same format:
+PROMPTS[
+    "entity_continue_extraction"
+] = """MANY entities were missed in the last extraction.  Add them below using the same format:
 """
 
-PROMPTS["entity_if_loop_extraction"] = """It appears some entities may have still been missed.  Answer YES | NO if there are still entities that need to be added."""
+PROMPTS["entity_if_loop_extraction"] = (
+    """It appears some entities may have still been missed.  Answer YES | NO if there are still entities that need to be added."""
+)
 
 PROMPTS["fail_response"] = "Sorry, I'm not able to provide an answer to that question."
 
-PROMPTS["rag_response"] = """---Role---
+PROMPTS[
+    "rag_response"
+] = """---Role---
 
 You are a helpful assistant responding to questions about data in the tables provided.
 
@@ -278,7 +289,9 @@ Output:
 
 """
 
-PROMPTS["naive_rag_response"] = """You're a helpful assistant
+PROMPTS[
+    "naive_rag_response"
+] = """You're a helpful assistant
 Below are the knowledge you know:
 {content_data}
 ---
@@ -288,4 +301,35 @@ If you don't know the answer, just say so. Do not make anything up.
 Do not include information where the supporting evidence for it is not provided.
 ---Target response length and format---
 {response_type}
+"""
+
+# ============================================================================================
+# Fast named entity extraction.
+# This prompt does give examples and is less correct than the full entity-relation extraction.
+# ============================================================================================
+PROMPTS[
+    "fast_entity_extraction"
+] = """
+Given a text document that is potentially relevant to this activity and a list of entity types, identify all entities of those types from the text.
+
+-Steps-
+1. Identify all entities. For each identified entity, extract the following information:
+- entity_name: Name of the entity, capitalized
+- entity_type: One of the following types: [{entity_types}]
+- entity_description: Comprehensive description of the entity's attributes and activities
+
+2. Format each entity as ("entity"{tuple_delimiter}<entity_name>{tuple_delimiter}<entity_type>{tuple_delimiter}<entity_description>)
+
+3. If an entity is mentioned multiple times, summarize the descriptions into a single comprehensive description.
+
+4. Return output in English as a single list of all the entities identified in steps 1. Use **{record_delimiter}** as the list delimiter.
+
+5. When finished, output {completion_delimiter}
+
+-Real Data-
+######################
+Entity_types: {entity_types}
+Text: {input_text}
+######################
+Output:
 """

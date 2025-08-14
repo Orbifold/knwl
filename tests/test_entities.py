@@ -2,7 +2,7 @@ from dataclasses import asdict
 
 import pytest
 
-from knwl.entities import convert_record_to_edge, is_entity, is_relationship, extract_entities, extract_entities_from_text
+from knwl.entities import convert_record_to_edge, is_entity, is_relationship, extract_entities, extract_graph_elements_from_text, fast_entity_extraction_from_text
 from knwl.entities import convert_record_to_node
 from knwl.models.KnwlChunk import KnwlChunk
 from knwl.models.KnwlEdge import KnwlEdge
@@ -132,6 +132,14 @@ class TestBasic:
 
 # @pytest.mark.skip("Not relevant for the current implementation")
 class TestActualExtraction:
+    @pytest.mark.asyncio
+    async def test_extract_one_person(self):
+        nodes = await fast_entity_extraction_from_text("John Field is a composer from Ireland.")
+
+        assert len(nodes) == 2
+        assert nodes[0].name == "John Field"
+        assert nodes[0].type == "person"
+        assert nodes[1].name == "Ireland"
 
     @pytest.mark.asyncio
     async def test_extract_two_people(self):
@@ -170,7 +178,7 @@ class TestActualExtraction:
     async def test_extract_from_text(self):
         print("LLM", settings.llm_model)
         text = "John is an artist. He works in a museum in Chelsea. He knows Maria."
-        found: KnwlExtraction = await extract_entities_from_text(text)
+        found: KnwlExtraction = await extract_graph_elements_from_text(text)
         assert found.is_consistent()
         print()
         print(json.dumps(asdict(found), indent=2))

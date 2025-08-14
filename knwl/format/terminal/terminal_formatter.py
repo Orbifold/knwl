@@ -16,6 +16,10 @@ def pretty_print(obj: Any, **kwargs) -> None:
 
 
 def print_response(response: KnwlResponse, chunks: bool = True, nodes: bool = True, edges: bool = True, references: bool = True, metadata: bool = True) -> None:
+    """
+    Print the response from the Knwl API in a pleasant format.
+    """
+    
     r = response
     rich_print("")
     rich_print(Panel(r.question, title="LOCAL", border_style="blue", expand=True, padding=(0, 1)))
