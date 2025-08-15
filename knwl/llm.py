@@ -3,7 +3,7 @@ from typing import List
 
 from knwl.llm_cache import LLMCache
 from .models import KnwlLLMAnswer
-from .settings import settings
+from .settings import settings, get_config
 from .utils import hash_args
 
 
@@ -36,12 +36,13 @@ class OpenAIClient:
 class LLMClient:
     def __init__(self, cache: LLMCache = None):
         self.cache = cache
-        if settings.llm_service == "ollama":
+        service = get_config("llm", "service", default="ollama")
+        if service == "ollama":
             self.client = OllamaClient()
-        elif settings.llm_service == "openai":
+        elif service == "openai":
             self.client = OpenAIClient()
         else:
-            raise Exception(f"Unknown language service: {settings.llm_service}")
+            raise Exception(f"Unknown language service: {service}. Supported services are: 'ollama', 'openai'.")
 
     async def is_cached(self, messages: str | List[str] | List[dict]) -> bool:
         if self.cache is None:
@@ -52,7 +53,7 @@ class LLMClient:
         messages = self.assemble_messages(prompt, system_prompt, history_messages)
 
         if self.cache is not None:
-            found = await self.cache.get(messages, settings.llm_service,  settings.llm_model)
+            found = await self.cache.get(messages, settings.llm_service, settings.llm_model)
             if found is not None:
                 return found
         # effectively asking the model
@@ -82,5 +83,6 @@ class LLMClient:
 
 
 # note that LangChain has a ton of caching mechanisms in place: https://python.langchain.com/docs/integrations/llm_caching
-llm_cache = LLMCache(caching=settings.llm_caching)
+
+llm_cache = LLMCache(caching=get_config("llm", "caching", default=True))
 llm = LLMClient(llm_cache)

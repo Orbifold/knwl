@@ -1,7 +1,7 @@
 import os
 
 
-class Settings:
+class OldSettings:
     """
     A global settings class to store diverse parameters for the codebase.
     """
@@ -45,9 +45,40 @@ class Settings:
         self.__init__()
 
 
-# Create a global settings instance
-settings = Settings()
+settings = {
+    "llm": {
+        "model": "gemma3:4b",
+        "service": "ollama",
+        "max_tokens": 32768,
+        "tokenize_model": "gpt-4o-mini",
+        "tokenize_size": 1024,
+        "tokenize_overlap": 128,
+        "caching": True
+    },
+    "logging": {
+        "enabled": True,
+        "level": "DEBUG",
+        "path": "knwl.log"
+    },
+    "storage": {
+        "documents": {
+            "typeName": "JsonSingleStorage",
+            "path": "documents/data.json",
+            "enabled": True
+        }
+    }
+}
 
 
-def get_config(key):
-    return getattr(settings, key, None)
+def get_config(*key, default=None):
+    if len(key) == 0:
+        return settings
+    if len(key) == 1:
+        return settings.get(key[0], None)
+    else:
+        current = settings
+        for k in key:
+            current = current.get(k, None)
+            if current is None:
+                return default
+        return current

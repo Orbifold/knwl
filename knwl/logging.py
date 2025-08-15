@@ -1,6 +1,5 @@
 import logging
-from knwl.settings import settings
-
+from knwl.settings import settings, get_config
 
 logger = logging.getLogger("knwl")
 
@@ -16,7 +15,7 @@ def set_logger():
         logging.Logger: The configured logger instance.
     """
     # disable logging if not enabled in the settings
-    if not settings.logging_enabled:
+    if not get_config("logging", "enabled", default=True):
         logger.setLevel(logging.CRITICAL)
         return logger
     logging.basicConfig(
@@ -24,7 +23,7 @@ def set_logger():
         level=logging.INFO,
         format="%(asctime)s %(levelname)s %(message)s",
         handlers=[
-            logging.FileHandler(settings.log_file),
+            logging.FileHandler(get_config("logging", "path", default="knwl.log")),
             logging.StreamHandler()
         ],
     )

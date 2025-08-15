@@ -5,7 +5,7 @@ from typing import List
 
 from knwl.entities import extract_entities
 from knwl.storage.graph_storage import GraphStorage
-from knwl.storage.json_storage import JsonStorage
+from knwl.storage.json_single_storage import JsonSingleStorage
 from knwl.llm import llm
 from knwl.logging import set_logger
 from knwl.models.KnwlBasicGraph import KnwlBasicGraph
@@ -42,8 +42,8 @@ class Knwl:
     """
 
     def __init__(self):
-        self.document_storage = JsonStorage(namespace="documents")
-        self.chunks_storage = JsonStorage(namespace="chunks")
+        self.document_storage = JsonSingleStorage(namespace="documents")
+        self.chunks_storage = JsonSingleStorage(namespace="chunks")
         self.graph_storage = GraphStorage(namespace="graph")
         self.node_vectors = VectorStorage(namespace="nodes")
         self.edge_vectors = VectorStorage(namespace="edges")

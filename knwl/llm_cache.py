@@ -1,8 +1,8 @@
 from dataclasses import asdict
 from typing import List
 
-from knwl.storage.json_storage import JsonStorage
 from knwl.models import KnwlLLMAnswer
+from knwl.storage.json_single_storage import JsonSingleStorage
 
 
 class LLMCache:
@@ -11,7 +11,7 @@ class LLMCache:
     """
 
     def __init__(self, namespace: str = "llm", caching: bool = False):
-        self.storage = JsonStorage(namespace, caching)
+        self.storage = JsonSingleStorage(path="llm.json", enabled=caching)
 
     async def is_in_cache(self, messages: str | List[str] | List[dict], llm_service: str, llm_model: str) -> bool:
         found = await self.get(messages, llm_service, llm_model)

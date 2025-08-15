@@ -5,7 +5,7 @@ book.txt
 .idea/
 dist/
 venv
-tests/workdir/**/*
+tests/data/**/*
 .coverage
 **/.DS_Store
 workdir/
