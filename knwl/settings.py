@@ -65,12 +65,43 @@ settings = {
             "typeName": "JsonSingleStorage",
             "path": "documents/data.json",
             "enabled": True
+        },
+        "chunks": {
+            "typeName": "JsonSingleStorage",
+            "path": "chunks/data.json",
+            "enabled": True
+        },
+        "vector": {
+            "typeName": "ChromaStorage",
+            "path": "vector",
+            "collections": {
+                "nodes": "nodes",
+                "edges": "edges",
+                "chunks": "chunks"
+            },
+            "enabled": True
+        },
+        "graph": {
+            "typeName": "GraphMLStorage",
+            "path": "graph/data.graphml",
+            "enabled": True
         }
     }
 }
 
 
 def get_config(*key, default=None):
+    """
+    Get (recursively) a configuration value from the settings dictionary.
+
+    @example:
+
+    >>> get_config("llm", "model")
+    'gemma3:4b'
+
+    >>> get_config("llm", "non_existent_key", default="default_value")
+    'default_value'
+    """
     if len(key) == 0:
         return settings
     if len(key) == 1:

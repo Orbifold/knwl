@@ -1,12 +1,10 @@
 import asyncio
 import os
-import shutil
 from dataclasses import asdict
 
 import pytest
 
 from knwl.models.KnwlDocument import KnwlDocument
-from knwl.settings import settings
 from knwl.storage.json_single_storage import JsonSingleStorage
 from knwl.utils import random_name, load_json
 
@@ -52,9 +50,13 @@ async def test_get_by_ids(test_store):
 
 @pytest.mark.asyncio
 async def test_filter_keys(test_store):
-    await test_store.upsert({"key1": {"value": "data1"}})
-    filtered_keys = await test_store.filter_new_ids(["key1", "key2"])
-    assert filtered_keys == {"key2"}
+    from faker import Faker
+    fake = Faker()
+    k1 = fake.word()
+    k2 = fake.word()
+    await test_store.upsert({k1: {"value": "data1"}})
+    filtered_keys = await test_store.filter_new_ids([k1, k2])
+    assert filtered_keys == {k2}
 
 
 @pytest.mark.asyncio
@@ -101,3 +103,18 @@ async def test_save():
     assert data == {"key1": {"value": "data1"}}
     await store.clear_cache()
     assert not os.path.exists(file_path)
+
+
+@pytest.mark.asyncio
+async def test_memory_only():
+    store = JsonSingleStorage("test", enabled=False)
+    await store.clear_cache()
+    await store.clear()
+
+    data = {"key1": {"value": "data1"}}
+    await store.upsert(data)
+    await store.save()
+    assert store.file_path is None
+    found = await store.get_by_id("key1")
+    assert found == {"value": "data1"}
+    await store.clear_cache()

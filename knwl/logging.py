@@ -27,5 +27,4 @@ def set_logger():
             logging.StreamHandler()
         ],
     )
-    logger.info("Logger is set up")
     return logger
