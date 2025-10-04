@@ -15,7 +15,10 @@ async def test_basic_ask():
     assert llm.model == "gemma3:4b"
     assert llm.temperature == 0.5
 
-    resp = await llm.ask("What is time?")
+    resp = await llm.ask("Hello")
     assert resp is not None
     assert isinstance(resp, KnwlLLMAnswer)
+
+    assert await llm.is_cached("Hello") is True
+    print("")
     print(resp.answer)

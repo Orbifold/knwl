@@ -21,6 +21,11 @@ class OllamaClient(LLMBase):
     async def ask(self, messages: List[dict] | str) -> KnwlLLMAnswer:
         if isinstance(messages, str):
             messages = [{"role": "user", "content": messages}]
+        # Check cache first
+        if self.caching_service is not None:
+            cached = await self.caching_service.get(messages, "ollama", self.model)
+            if cached is not None:
+                return cached
         start_time = time.time()
         response = await self.client.chat(model=self.model, messages=messages, options={"temperature": self.temperature, "num_ctx": self.context_window}, )
         end_time = time.time()
@@ -31,4 +36,6 @@ class OllamaClient(LLMBase):
         return answer
 
     async def is_cached(self, messages: str | List[str] | List[dict]) -> bool:
-        pass
+        if self.caching_service is None:
+            return False
+        return await self.caching_service.is_in_cache(messages, "ollama", self.model)

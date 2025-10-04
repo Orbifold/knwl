@@ -6,13 +6,13 @@ from typing import cast
 from knwl.models.KnwlChunk import KnwlChunk
 from knwl.models.KnwlDocument import KnwlDocument
 from knwl.storage.kv_storage import KeyValueStorage
-from knwl.utils import load_json, logger, write_json
+from knwl.utils import load_json, logger, write_json, get_full_path
 
 
 class JsonStorage(KeyValueStorage):
     """
     Basic JSON storage implementation with everything in a single file.
-    Note that this stores a dictionary of objects, where each object must have a unique 'id' field. 
+    Note that this stores a dictionary of objects, where each object must have a unique 'id' field.
     It doesn't allow arrays of objects at the top level.
     """
 
@@ -32,15 +32,8 @@ class JsonStorage(KeyValueStorage):
         if len(args) > 0:
             if isinstance(args[0], str):
                 if args[0] == "test":
-                    self.file_path = os.path.join(
-                        self.get_test_dir(),
-                        f"test_{round(datetime.now().timestamp())}.json",
-                    )
-                    self.enabled = (
-                        False
-                        if str(kwargs.get("enabled", "True")) == "False"
-                        else True
-                    )
+                    self.file_path = os.path.join(self.get_test_dir(), f"test_{round(datetime.now().timestamp())}.json", )
+                    self.enabled = (False if str(kwargs.get("enabled", "True")) == "False" else True)
                 elif args[0] == "memory" or args[0] == "none" or args[0] == "false":
                     self.enabled = False
                     self.file_path = None
@@ -48,18 +41,16 @@ class JsonStorage(KeyValueStorage):
                     self.file_path = args[0]
                     self.enabled = True
         else:
-            self.enabled = True if kwargs.get("enabled", "True") == "True" else False
+            self.enabled = True if str(kwargs.get("enabled", "True")) == "True" else False
             self.file_path = kwargs.get("path", "data.json")
         if self.enabled:
             if not self.file_path.endswith(".json"):
                 raise ValueError(f"File path '{self.file_path}' must end with '.json'.")
-
+            self.file_path = get_full_path(self.file_path)
             self.ensure_path_exists(os.path.dirname(self.file_path))
             self.data = load_json(self.file_path) or {}
             if len(self.data) > 0:
-                logger.info(
-                    f"Loaded '{self.file_path}' JSON with {len(self.data)} items."
-                )
+                logger.info(f"Loaded '{self.file_path}' JSON with {len(self.data)} items.")
         else:
             self.data = {}
             self.file_path = None
@@ -114,14 +105,7 @@ class JsonStorage(KeyValueStorage):
         """
         if fields is None:
             return [self.data.get(id, None) for id in ids]
-        return [
-            (
-                {k: v for k, v in self.data[id].items() if k in fields}
-                if self.data.get(id, None)
-                else None
-            )
-            for id in ids
-        ]
+        return [({k: v for k, v in self.data[id].items() if k in fields} if self.data.get(id, None) else None) for id in ids]
 
     async def filter_new_ids(self, data: list[str]) -> set[str]:
         """

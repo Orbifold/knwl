@@ -30,7 +30,7 @@ default_config = {
     },
     "llm_caching": {
         "default": "json",
-        "json": {"class": "knwl.llm.json_llm_cache.JsonLLMCache", "path": "llm.json"},
+        "json": {"class": "knwl.llm.json_llm_cache.JsonLLMCache", "path": "$test/llm.json"},
     },
     "logging": {"enabled": True, "level": "DEBUG", "path": "knwl.log"},
     "storage": {

@@ -15,7 +15,6 @@ class JsonLLMCache(LLMCacheBase):
         config = kwargs.get("override", None)
         self.path = self.get_param(["llm_caching", "json", "path"], args, kwargs, default="llm_cache.json", override=config)
         self.enabled = self.get_param(["llm_caching", "json", "enabled"], args, kwargs, default=True, override=config)
-
         self.storage = JsonStorage(path=self.path, enabled=self.enabled)
 
     async def is_in_cache(self, messages: str | List[str] | List[dict], llm_service: str, llm_model: str) -> bool:
@@ -36,7 +35,8 @@ class JsonLLMCache(LLMCacheBase):
         return await self.storage.get_all_ids()
 
     async def save(self):
-        await self.storage.save()
+        if self.enabled:
+            await self.storage.save()
 
     async def clear_cache(self):
         await self.storage.clear_cache()
@@ -61,10 +61,13 @@ class JsonLLMCache(LLMCacheBase):
         blob = {}
         blob[a.id] = data
         await self.storage.upsert(blob)
+        await self.save()
         return a.id
 
     async def delete_by_id(self, id):
         await self.storage.delete_by_id(id)
+        await self.save()
 
     async def delete(self, a: KnwlLLMAnswer):
         await self.storage.delete_by_id(a.id)
+        await self.save()

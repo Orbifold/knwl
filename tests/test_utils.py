@@ -4,23 +4,15 @@ from dataclasses import asdict
 from hashlib import md5
 
 import pytest
+from pydantic import ValidationError
 
 from knwl.models import KnwlLLMAnswer
-from knwl.models.KnwlRagChunk import KnwlRagChunk
-from knwl.models.KnwlRagEdge import KnwlRagEdge
-from knwl.models.KnwlContext import KnwlContext
-from knwl.models.KnwlRagNode import KnwlRagNode
 from knwl.models.KnwlChunk import KnwlChunk
 from knwl.models.KnwlDocument import KnwlDocument
 from knwl.models.KnwlEdge import KnwlEdge
 from knwl.models.KnwlNode import KnwlNode
-from knwl.config import config
 from knwl.utils import clean_str, pack_messages, split_string_by_multi_markers, hash_with_prefix
-from knwl.utils import (
-    hash_args,
-    get_json_body,
-    convert_response_to_json,
-)
+from knwl.utils import (hash_args, get_json_body, convert_response_to_json, get_full_path)
 from knwl.utils import throttle
 
 
@@ -228,11 +220,7 @@ def test_pack_messages_single_message():
 
 def test_pack_messages_multiple_messages():
     messages = ("Hello", "Hi", "How are you?")
-    expected = [
-        {"role": "user", "content": "Hello"},
-        {"role": "assistant", "content": "Hi"},
-        {"role": "user", "content": "How are you?"},
-    ]
+    expected = [{"role": "user", "content": "Hello"}, {"role": "assistant", "content": "Hi"}, {"role": "user", "content": "How are you?"}, ]
     result = pack_messages(*messages)
     assert result == expected
 
@@ -246,12 +234,7 @@ def test_pack_messages_no_messages():
 
 def test_pack_messages_alternating_roles():
     messages = ("Message 1", "Message 2", "Message 3", "Message 4")
-    expected = [
-        {"role": "user", "content": "Message 1"},
-        {"role": "assistant", "content": "Message 2"},
-        {"role": "user", "content": "Message 3"},
-        {"role": "assistant", "content": "Message 4"},
-    ]
+    expected = [{"role": "user", "content": "Message 1"}, {"role": "assistant", "content": "Message 2"}, {"role": "user", "content": "Message 3"}, {"role": "assistant", "content": "Message 4"}, ]
     result = pack_messages(*messages)
     assert result == expected
 
@@ -319,7 +302,7 @@ def test_source():
 
     print()
     print(source.__dict__)
-    with pytest.raises(AttributeError):
+    with pytest.raises(ValidationError):
         source.content = "New content"
 
 
@@ -329,8 +312,8 @@ def test_chunk_class():
 
     c = KnwlChunk(content="Hello", tokens=0, index=0, originId="doc1")
     # id is assigned based on the content
-    assert "chunk-" in c.id
-    assert c.id == hash_with_prefix(c.content, prefix="chunk-")
+    assert "chunk|>" in c.id
+    assert c.id == hash_with_prefix(c.content, prefix="chunk|>")
 
 
 def test_document_class():
@@ -367,3 +350,10 @@ def test_args_hash():
     a = KnwlLLMAnswer(messages=[{"content": "Hello"}], llm_service="ollama", llm_model="qwen2.5:14b")
     print(asdict(a))
 
+
+def test_get_full_path():
+    p = get_full_path("knwl.llm")
+    assert p.index("knwl/knwl/../data/knwl.llm") > -1
+    p = get_full_path("a/llm", "$test")
+    print(p)
+    assert p.index("tests/data/a/llm") > -1
