@@ -27,10 +27,20 @@ default_config = {
             "temperature": 0.1,
             "context_window": 32768,
         },
+        "openai": {
+            "class": "knwl.llm.openai.OpenAIClient",
+            "model": "gpt-4o-mini",
+            "caching": "json",
+            "temperature": 0.1,
+            "context_window": 32768,
+        },
     },
     "llm_caching": {
         "default": "json",
-        "json": {"class": "knwl.llm.json_llm_cache.JsonLLMCache", "path": "$test/llm.json"},
+        "json": {
+            "class": "knwl.llm.json_llm_cache.JsonLLMCache",
+            "path": "$test/llm.json",
+        },
     },
     "logging": {"enabled": True, "level": "DEBUG", "path": "knwl.log"},
     "storage": {

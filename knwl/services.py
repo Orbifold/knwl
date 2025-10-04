@@ -66,6 +66,10 @@ class Services:
             raise ValueError(
                 f"Service variant '{variant_name}' for {service_name} does not specify a class to instantiate."
             )
+        if not isinstance(class_path, str):
+            # this allows to use the override with an ad-hoc class instance rather via a namespace path
+            return class_path  # Already an instance of the class
+        
         module_name, class_name = class_path.rsplit(".", 1)
         module = __import__(module_name, fromlist=[class_name])
         cls = getattr(module, class_name)
