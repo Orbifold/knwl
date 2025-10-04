@@ -11,14 +11,31 @@ class TiktokenChunking(ChunkBase):
     Chunking implementation using tiktoken for token-based chunking.
     """
 
-    def get_model(self) -> str:
-        return get_settings("chunking", "tiktoken", "model", default="gpt-4o-mini")
-
-    def get_chunk_size(self) -> int:
-        return get_settings("chunking", "tiktoken", "size", default=1024)
-
-    def get_chunk_overlap(self) -> int:
-        return get_settings("chunking", "tiktoken", "overlap", default=128)
+    def __init__(self, *args, **kwargs):
+        super().__init__()
+        config = kwargs.get("override", None)
+        self.model = self.get_param(
+            ["chunking", "tiktoken", "model"],
+            args,
+            kwargs,
+            default="gpt-4o-mini",
+            override=config,
+        )
+        self.chunk_size = self.get_param(
+            ["chunking", "tiktoken", "size"],
+            args,
+            kwargs,
+            default=1024,
+            override=config,
+        )
+        self.chunk_overlap = self.get_param(
+            ["chunking", "tiktoken", "overlap"],
+            args,
+            kwargs,
+            default=128,
+            override=config,
+        )
+        self.ENCODER = None
 
     def encode(self, content: str) -> list[int]:
         """
@@ -48,32 +65,27 @@ class TiktokenChunking(ChunkBase):
         content = self.ENCODER.decode(tokens)
         return content
 
-    def __init__(self):
-        super().__init__()
-        self.ENCODER = None
-
     def ensure_encoder(self):
         if self.ENCODER is None:
-            self.ENCODER = tiktoken.encoding_for_model(
-                get_settings("chunking", "tiktoken", "model", default="gpt-4o-mini")
-            )
+            self.ENCODER = tiktoken.encoding_for_model(self.model)
 
     async def chunk(self, content: str, source_key: str = None) -> List[KnwlChunk]:
         tokens = self.encode(content)
         results = []
         for index, start in enumerate(
-            range(0, len(tokens), self.get_chunk_size() - self.get_chunk_overlap())
+            range(0, len(tokens), self.chunk_size - self.chunk_overlap)
         ):
-            chunk_content = self.decode(tokens[start : start + self.get_chunk_size()])
+            chunk_content = self.decode(tokens[start : start + self.chunk_size])
             if len(chunk_content.strip()) > 0:
                 results.append(
                     KnwlChunk(
                         content=chunk_content.strip(),
-                        tokens=min(self.get_chunk_size(), len(tokens) - start),
+                        tokens=min(self.chunk_size, len(tokens) - start),
                         index=index,
                         originId=source_key,
                     )
                 )
+        return results
 
     def count_tokens(self, content: str) -> int:
         """

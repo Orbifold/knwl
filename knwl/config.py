@@ -12,7 +12,7 @@ default_config = {
     "global": {},
     "chunking": {
         "default": "tiktoken",
-        "tiktoken": {"model": "gpt-4o-mini", "size": 1024, "overlap": 128},
+        "tiktoken": {"class": "knwl.chunking.TiktokenChunking", "model": "gpt-4o-mini", "size": 1024, "overlap": 128},
     },
     "summarization": {
         "default": "gemma3",
