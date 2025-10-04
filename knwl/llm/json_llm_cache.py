@@ -1,17 +1,22 @@
 from dataclasses import asdict
 from typing import List
 
+from knwl.llm.llm_cache_base import LLMCacheBase
 from knwl.models import KnwlLLMAnswer
-from knwl.storage.json_single_storage import JsonSingleStorage
+from knwl.storage.json_storage import JsonStorage
 
 
-class LLMCache:
+class JsonLLMCache(LLMCacheBase):
     """
     A thin wrapper around a JSON storage object to provide caching functionality for LLM.
     """
 
-    def __init__(self, namespace: str = "llm", caching: bool = False):
-        self.storage = JsonSingleStorage(path="llm.json", enabled=caching)
+    def __init__(self, *args, **kwargs):
+        config = kwargs.get("override", None)
+        self.path = self.get_param(["llm_caching", "json", "path"], args, kwargs, default="llm_cache.json", override=config)
+        self.enabled = self.get_param(["llm_caching", "json", "enabled"], args, kwargs, default=True, override=config)
+
+        self.storage = JsonStorage(path=self.path, enabled=self.enabled)
 
     async def is_in_cache(self, messages: str | List[str] | List[dict], llm_service: str, llm_model: str) -> bool:
         found = await self.get(messages, llm_service, llm_model)
@@ -36,7 +41,7 @@ class LLMCache:
     async def clear_cache(self):
         await self.storage.clear_cache()
 
-    async def get_by_id(self, id:str):
+    async def get_by_id(self, id: str):
         d = await self.storage.get_by_id(id)
         if d is None:
             return None

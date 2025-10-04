@@ -3,7 +3,7 @@ import asyncio
 import sys
 
 sys.path.append('..')
-from knwl import Knwl, QueryParam, QueryModes, settings
+from knwl import Knwl, QueryParam, QueryModes, config
 
 knwl = Knwl()
 
@@ -16,10 +16,10 @@ async def set_facts():
 
 async def query(mode: QueryModes):
     r = await knwl.query("Who is John?", QueryParam(mode=mode))
-    with open(f"{settings.llm_model}-{mode}.txt", 'w') as f:
+    with open(f"{config.llm_model}-{mode}.txt", 'w') as f:
         f.write(r.answer)
     with open('speed.txt', 'a') as f:
-        f.write(f"{settings.llm_service}, {settings.llm_model}, {mode}, {r.total_time}, {r.rag_time}, {r.llm_time}\n")
+        f.write(f"{config.llm_service}, {config.llm_model}, {mode}, {r.total_time}, {r.rag_time}, {r.llm_time}\n")
 
 
 async def run():
@@ -42,7 +42,7 @@ async def run():
         "qwq"
     ]
     for model in models:
-        settings.llm_model = model
+        config.llm_model = model
         try:
             await query("naive")
             await query("hybrid")

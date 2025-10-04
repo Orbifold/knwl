@@ -22,7 +22,6 @@ from knwl.models.KnwlNode import KnwlNode
 from knwl.models.KnwlResponse import KnwlResponse
 from knwl.models.QueryParam import QueryParam
 from knwl.prompt import GRAPH_FIELD_SEP
-from knwl.tokenize import count_tokens
 from knwl.utils import hash_with_prefix
 
 faker = Faker()

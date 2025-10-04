@@ -54,7 +54,7 @@ def get_json_body(content: str) -> Union[str, None]:
             if stack:
                 stack.pop()
                 if not stack:
-                    return content[start: i + 1]
+                    return content[start : i + 1]
     if start != -1 and stack:
         return content[start:]
     else:
@@ -72,7 +72,7 @@ def random_name(length=8):
         str: A randomly generated name of the specified length.
     """
     letters = string.ascii_lowercase
-    return ''.join(random.choice(letters) for i in range(length))
+    return "".join(random.choice(letters) for i in range(length))
 
 
 def convert_response_to_json(response: str) -> dict:
@@ -92,7 +92,9 @@ def convert_response_to_json(response: str) -> dict:
         json.JSONDecodeError: If the JSON string cannot be parsed into a dictionary.
     """
     json_str = get_json_body(response)
-    assert json_str is not None, f"Unable to parse JSON from response: {
+    assert (
+        json_str is not None
+    ), f"Unable to parse JSON from response: {
     response}"
     try:
         data = json.loads(json_str)
@@ -227,9 +229,8 @@ def split_string_by_multi_markers(content: str, markers: list[str]) -> list[str]
         return [content]
     if content == "":
         return [""]
-    results = re.split("|".join(re.escape(marker)
-                                for marker in markers), content)
-    return [r.strip().replace("\"", "") for r in results if r.strip()]
+    results = re.split("|".join(re.escape(marker) for marker in markers), content)
+    return [r.strip().replace('"', "") for r in results if r.strip()]
 
 
 def clean_str(input: Any) -> str:
@@ -274,9 +275,10 @@ def get_info() -> dict:
     Retrieves project information from the `pyproject.toml` file.
     """
     import toml
+
     current_dir = os.path.dirname(os.path.abspath(__file__))
     pyproject_path = os.path.join(current_dir, "..", "pyproject.toml")
-    with open(pyproject_path, 'r') as file:
+    with open(pyproject_path, "r") as file:
         pyproject_data = toml.load(file)
     version = pyproject_data["project"]["version"]
     name = pyproject_data["project"]["name"]
@@ -288,3 +290,14 @@ def get_info() -> dict:
         "author": author,
         "description": description,
     }
+
+
+def merge_dictionaies(source: dict, destination: dict) -> dict:
+    for key, value in source.items():
+        if isinstance(value, dict):
+            # get node or create one
+            node = destination.setdefault(key, {})
+            merge_dictionaies(value, node)
+        else:
+            destination[key] = value
+    return destination

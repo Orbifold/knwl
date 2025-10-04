@@ -2,12 +2,12 @@ from collections import defaultdict
 from typing import Dict
 
 from knwl.prompt import PROMPTS
-from .llm import llm
+
 from .models.KnwlChunk import KnwlChunk
 from .models.KnwlEdge import KnwlEdge
 from .models.KnwlExtraction import KnwlExtraction
 from .models.KnwlNode import KnwlNode
-from .settings import settings
+from .config import get_config
 from .utils import *
 
 
@@ -183,7 +183,7 @@ async def extract_graph_elements_from_text(
     )
     final_result = final_answer.answer
     history = pack_messages(final_prompt, final_result)
-    entity_extract_max_gleaning = settings.entity_extract_max_gleaning
+    entity_extract_max_gleaning = config.entity_extract_max_gleaning
     for now_glean_index in range(entity_extract_max_gleaning):
         glean_answer = await llm.ask(
             continue_prompt, history_messages=history, category=CATEGORY_GLEANING

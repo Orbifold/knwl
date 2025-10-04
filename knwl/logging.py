@@ -1,5 +1,5 @@
 import logging
-from knwl.settings import settings, get_config
+from knwl.config import  get_config
 
 logger = logging.getLogger("knwl")
 

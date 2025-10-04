@@ -14,7 +14,7 @@ from knwl.models.KnwlChunk import KnwlChunk
 from knwl.models.KnwlDocument import KnwlDocument
 from knwl.models.KnwlEdge import KnwlEdge
 from knwl.models.KnwlNode import KnwlNode
-from knwl.settings import settings
+from knwl.config import config
 from knwl.utils import clean_str, pack_messages, split_string_by_multi_markers, hash_with_prefix
 from knwl.utils import (
     hash_args,
@@ -128,12 +128,6 @@ def test_compute_args_hash_with_none():
     expected = md5(str(args).encode()).hexdigest()
     result = hash_args(*args)
     assert result == expected
-
-
-def test_settings_update():
-    settings.update(tokenize_size=100, tokenize_overlap=10)
-    assert settings.tokenize_size == 100
-    assert settings.tokenize_overlap == 10
 
 
 def test_clean_str_html_escape():

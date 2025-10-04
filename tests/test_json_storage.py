@@ -5,13 +5,13 @@ from dataclasses import asdict
 import pytest
 
 from knwl.models.KnwlDocument import KnwlDocument
-from knwl.storage.json_single_storage import JsonSingleStorage
+from knwl.storage.json_storage import JsonStorage
 from knwl.utils import random_name, load_json
 
 
 @pytest.fixture
 def test_store():
-    return JsonSingleStorage("test")
+    return JsonStorage("test")
 
 
 @pytest.mark.asyncio
@@ -24,7 +24,7 @@ async def test_all_keys(test_store):
 
 @pytest.mark.asyncio
 async def test_save_somewhere():
-    storage = JsonSingleStorage(f"{JsonSingleStorage.get_test_dir()}/{random_name()}.json")
+    storage = JsonStorage(f"{JsonStorage.get_test_dir()}/{random_name()}.json")
     data = {"key1": {"value": "data1"}}
     await storage.upsert(data)
     await storage.save()
@@ -89,7 +89,7 @@ async def test_save_source(test_store):
 
 @pytest.mark.asyncio
 async def test_save():
-    store = JsonSingleStorage("test")
+    store = JsonStorage("test")
     await store.clear_cache()
     await store.clear()
 
@@ -107,7 +107,7 @@ async def test_save():
 
 @pytest.mark.asyncio
 async def test_memory_only():
-    store = JsonSingleStorage("test", enabled=False)
+    store = JsonStorage("test", enabled=False)
     await store.clear_cache()
     await store.clear()
 

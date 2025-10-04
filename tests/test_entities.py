@@ -8,7 +8,7 @@ from knwl.models.KnwlChunk import KnwlChunk
 from knwl.models.KnwlEdge import KnwlEdge
 from knwl.models.KnwlExtraction import KnwlExtraction
 from knwl.models.KnwlNode import KnwlNode
-from knwl.settings import settings
+from knwl.config import config
 from knwl.utils import *
 pytestmark=pytest.mark.llm
 
@@ -176,7 +176,7 @@ class TestActualExtraction:
 
     @pytest.mark.asyncio
     async def test_extract_from_text(self):
-        print("LLM", settings.llm_model)
+        print("LLM", config.llm_model)
         text = "John is an artist. He works in a museum in Chelsea. He knows Maria."
         found: KnwlExtraction = await extract_graph_elements_from_text(text)
         assert found.is_consistent()

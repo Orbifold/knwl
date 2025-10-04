@@ -4,7 +4,7 @@ import os
 import chromadb
 import pandas as pd
 
-from knwl.settings import settings
+from knwl.config import config
 from knwl.storage.storage_base import StorageBase
 from knwl.storage.vector_storage import VectorStorage
 
@@ -27,7 +27,7 @@ class ChromaStorage(VectorStorage):
         self.metadata = metadata
 
         if self.caching:
-            self.client = chromadb.PersistentClient(path=os.path.join(settings.working_dir, f"vectordb_{self.namespace}"))
+            self.client = chromadb.PersistentClient(path=os.path.join(config.working_dir, f"vectordb_{self.namespace}"))
         else:
             self.client = chromadb.Client()
 

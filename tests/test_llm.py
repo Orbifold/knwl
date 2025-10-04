@@ -4,8 +4,7 @@ import pytest
 
 from knwl.llm import llm, LLMClient
 from knwl.models import KnwlLLMAnswer
-from knwl.settings import settings
-pytestmark = pytest.mark.llm
+from knwl.config import config
 
 
 @pytest.mark.asyncio
@@ -18,7 +17,7 @@ async def test_history():
         {"role": "user", "content": "How are you?"}
     ]
     messages = LLMClient.assemble_messages(prompt, system_prompt, history_messages)
-    api_response = KnwlLLMAnswer(answer="LLM answer", messages=messages, llm_model=settings.llm_model, llm_service=settings.llm_service)
+    api_response = KnwlLLMAnswer(answer="LLM answer", messages=messages, llm_model=config.llm_model, llm_service=config.llm_service)
 
     with patch("knwl.llm.llm.cache.storage.get_by_id", new=AsyncMock(return_value=None)) as mock_get_by_id:
         with patch("knwl.llm.llm.cache.upsert", new=AsyncMock()) as mock_upsert:
@@ -37,7 +36,7 @@ async def test_history():
 @pytest.mark.asyncio
 async def test_is_in_cache_hit():
     messages = [{"role": "user", "content": "Hi"}]
-    cached_response = KnwlLLMAnswer(answer="Cached response", messages=messages, llm_model=settings.llm_model, llm_service=settings.llm_service)
+    cached_response = KnwlLLMAnswer(answer="Cached response", messages=messages, llm_model=config.llm_model, llm_service=config.llm_service)
 
     with patch("knwl.llm.llm.cache.get_by_id", return_value=cached_response.id) as mock_get_by_id:
         result = await llm.is_cached(messages)

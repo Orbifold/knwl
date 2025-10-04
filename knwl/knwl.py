@@ -3,9 +3,10 @@ from collections import Counter
 from dataclasses import asdict
 from typing import List
 
+from knwl.chunking.tiktoken_chunking import TiktokenChunking
 from knwl.entities import extract_entities
 from knwl.storage.graph_storage import GraphStorage
-from knwl.storage.json_single_storage import JsonSingleStorage
+from knwl.storage.json_storage import JsonStorage
 from knwl.llm import llm
 from knwl.logging import set_logger
 from knwl.models.KnwlBasicGraph import KnwlBasicGraph
@@ -27,8 +28,8 @@ from knwl.models.KnwlRagText import KnwlRagText
 from knwl.models.KnwlResponse import KnwlResponse
 from knwl.models.QueryParam import QueryParam
 from knwl.prompt import GRAPH_FIELD_SEP, PROMPTS
-from knwl.settings import settings
-from knwl.tokenize import chunk, encode, decode, truncate_content, count_tokens
+from knwl.config import get_config, config
+
 from knwl.utils import *
 from knwl.storage.vector_storage import VectorStorage
 
@@ -41,9 +42,23 @@ class Knwl:
         It includes functionalities for inserting sources, creating chunks, extracting entities, merging data into the knowledge graph, and querying the graph using various modes.
     """
 
+    def get_chunker(self):
+        method = get_config("chunking", "method", default="tiktoken")
+        if method == "tiktoken":
+            return TiktokenChunking()
+        else:
+            raise ValueError(f"Unknown chunking method '{method}'")
+    def count_tokens(self, text: str) -> int:
+        chunker = self.get_chunker()
+        return chunker.count_tokens(text)
+
+    def chunk(self, text: str, origin_id: str = None) -> List[KnwlChunk]:
+        chunker = self.get_chunker()
+        return chunker.chunk(text, origin_id)
+    
     def __init__(self):
-        self.document_storage = JsonSingleStorage(namespace="documents")
-        self.chunks_storage = JsonSingleStorage(namespace="chunks")
+        self.document_storage = JsonStorage(namespace="documents")
+        self.chunks_storage = JsonStorage(namespace="chunks")
         self.graph_storage = GraphStorage(namespace="graph")
         self.node_vectors = VectorStorage(namespace="nodes")
         self.edge_vectors = VectorStorage(namespace="edges")
@@ -156,7 +171,7 @@ class Knwl:
             nodes = extraction.nodes[name]
             if len(nodes) > 1:
                 descriptions = " ".join([n.description for n in nodes])
-                if count_tokens(descriptions) > settings.max_tokens:
+                if self.count_tokens(descriptions) > config.max_tokens:
                     descriptions = await self.compactify_summary(name, descriptions)
                 majority_entity_type = sorted(Counter([dp.type for dp in nodes]).items(), key=lambda x: x[1], reverse=True, )[0][0]
                 graph["nodes"].append({
@@ -183,7 +198,7 @@ class Knwl:
                 raise ValueError(f"Invalid edge name '{name}'")
             if len(edges) > 1:
                 descriptions = " ".join([e.description for e in edges])
-                if count_tokens(descriptions) > settings.max_tokens:
+                if self.count_tokens(descriptions) > config.max_tokens:
                     descriptions = await self.compactify_summary(name, descriptions)
 
                 graph["edges"].append({
@@ -253,7 +268,7 @@ class Knwl:
         """
         given_chunks = {}
         for source_key, source in sources.items():
-            chunks = {KnwlChunk.hash_keys(source.content): u for u in chunk(source.content, source_key)}
+            chunks = {KnwlChunk.hash_keys(source.content): u for u in self.chunk(source.content, source_key)}
             given_chunks.update(chunks)
         new_chunk_keys = await self.chunks_storage.filter_new_ids(list(given_chunks.keys()))
         # the filtered out ones
@@ -453,8 +468,8 @@ class Knwl:
             # simple concatenation
             return description.replace(GRAPH_FIELD_SEP, " ")
 
-        llm_max_tokens = settings.max_tokens
-        summary_max_tokens = settings.summary_max
+        llm_max_tokens = config.max_tokens
+        summary_max_tokens = config.summary_max
 
         tokens = encode(description)
         if len(tokens) < summary_max_tokens:  # No need for summary
@@ -919,7 +934,7 @@ class Knwl:
             return KnwlResponse(answer="No vectors found to answer the question.", context=None)
         chunks = []
         for i, chunk in enumerate(rag_chunks):
-            chunks.append(KnwlRagChunk(id=chunk["id"], text=truncate_content(chunk["content"], settings.max_tokens), order=0, index=str(i)))
+            chunks.append(KnwlRagChunk(id=chunk["id"], text=truncate_content(chunk["content"], config.max_tokens), order=0, index=str(i)))
         refs = await self.get_references([c.id for c in chunks])
         context = KnwlContext(chunks=chunks, references=refs)
 

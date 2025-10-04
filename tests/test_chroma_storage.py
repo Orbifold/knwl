@@ -1,20 +1,20 @@
 import pytest
 
-from knwl.settings import settings
+from knwl.config import config
 from knwl.storage.chroma_storage import ChromaStorage
 from knwl.utils import random_name
 
 
 @pytest.fixture
 def dummy_store():
-    settings.reset()
+    config.reset()
     storage = ChromaStorage(namespace="dummy")
     return storage
 
 
 @pytest.fixture
 def dummy_store_with_metadata():
-    settings.reset()
+    config.reset()
     storage = ChromaStorage(namespace="dummy", metadata=["a", "b"])
     return storage
 

@@ -1,9 +1,9 @@
 import time
 from typing import List
 
-from knwl.llm_cache import LLMCache
+from knwl.llm.json_llm_cache import LLMCache
 from .models import KnwlLLMAnswer
-from .settings import settings, get_config
+from .config import  get_config
 from .utils import hash_args
 
 
@@ -14,10 +14,10 @@ class OllamaClient:
 
     async def ask(self, messages: List[dict]) -> KnwlLLMAnswer:
         start_time = time.time()
-        response = await self.client.chat(model=settings.llm_model, messages=messages, options={"temperature": 0.0, "num_ctx": 32768})
+        response = await self.client.chat(model=config.llm_model, messages=messages, options={"temperature": 0.0, "num_ctx": 32768})
         end_time = time.time()
         content = response["message"]["content"]
-        return KnwlLLMAnswer(answer=content, messages=messages, timing=round(end_time - start_time, 2), llm_model=settings.llm_model, llm_service=settings.llm_service)
+        return KnwlLLMAnswer(answer=content, messages=messages, timing=round(end_time - start_time, 2), llm_model=config.llm_model, llm_service=config.llm_service)
 
 
 class OpenAIClient:
@@ -27,10 +27,10 @@ class OpenAIClient:
 
     async def ask(self, messages: List[dict]) -> KnwlLLMAnswer:
         start_time = time.time()
-        found = await self.client.chat.completions.create(messages=messages, model=settings.llm_model)
+        found = await self.client.chat.completions.create(messages=messages, model=config.llm_model)
         end_time = time.time()
         content = found.choices[0].message.content
-        return KnwlLLMAnswer(answer=content, messages=messages, timing=round(end_time - start_time, 2), llm_model=settings.llm_model, llm_service=settings.llm_service)
+        return KnwlLLMAnswer(answer=content, messages=messages, timing=round(end_time - start_time, 2), llm_model=config.llm_model, llm_service=config.llm_service)
 
 
 class LLMClient:
@@ -47,13 +47,13 @@ class LLMClient:
     async def is_cached(self, messages: str | List[str] | List[dict]) -> bool:
         if self.cache is None:
             return False
-        return await self.cache.is_in_cache(messages, settings.llm_service, settings.llm_model)
+        return await self.cache.is_in_cache(messages, config.llm_service, config.llm_model)
 
     async def ask(self, prompt: str, system_prompt=None, history_messages=None, core_input: str = None, category: str = None, save: bool = True) -> KnwlLLMAnswer:
         messages = self.assemble_messages(prompt, system_prompt, history_messages)
 
         if self.cache is not None:
-            found = await self.cache.get(messages, settings.llm_service, settings.llm_model)
+            found = await self.cache.get(messages, config.llm_service, config.llm_model)
             if found is not None:
                 return found
         # effectively asking the model

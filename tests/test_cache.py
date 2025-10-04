@@ -1,6 +1,6 @@
 import pytest
 
-from knwl.llm_cache import LLMCache
+from knwl.llm.json_llm_cache import LLMCache
 from knwl.models import KnwlLLMAnswer
 
 cache = LLMCache("testing", True)

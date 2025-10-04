@@ -8,7 +8,7 @@ from knwl.models.KnwlEdge import KnwlEdge
 from knwl.models.KnwlNode import KnwlNode
 from knwl.storage.graph_storage import GraphStorage
 
-from knwl.settings import settings
+from knwl.config import config
 from knwl.utils import random_name
 
 
@@ -87,7 +87,7 @@ async def test_save():
     assert os.path.exists(file_path)
     await store.unsave()
     assert not os.path.exists(file_path)
-    settings.reset()  # reset for the remaining tests
+    config.reset()  # reset for the remaining tests
 
 
 @pytest.mark.asyncio

@@ -8,7 +8,7 @@ import networkx as nx
 from knwl.storage.storage_base import StorageBase
 from knwl.models.KnwlEdge import KnwlEdge
 from knwl.models.KnwlNode import KnwlNode
-from knwl.settings import settings
+from knwl.config import config
 from knwl.utils import *
 
 
@@ -28,7 +28,7 @@ class GraphStorage(StorageBase):
     def __init__(self, namespace: str = "default", caching: bool = False):
         super().__init__(namespace, caching)
         if self.caching:
-            self.file_path = os.path.join(settings.working_dir, f"graphdb_{self.namespace}", f"data.graphml")
+            self.file_path = os.path.join(config.working_dir, f"graphdb_{self.namespace}", f"data.graphml")
             self.parent_path = os.path.dirname(self.file_path)
             os.makedirs(self.parent_path, exist_ok=True)
             preloaded_graph = GraphStorage.load(self.file_path)
