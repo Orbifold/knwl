@@ -1,13 +1,18 @@
 import os
+import uuid
 from abc import ABC
 from pathlib import Path
 
 from knwl.config import get_config
+from knwl.services import services
 
 
 class FrameworkBase(ABC):
     def __init__(self, *args, **kwargs):
-        pass
+        self.id = str(uuid.uuid4())
+
+    def get_service(self, service_name: str, variant_name: str = None, override=None):
+        return services.get_service(service_name, variant_name=variant_name, override=override)
 
     def get_user_home(self) -> str:
         home = Path.home()

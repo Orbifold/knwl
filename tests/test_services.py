@@ -7,7 +7,7 @@ def test_service_instantiation():
 
     services = Services()
     assert services.service_exists("llm")
-    assert services.get_default_service_name("llm") == "ollama"
+    assert services.get_default_variant_name("llm") == "ollama"
     llm_service = services.instantiate_service("llm")
     assert llm_service is not None
     assert llm_service.__class__.__name__ == "OllamaClient"
@@ -53,3 +53,28 @@ def test_service_params():
     assert llm.model == "override_model:1b"
     assert llm.temperature == 0.3
 
+
+def test_service_singleton():
+    from knwl.services import Services
+
+    services = Services()
+    llm1 = services.get_service("llm")
+    llm2 = services.get_service("llm")
+    assert llm1.id == llm2.id
+
+    llm3 = services.get_service("llm", variant_name="ollama")
+    assert llm1.id == llm3.id
+
+    override_config = {
+        "llm":{
+            "ollama": {
+                "model": "override_model:1b",
+                "temperature": 0.3,
+                "context_window": 8192,
+            }
+        }
+    }
+    llm4 = services.get_service("llm", override=override_config)
+    llm5 = services.get_service("llm", override=override_config)
+    assert llm4.id == llm5.id
+    assert llm4.id != llm1.id

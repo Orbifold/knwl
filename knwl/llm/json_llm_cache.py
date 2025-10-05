@@ -12,6 +12,7 @@ class JsonLLMCache(LLMCacheBase):
     """
 
     def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         config = kwargs.get("override", None)
         self.path = self.get_param(["llm_caching", "json", "path"], args, kwargs, default="llm_cache.json", override=config)
         self.enabled = self.get_param(["llm_caching", "json", "enabled"], args, kwargs, default=True, override=config)

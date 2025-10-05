@@ -12,7 +12,7 @@ class TiktokenChunking(ChunkBase):
     """
 
     def __init__(self, *args, **kwargs):
-        super().__init__()
+        super().__init__(*args, **kwargs)
         config = kwargs.get("override", None)
         self.model = self.get_param(
             ["chunking", "tiktoken", "model"],

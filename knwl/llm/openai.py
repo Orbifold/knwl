@@ -9,6 +9,7 @@ from knwl.models import KnwlLLMAnswer
 
 class OpenAIClient(LLMBase):
     def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.client = openai.AsyncClient()
         config = kwargs.get("override", None)
 

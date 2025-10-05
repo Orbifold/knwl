@@ -5,7 +5,7 @@ from typing import List
 
 from knwl.chunking.tiktoken_chunking import TiktokenChunking
 from knwl.entities import extract_entities
-from knwl.storage.networkx_storage import NetworkXGraphStorage
+from knwl.storage.networkx_storage import GraphStorage
 from knwl.storage.json_storage import JsonStorage
 from knwl.llm import llm
 from knwl.logging import set_logger
@@ -59,7 +59,7 @@ class Knwl:
     def __init__(self):
         self.document_storage = JsonStorage(namespace="documents")
         self.chunks_storage = JsonStorage(namespace="chunks")
-        self.graph_storage = NetworkXGraphStorage(namespace="graph")
+        self.graph_storage = GraphStorage(namespace="graph")
         self.node_vectors = VectorStorageBase(namespace="nodes")
         self.edge_vectors = VectorStorageBase(namespace="edges")
         self.chunk_vectors = VectorStorageBase(namespace="chunks")

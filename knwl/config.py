@@ -20,8 +20,17 @@ default_config = {
         },
     },
     "summarization": {
-        "default": "gemma3",
-        "gemma3": {"model": "gemma3:4b", "service": "ollama", "max_tokens": 32768},
+        "default": "ollama",
+        "concat": {
+            "class": "knwl.summarization.concat.SimpleConcatenation",
+            "max_tokens": 500,
+        },
+        "ollama": {
+            "class": "knwl.summarization.ollama.OllamaSummarization",
+            "model": "gemma3:4b",
+            "max_tokens": 150,
+            "chunker": "tiktoken",
+        },
     },
     "llm": {
         "default": "ollama",
@@ -55,7 +64,7 @@ default_config = {
             "memory": False,
             "path": "$test/vector",
             "collection": "default",
-            "metadata": []
+            "metadata": [],
         },
     },
     "graph": {
@@ -63,7 +72,7 @@ default_config = {
         "nx": {
             "class": "knwl.storage.networkx_storage.NetworkXStorage",
             "format": "graphml",
-             "memory": False,
+            "memory": False,
             "path": "$test/graph.graphml",
         },
     },

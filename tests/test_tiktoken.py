@@ -69,7 +69,7 @@ async def test_chunking_by_token_size():
 
 @pytest.mark.asyncio
 async def test_via_services():
-    chunker = services.get_default_service("chunking")
+    chunker = services.create_service("chunking")
     assert isinstance(chunker, TiktokenChunking)
     assert chunker.chunk_size == 1024
     assert chunker.chunk_overlap == 128
@@ -85,7 +85,7 @@ async def test_via_services():
     config_override = {
         "chunking": {"default": "special", "special": {"class": SpecialClass()}}
     }
-    chunker = services.get_default_service("chunking", override=config_override)
+    chunker = services.create_service("chunking", override=config_override)
     assert chunker.name == "Swa"
     chunks = await chunker.chunk("Anything")
     assert len(chunks) == 1
