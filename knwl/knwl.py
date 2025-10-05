@@ -5,9 +5,7 @@ from typing import List
 
 from knwl.chunking.tiktoken_chunking import TiktokenChunking
 from knwl.entities import extract_entities
-from knwl.storage.networkx_storage import GraphStorage
 from knwl.storage.json_storage import JsonStorage
-from knwl.llm import llm
 from knwl.logging import set_logger
 from knwl.models.KnwlBasicGraph import KnwlBasicGraph
 from knwl.models.KnwlChunk import KnwlChunk
@@ -28,7 +26,7 @@ from knwl.models.KnwlRagText import KnwlRagText
 from knwl.models.KnwlResponse import KnwlResponse
 from knwl.models.QueryParam import QueryParam
 from knwl.prompt import GRAPH_FIELD_SEP, PROMPTS
-from knwl.config import get_config, config
+from knwl.config import get_config
 
 from knwl.utils import *
 from knwl.storage.vector_storage_base import VectorStorageBase
@@ -55,7 +53,7 @@ class Knwl:
     def chunk(self, text: str, origin_id: str = None) -> List[KnwlChunk]:
         chunker = self.get_chunker()
         return chunker.chunk(text, origin_id)
-    
+
     def __init__(self):
         self.document_storage = JsonStorage(namespace="documents")
         self.chunks_storage = JsonStorage(namespace="chunks")
@@ -392,7 +390,7 @@ class Knwl:
         chunk_ids = unique_strings([dp.chunkIds for dp in nodes] + [found_chunk_ids])
         compactified_description = await Knwl.compactify_summary(entity_id, GRAPH_FIELD_SEP.join(unique_descriptions), smart_merge)
         node = KnwlNode(name=entity_name, type=majority_entity_type, description=compactified_description, chunkIds=chunk_ids)
-        await self.graph_storage.upsert_node(entity_id, asdict(node))
+        await self.graph_storage.upsert_node(entity_id, node.model_dump(mode="json"))
         return node
 
     async def merge_edges_into_graph(self, edges: List[KnwlEdge], smart_merge: bool = True) -> KnwlEdge | None:

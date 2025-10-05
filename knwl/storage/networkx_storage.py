@@ -1,5 +1,4 @@
 import shutil
-from dataclasses import asdict
 from typing import cast
 from uuid import uuid4
 
@@ -92,13 +91,13 @@ class NetworkXGraphStorage(GraphBase):
     def from_knwl_node(node: KnwlNode) -> dict | None:
         if node is None:
             return None
-        return asdict(node)
+        return node.model_dump(mode="json")
 
     @staticmethod
     def from_knwl_edge(edge: KnwlEdge) -> dict | None:
         if edge is None:
             return None
-        return asdict(edge)
+        return edge.model_dump(mode="json")
 
     @staticmethod
     def load(file_name) -> nx.Graph | None:
@@ -114,7 +113,7 @@ class NetworkXGraphStorage(GraphBase):
         logger.info(f"Writing graph with {graph.number_of_nodes()} nodes, {graph.number_of_edges()} edges")
         # the label is the id, helps with visualization
         nx.set_node_attributes(graph, {id: str(id) for id in graph.nodes}, "label")
-        
+
         # Convert list attributes to strings and remove None values for GraphML compatibility
         for node_id, node_data in graph.nodes(data=True):
             keys_to_remove = []
@@ -125,7 +124,7 @@ class NetworkXGraphStorage(GraphBase):
                     graph.nodes[node_id][key] = str(value)
             for key in keys_to_remove:
                 del graph.nodes[node_id][key]
-        
+
         for edge in graph.edges(data=True):
             edge_data = edge[2]
             keys_to_remove = []
@@ -136,7 +135,7 @@ class NetworkXGraphStorage(GraphBase):
                     edge_data[key] = str(value)
             for key in keys_to_remove:
                 del edge_data[key]
-        
+
         nx.write_graphml(graph, file_name)
 
     async def save(self):
@@ -328,7 +327,7 @@ class NetworkXGraphStorage(GraphBase):
 
     async def upsert_edge(self, source_node_id: str, target_node_id: str = None, edge_data: object = None):
         if isinstance(source_node_id, KnwlEdge):
-            edge_data = asdict(source_node_id)
+            edge_data = source_node_id.model_dump(mode="json")
             source_node_id = edge_data.get("sourceId", None)
             target_node_id = edge_data.get("targetId", None)
         if isinstance(source_node_id, tuple):
@@ -341,7 +340,7 @@ class NetworkXGraphStorage(GraphBase):
         if isinstance(edge_data, KnwlEdge):
             source_node_id = edge_data.sourceId
             target_node_id = edge_data.targetId
-            edge_data = asdict(edge_data)
+            edge_data = edge_data.model_dump(mode="json")
         if isinstance(source_node_id, str):
             if target_node_id is None:
                 raise ValueError("Insufficient data to upsert edge, missing target node id")

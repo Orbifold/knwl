@@ -1,4 +1,4 @@
-    from collections import defaultdict
+from collections import defaultdict
 from typing import Dict
 
 from knwl.prompt import PROMPTS
@@ -7,7 +7,6 @@ from .models.KnwlChunk import KnwlChunk
 from .models.KnwlEdge import KnwlEdge
 from .models.KnwlExtraction import KnwlExtraction
 from .models.KnwlNode import KnwlNode
-from .config import get_config
 from .utils import *
 
 

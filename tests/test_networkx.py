@@ -113,7 +113,7 @@ async def test_edge_exists(test_storage):
 
 def test_from_knwl_edge_with_valid_edge():
     edge = KnwlEdge(sourceId="node1", targetId="node2", weight=1.0)
-    expected = asdict(edge)
+    expected = edge.model_dump(mode="json")
     result = NetworkXGraphStorage.from_knwl_edge(edge)
     assert result == expected
 
@@ -289,7 +289,7 @@ async def test_get_edge_weight_knwl_edge():
     # Add nodes and edge to the graph
     await graph_storage.upsert_node(source_node_id, {"name": "Node 1"})
     await graph_storage.upsert_node(target_node_id, {"name": "Node 2"})
-    await graph_storage.upsert_edge(source_node_id, target_node_id, asdict(edge))
+    await graph_storage.upsert_edge(source_node_id, target_node_id, edge.model_dump(mode="json"))
 
     # Test get_edge_weight using KnwlEdge instance
     result = await graph_storage.get_edge_weight(edge)
