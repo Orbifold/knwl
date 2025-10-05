@@ -6,6 +6,8 @@ class Services:
     A class to manage and instantiate services based on configuration.
     """
 
+    singletons = {}
+
     def service_exists(self, service_name: str, override=None) -> bool:
         return get_config(service_name, default=None, override=override) is not None
 
@@ -36,10 +38,51 @@ class Services:
         return get_config(service_name, "default", default=None, override=override)
 
     def get_default_service(self, service_name: str, override=None):
+        if not self.service_exists(service_name, override=override):
+            raise ValueError(f"Service '{service_name}' not found in configuration.")
         variant_name = self.get_default_service_name(service_name, override=override)
         if variant_name is None:
             raise ValueError(f"No default service configured for {service_name}")
         return self.instantiate_service(service_name, variant=variant_name)
+
+    def get_service(self, service_name: str, variant_name: str = None, override=None):
+        """
+        Get a singleton instance of a service. If the service has already been instantiated, return the existing instance.
+        Otherwise, create a new instance and store it for future use.
+        """
+        if not self.service_exists(service_name, override=override):
+            raise ValueError(f"Service '{service_name}' not found in configuration.")
+        if self.singletons.get((service_name, variant_name), None) is not None:
+            return self.singletons[(service_name, variant_name)]
+        instance = self.create_service(
+            service_name, variant_name=variant_name, override=override
+        )
+        self.singletons[(service_name, variant_name)] = instance
+        return instance
+
+    def create_service(
+        self, service_name: str, variant_name: str = None, override=None
+    ):
+        """
+        Create a service instance with optional variant specification.
+
+        Args:
+            service_name (str): The name of the service to create.
+            variant_name (str, optional): The specific variant of the service to instantiate.
+                If None, the default service will be returned. Defaults to None.
+            override (optional): Override parameters for service configuration.
+                Defaults to None.
+
+        Returns:
+            The created service instance, either the default service or a specific variant
+            based on the variant_name parameter.
+        """
+        if variant_name is None:
+            return self.get_default_service(service_name, override=override)
+        else:
+            return self.instantiate_service(
+                service_name, variant=variant_name, override=override
+            )
 
     def instantiate_service(
         self, service_name: str, variant: str = None, override=None
@@ -69,7 +112,7 @@ class Services:
         if not isinstance(class_path, str):
             # this allows to use the override with an ad-hoc class instance rather via a namespace path
             return class_path  # Already an instance of the class
-        
+
         module_name, class_name = class_path.rsplit(".", 1)
         module = __import__(module_name, fromlist=[class_name])
         cls = getattr(module, class_name)

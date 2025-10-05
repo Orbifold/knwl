@@ -291,7 +291,9 @@ def merge_dictionaries(source: dict, destination: dict) -> dict:
     return destination
 
 
-def get_full_path(file_path: str, reference_path: str = None) -> str:
+def get_full_path(file_path: str, reference_path: str = None) -> str | None:
+    if file_path is None:
+        return None
     if file_path.startswith("$test"):
         return get_full_path("." + file_path[5:], "$test")
     if file_path.startswith("$data"):
@@ -321,5 +323,8 @@ def get_full_path(file_path: str, reference_path: str = None) -> str:
         return get_full_path(file_path, "$data")
 
     p = os.path.join(reference_path, file_path)
-    os.makedirs(os.path.dirname(p), exist_ok=True)
+    if os.path.isfile(p):
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+    else:
+        os.makedirs(p, exist_ok=True)
     return p

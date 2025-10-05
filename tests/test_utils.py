@@ -357,3 +357,15 @@ def test_get_full_path():
     p = get_full_path("a/llm", "$test")
     print(p)
     assert p.index("tests/data/a/llm") > -1
+    p = get_full_path("$test/abc")
+    print(p)
+
+
+def test_hash():
+    assert hash_with_prefix("hello", "pre|>") == "pre|>" + md5("hello".encode()).hexdigest()
+    assert hash_with_prefix("", "pre|>") == "pre|>" + md5("".encode()).hexdigest()
+    assert hash_with_prefix("hello", "hash|>") == "hash|>" + md5("hello".encode()).hexdigest()
+    assert hash_with_prefix("", "hash|>") == "hash|>" + md5("".encode()).hexdigest()
+
+    assert hash_with_prefix(json.dumps({"a": 1, "b": 2, "c": {"x": 23, "y": .1}}), "json|>") == hash_with_prefix(json.dumps({"a": 1, "b": 2, "c": {"x": 23, "y": 0.1}}), "json|>")
+    assert hash_with_prefix(json.dumps({"a": 1, "b": 2, "c": {"x": 23, "y": .1}}), "json|>") != hash_with_prefix(json.dumps({"a": 2, "b": 2, "c": {"x": 23, "y": 0.1}}), "json|>")

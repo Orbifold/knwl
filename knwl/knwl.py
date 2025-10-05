@@ -5,7 +5,7 @@ from typing import List
 
 from knwl.chunking.tiktoken_chunking import TiktokenChunking
 from knwl.entities import extract_entities
-from knwl.storage.graph_storage import GraphStorage
+from knwl.storage.networkx_storage import NetworkXGraphStorage
 from knwl.storage.json_storage import JsonStorage
 from knwl.llm import llm
 from knwl.logging import set_logger
@@ -31,7 +31,7 @@ from knwl.prompt import GRAPH_FIELD_SEP, PROMPTS
 from knwl.config import get_config, config
 
 from knwl.utils import *
-from knwl.storage.vector_storage import VectorStorage
+from knwl.storage.vector_storage_base import VectorStorageBase
 
 logger = set_logger()
 
@@ -59,10 +59,10 @@ class Knwl:
     def __init__(self):
         self.document_storage = JsonStorage(namespace="documents")
         self.chunks_storage = JsonStorage(namespace="chunks")
-        self.graph_storage = GraphStorage(namespace="graph")
-        self.node_vectors = VectorStorage(namespace="nodes")
-        self.edge_vectors = VectorStorage(namespace="edges")
-        self.chunk_vectors = VectorStorage(namespace="chunks")
+        self.graph_storage = NetworkXGraphStorage(namespace="graph")
+        self.node_vectors = VectorStorageBase(namespace="nodes")
+        self.edge_vectors = VectorStorageBase(namespace="edges")
+        self.chunk_vectors = VectorStorageBase(namespace="chunks")
 
     async def input(self, text: str, name: str = None, description: str = None):
         """

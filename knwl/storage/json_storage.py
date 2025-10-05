@@ -5,11 +5,11 @@ from typing import cast
 
 from knwl.models.KnwlChunk import KnwlChunk
 from knwl.models.KnwlDocument import KnwlDocument
-from knwl.storage.kv_storage import KeyValueStorage
+from knwl.storage.kv_storage_base import KeyValueStorageBase
 from knwl.utils import load_json, logger, write_json, get_full_path
 
 
-class JsonStorage(KeyValueStorage):
+class JsonStorage(KeyValueStorageBase):
     """
     Basic JSON storage implementation with everything in a single file.
     Note that this stores a dictionary of objects, where each object must have a unique 'id' field.
@@ -121,10 +121,10 @@ class JsonStorage(KeyValueStorage):
         left_data = {k: v for k, v in data.items() if k not in self.data}
         for k in left_data:
             if isinstance(left_data[k], KnwlChunk):
-                left_data[k] = asdict(left_data[k])
+                left_data[k] = left_data[k].model_dump(mode="json")
 
             elif isinstance(left_data[k], KnwlDocument):
-                left_data[k] = asdict(left_data[k])
+                left_data[k] = left_data[k].model_dump(mode="json")
             elif hasattr(left_data[k], "model_dump"):  # Pydantic v2
                 left_data[k] = left_data[k].model_dump(mode="json")
             else:

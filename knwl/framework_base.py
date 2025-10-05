@@ -6,6 +6,9 @@ from knwl.config import get_config
 
 
 class FrameworkBase(ABC):
+    def __init__(self, *args, **kwargs):
+        pass
+
     def get_user_home(self) -> str:
         home = Path.home()
         if home is None:

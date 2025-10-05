@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from knwl.storage.storage_base import StorageBase
 
 
-class KeyValueStorage(StorageBase, ABC):
+class KeyValueStorageBase(StorageBase, ABC):
     """
     Abstract base class for JSON dictionary storage on disk.
     """

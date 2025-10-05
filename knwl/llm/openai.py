@@ -13,6 +13,7 @@ class OpenAIClient(LLMBase):
         config = kwargs.get("override", None)
 
         self.model = self.get_param(["llm", "openai", "model"], args, kwargs, default="gpt-4o-mini", override=config)
+        self.temperature = self.get_param(["llm", "openai", "temperature"], args, kwargs, default=1.0, override=config)
         self.caching_service_name = self.get_param(["llm", "ollama", "caching"], args, kwargs, False, config)
         self.caching_service = self.get_caching_service(self.caching_service_name, override=config)
 
@@ -28,7 +29,10 @@ class OpenAIClient(LLMBase):
         found = await self.client.chat.completions.create(messages=messages, model=self.model)
         end_time = time.time()
         content = found.choices[0].message.content
-        return KnwlLLMAnswer(answer=content, messages=messages, timing=round(end_time - start_time, 2), llm_model=self.model, llm_service="openai")
+        answer = KnwlLLMAnswer(answer=content, messages=messages, timing=round(end_time - start_time, 2), llm_model=self.model, llm_service="openai")
+        if self.caching_service is not None:
+            await self.caching_service.upsert(answer)
+        return answer
 
     async def is_cached(self, messages: str | List[str] | List[dict]) -> bool:
         if self.caching_service is None:

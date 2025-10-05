@@ -78,13 +78,13 @@ async def test_drop(test_store):
 @pytest.mark.asyncio
 async def test_save_source(test_store):
     id = random_name()
-    source = KnwlDocument(id)
+    source = KnwlDocument(id=id, content="This is a test document.")
     await test_store.upsert({id: source})
     print()
     found = await test_store.get_by_id(id)
     print(found)
     await test_store.save()
-    assert found == asdict(source)
+    assert found == source.model_dump(mode="json")
 
 
 @pytest.mark.asyncio

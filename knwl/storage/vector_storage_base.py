@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from knwl.storage.storage_base import StorageBase
 
 
-class VectorStorage(StorageBase, ABC):
+class VectorStorageBase(StorageBase, ABC):
     """
     Base class for vector storage.
     """

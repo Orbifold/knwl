@@ -1,20 +1,19 @@
 import pytest
 
-from knwl.config import config
+from knwl.config import get_config
+from knwl.services import services
 from knwl.storage.chroma_storage import ChromaStorage
-from knwl.utils import random_name
+from knwl.utils import random_name, get_full_path
 
 
 @pytest.fixture
 def dummy_store():
-    config.reset()
     storage = ChromaStorage(namespace="dummy")
     return storage
 
 
 @pytest.fixture
 def dummy_store_with_metadata():
-    config.reset()
     storage = ChromaStorage(namespace="dummy", metadata=["a", "b"])
     return storage
 
@@ -73,3 +72,9 @@ async def test_auto_embedding():
     collection.upsert(ids=list(data.keys()), documents=list(data.values()))
     all = collection.get(include=["embeddings"])
     assert len(all["embeddings"][0]) == 384  # all-MiniLM-L6-v2 produces 384-dimensional embeddings
+
+
+@pytest.mark.asyncio
+async def test_chroma_via_service():
+    chroma = services.create_service("vector")
+    assert chroma.path == get_full_path(get_config("vector", "chroma", "path"))

@@ -12,7 +12,7 @@ from knwl.config import config
 from knwl.utils import *
 
 
-class GraphStorage(StorageBase):
+class NetworkXGraphStorage(StorageBase):
     """
     A class to handle storage and manipulation of an undirected graph using NetworkX.
         - the id of nodes and edges is a uuid4 string but one could also use the combination name+type as a primary key.
@@ -31,7 +31,7 @@ class GraphStorage(StorageBase):
             self.file_path = os.path.join(config.working_dir, f"graphdb_{self.namespace}", f"data.graphml")
             self.parent_path = os.path.dirname(self.file_path)
             os.makedirs(self.parent_path, exist_ok=True)
-            preloaded_graph = GraphStorage.load(self.file_path)
+            preloaded_graph = NetworkXGraphStorage.load(self.file_path)
             if preloaded_graph is not None:
                 logger.info(f"Loaded graph from {self.file_path} with {preloaded_graph.number_of_nodes()} nodes, {preloaded_graph.number_of_edges()} edges")
                 # remove the label attributes if present
@@ -91,7 +91,7 @@ class GraphStorage(StorageBase):
 
     async def save(self):
         if self.caching:
-            GraphStorage.write(self.graph, self.file_path)
+            NetworkXGraphStorage.write(self.graph, self.file_path)
 
     async def node_exists(self, node_id: str) -> bool:
         if str.strip(node_id) == "":
@@ -139,7 +139,7 @@ class GraphStorage(StorageBase):
         found = self.graph.nodes.get(node_id)
         if found:
             found["id"] = node_id
-            return GraphStorage.to_knwl_node(found)
+            return NetworkXGraphStorage.to_knwl_node(found)
 
     async def get_node_by_name(self, node_name: str) -> Union[List[KnwlNode], None]:
         found = []
@@ -147,7 +147,7 @@ class GraphStorage(StorageBase):
             node = self.graph.nodes[node_id]
             if node.get("name", None) == node_name:
                 node["id"] = node_id
-                found.append(GraphStorage.to_knwl_node(node))
+                found.append(NetworkXGraphStorage.to_knwl_node(node))
         return found
 
     async def node_degree(self, node_id: str) -> int:
@@ -170,7 +170,7 @@ class GraphStorage(StorageBase):
         if found:
             found["sourceId"] = source_node_id
             found["targetId"] = target_node_id
-            return GraphStorage.to_knwl_edge(found)
+            return NetworkXGraphStorage.to_knwl_edge(found)
         else:
             return None
 
@@ -188,7 +188,7 @@ class GraphStorage(StorageBase):
             tuples = list(self.graph.edges(source_node_id))
 
             raw = [{"sourceId": t[0], "targetId": t[1], **self.graph.get_edge_data(t[0], t[1], {})} for t in tuples]
-            return [GraphStorage.to_knwl_edge(edge) for edge in raw]
+            return [NetworkXGraphStorage.to_knwl_edge(edge) for edge in raw]
         return None
 
     async def get_attached_edges(self, nodes: List[KnwlNode]) -> List[KnwlEdge]:
@@ -247,7 +247,7 @@ class GraphStorage(StorageBase):
             if edge[2]["id"] == edge_id:
                 found = edge[2]
                 found["id"] = edge_id
-                found = GraphStorage.to_knwl_edge(found)
+                found = NetworkXGraphStorage.to_knwl_edge(found)
                 return found
         raise ValueError(f"Edge with id {edge_id} not found")
 
@@ -345,11 +345,11 @@ class GraphStorage(StorageBase):
 
     async def get_nodes(self) -> List[KnwlNode]:
         found = list(self.graph.nodes)
-        return [GraphStorage.to_knwl_node(self.graph.nodes[node_id]) for node_id in found]
+        return [NetworkXGraphStorage.to_knwl_node(self.graph.nodes[node_id]) for node_id in found]
 
     async def get_edges(self) -> List[KnwlEdge]:
         found = list(self.graph.edges)
-        return [GraphStorage.to_knwl_edge(self.graph.edges[edge_id]) for edge_id in found]
+        return [NetworkXGraphStorage.to_knwl_edge(self.graph.edges[edge_id]) for edge_id in found]
 
     async def get_edge_weight(self, source_node_id: object, target_node_id: str = None) -> float:
         if isinstance(source_node_id, KnwlEdge):

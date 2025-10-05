@@ -4,12 +4,11 @@ import os
 import chromadb
 import pandas as pd
 
-from knwl.config import config
-from knwl.storage.storage_base import StorageBase
-from knwl.storage.vector_storage import VectorStorage
+from knwl.storage.vector_storage_base import VectorStorageBase
+from knwl.utils import get_full_path
 
 
-class ChromaStorage(VectorStorage):
+class ChromaStorage(VectorStorageBase):
     """
     Straightforward vector storage based on ChromaDB.
     The embedding is the default all-MiniLM-L6-v2, which is a 384-dimensional embedding.
@@ -18,16 +17,22 @@ class ChromaStorage(VectorStorage):
     The `metadata` parameter allows you to specify additional metadata fields to store with each document.
     Only the metadata fields specified in the `metadata` list will be stored with the documents.
     """
+
     metadata: list[str]
 
-    def __init__(self, namespace: str = "default", metadata=None, caching: bool = False):
-        super().__init__(namespace, caching)
-        if metadata is None:
-            metadata = []
-        self.metadata = metadata
+    def __init__(self, *args, **kwargs):
+        # def __init__(self, namespace: str = "default", metadata=None, caching: bool = False):
+        super().__init__(*args, **kwargs)
+        config = kwargs.get("override", None)
+        self.metadata = self.get_param(["vector", "chroma", "metadata"], args, kwargs, default=[], override=config, )
+        self.memory = self.get_param(["vector", "chroma", "memory"], args, kwargs, default=False, override=config)
+        self.namespace = self.get_param(["vector", "chroma", "collection"], args, kwargs, default="default", override=config, )
+        self.path = self.get_param(["vector", "chroma", "path"], args, kwargs, default="$test/vector", override=config, )
 
-        if self.caching:
-            self.client = chromadb.PersistentClient(path=os.path.join(config.working_dir, f"vectordb_{self.namespace}"))
+        if not self.memory and self.path is not None:
+            self.path = get_full_path(self.path)
+            self.client = chromadb.PersistentClient(path=self.path)
+
         else:
             self.client = chromadb.Client()
 
@@ -73,7 +78,7 @@ class ChromaStorage(VectorStorage):
 
     async def get_ids(self):
         ids_only_result = self.collection.get(include=[])
-        return ids_only_result['ids']
+        return ids_only_result["ids"]
 
     async def to_dataframe(self) -> pd.DataFrame:
         data = self.collection.get(include=["documents", "metadatas", "embeddings"])

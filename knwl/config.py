@@ -12,7 +12,12 @@ default_config = {
     "global": {},
     "chunking": {
         "default": "tiktoken",
-        "tiktoken": {"class": "knwl.chunking.TiktokenChunking", "model": "gpt-4o-mini", "size": 1024, "overlap": 128},
+        "tiktoken": {
+            "class": "knwl.chunking.TiktokenChunking",
+            "model": "gpt-4o-mini",
+            "size": 1024,
+            "overlap": 128,
+        },
     },
     "summarization": {
         "default": "gemma3",
@@ -43,27 +48,29 @@ default_config = {
         },
     },
     "logging": {"enabled": True, "level": "DEBUG", "path": "knwl.log"},
-    "storage": {
-        "documents": {
-            "typeName": "JsonSingleStorage",
-            "path": "documents/data.json",
-            "enabled": True,
+    "vector": {
+        "default": "chroma",
+        "chroma": {
+            "class": "knwl.storage.chroma_storage.ChromaStorage",
+            "memory": False,
+            "path": "$test/vector",
+            "collection": "default",
+            "metadata": []
         },
-        "chunks": {
-            "typeName": "JsonSingleStorage",
-            "path": "chunks/data.json",
-            "enabled": True,
+    },
+    "graph": {
+        "default": "nx",
+        "nx": {
+            "class": "knwl.storage.networkx_storage.NetworkXStorage",
+            "format": "graphml",
+            "path": "$test/graph.graphml",
         },
-        "vector": {
-            "typeName": "ChromaStorage",
-            "path": "vector",
-            "collections": {"nodes": "nodes", "edges": "edges", "chunks": "chunks"},
-            "enabled": True,
-        },
-        "graph": {
-            "typeName": "GraphMLStorage",
-            "path": "graph/data.graphml",
-            "enabled": True,
+    },
+    "json": {
+        "default": "basic",
+        "basic": {
+            "class": "knwl.storage.json_storage.JsonStorage",
+            "path": "$test/data.json",
         },
     },
 }
