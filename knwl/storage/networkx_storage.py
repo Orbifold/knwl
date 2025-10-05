@@ -5,14 +5,14 @@ from uuid import uuid4
 
 import networkx as nx
 
-from knwl.storage.storage_base import StorageBase
 from knwl.models.KnwlEdge import KnwlEdge
 from knwl.models.KnwlNode import KnwlNode
-from knwl.config import config
+from knwl.storage.graph_base import GraphBase
 from knwl.utils import *
+import ast
 
 
-class NetworkXGraphStorage(StorageBase):
+class NetworkXGraphStorage(GraphBase):
     """
     A class to handle storage and manipulation of an undirected graph using NetworkX.
         - the id of nodes and edges is a uuid4 string but one could also use the combination name+type as a primary key.
@@ -22,30 +22,36 @@ class NetworkXGraphStorage(StorageBase):
     """
     graph: nx.Graph
 
-    file_path: str | None
-    parent_path: str | None
-
-    def __init__(self, namespace: str = "default", caching: bool = False):
-        super().__init__(namespace, caching)
-        if self.caching:
-            self.file_path = os.path.join(config.working_dir, f"graphdb_{self.namespace}", f"data.graphml")
-            self.parent_path = os.path.dirname(self.file_path)
-            os.makedirs(self.parent_path, exist_ok=True)
-            preloaded_graph = NetworkXGraphStorage.load(self.file_path)
-            if preloaded_graph is not None:
-                logger.info(f"Loaded graph from {self.file_path} with {preloaded_graph.number_of_nodes()} nodes, {preloaded_graph.number_of_edges()} edges")
-                # remove the label attributes if present
-                for node in preloaded_graph.nodes:
-                    if "label" in preloaded_graph.nodes[node]:
-                        del preloaded_graph.nodes[node]["label"]
-                for edge in preloaded_graph.edges:
-                    if "label" in preloaded_graph.edges[edge]:
-                        del preloaded_graph.edges[edge]["label"]
-            self.graph = preloaded_graph or nx.Graph()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        config = kwargs.get("override", None)
+        self.memory = self.get_param(["graph", "nx", "memory"], args, kwargs, default=False, override=config)
+        self.path = self.get_param(["graph", "nx", "path"], args, kwargs, default="$test/vector", override=config, )
+        self.format = self.get_param(["graph", "nx", "format"], args, kwargs, default="graphml", override=config)
+        if not self.memory and self.path is not None:
+            # self.file_path = os.path.join(config.working_dir, f"graphdb_{self.namespace}", f"data.graphml")
+            self.path = get_full_path(self.path)
+            if os.path.exists(self.path):
+                preloaded_graph = NetworkXGraphStorage.load(self.path)
+                if preloaded_graph is not None:
+                    logger.info(f"Loaded graph from {self.path} with {preloaded_graph.number_of_nodes()} nodes, {preloaded_graph.number_of_edges()} edges")
+                    # remove the label attributes if present
+                    # todo: why is this needed?
+                    for node in preloaded_graph.nodes:
+                        if "label" in preloaded_graph.nodes[node]:
+                            del preloaded_graph.nodes[node]["label"]
+                    for edge in preloaded_graph.edges:
+                        if "label" in preloaded_graph.edges[edge]:
+                            del preloaded_graph.edges[edge]["label"]
+                    self.graph = preloaded_graph
+                else:
+                    # failed to load the graph from file
+                    self.graph = nx.Graph()
+            else:
+                self.graph = nx.Graph()
         else:
             self.graph = nx.Graph()
-            self.file_path = None
-            self.parent_path = None
+            self.path = None
 
     @staticmethod
     def to_knwl_node(node: dict) -> KnwlNode | None:
@@ -53,6 +59,15 @@ class NetworkXGraphStorage(StorageBase):
             return None
         if "label" in node:
             del node["label"]
+        # Convert stringified lists back to actual lists
+        for key, value in node.items():
+            if isinstance(value, str) and value.startswith('[') and value.endswith(']'):
+                try:
+                    # Safely evaluate the string as a list
+                    node[key] = ast.literal_eval(value)
+                except (ValueError, SyntaxError):
+                    # If evaluation fails, keep as string
+                    pass
         return KnwlNode(**node)
 
     @staticmethod
@@ -62,6 +77,15 @@ class NetworkXGraphStorage(StorageBase):
         # the label is added for visualization of GraphML
         if "label" in edge:
             del edge["label"]
+        # Convert stringified lists back to actual lists
+        for key, value in edge.items():
+            if isinstance(value, str) and value.startswith('[') and value.endswith(']'):
+                try:
+                    # Safely evaluate the string as a list
+                    edge[key] = ast.literal_eval(value)
+                except (ValueError, SyntaxError):
+                    # If evaluation fails, keep as string
+                    pass
         return KnwlEdge(**edge)
 
     @staticmethod
@@ -78,20 +102,46 @@ class NetworkXGraphStorage(StorageBase):
 
     @staticmethod
     def load(file_name) -> nx.Graph | None:
-        if os.path.exists(file_name):
-            return nx.read_graphml(file_name)
-        return None
+        try:
+            if os.path.exists(file_name):
+                return nx.read_graphml(file_name)
+        except Exception as e:
+            logger.error(f"Error loading graph from {file_name}: {e}")
+            return None
 
     @staticmethod
     def write(graph: nx.Graph, file_name):
         logger.info(f"Writing graph with {graph.number_of_nodes()} nodes, {graph.number_of_edges()} edges")
         # the label is the id, helps with visualization
         nx.set_node_attributes(graph, {id: str(id) for id in graph.nodes}, "label")
+        
+        # Convert list attributes to strings and remove None values for GraphML compatibility
+        for node_id, node_data in graph.nodes(data=True):
+            keys_to_remove = []
+            for key, value in node_data.items():
+                if value is None:
+                    keys_to_remove.append(key)
+                elif isinstance(value, list):
+                    graph.nodes[node_id][key] = str(value)
+            for key in keys_to_remove:
+                del graph.nodes[node_id][key]
+        
+        for edge in graph.edges(data=True):
+            edge_data = edge[2]
+            keys_to_remove = []
+            for key, value in edge_data.items():
+                if value is None:
+                    keys_to_remove.append(key)
+                elif isinstance(value, list):
+                    edge_data[key] = str(value)
+            for key in keys_to_remove:
+                del edge_data[key]
+        
         nx.write_graphml(graph, file_name)
 
     async def save(self):
-        if self.caching:
-            NetworkXGraphStorage.write(self.graph, self.file_path)
+        if not self.memory and self.path is not None:
+            NetworkXGraphStorage.write(self.graph, self.path)
 
     async def node_exists(self, node_id: str) -> bool:
         if str.strip(node_id) == "":
@@ -257,7 +307,7 @@ class NetworkXGraphStorage(StorageBase):
 
         if node_data is None:
             if isinstance(node_id, KnwlNode):
-                node_data = asdict(node_id)
+                node_data = node_id.model_dump(mode="json")
                 node_id = node_data.get("id", node_id)
             else:
                 node_data = cast(dict, node_id)
@@ -268,12 +318,13 @@ class NetworkXGraphStorage(StorageBase):
             if str.strip(node_id) == "":
                 raise ValueError("Node Id must not be empty")
             if isinstance(node_data, KnwlNode):
-                node_data = asdict(node_data)
+                node_data = node_data.model_dump(mode="json")
             else:
                 node_data = cast(dict, node_data)
         node_data["id"] = node_id
 
         self.graph.add_node(node_id, **node_data)
+        await self.save()
 
     async def upsert_edge(self, source_node_id: str, target_node_id: str = None, edge_data: object = None):
         if isinstance(source_node_id, KnwlEdge):
@@ -305,11 +356,11 @@ class NetworkXGraphStorage(StorageBase):
         edge_data["sourceId"] = source_node_id
         edge_data["targetId"] = target_node_id
         self.graph.add_edge(source_node_id, target_node_id, **edge_data)
+        await self.save()
 
     async def clear(self):
         self.graph.clear()
-        if self.caching:
-            await self.save()
+        await self.save()
 
     async def node_count(self):
         return self.graph.number_of_nodes()
@@ -322,6 +373,7 @@ class NetworkXGraphStorage(StorageBase):
             node_id = node_id.id
 
         self.graph.remove_node(node_id)
+        await self.save()
 
     async def remove_edge(self, source_node_id: object, target_node_id: str = None):
         sourceId = None
@@ -342,6 +394,7 @@ class NetworkXGraphStorage(StorageBase):
             else:
                 targetId = target_node_id
         self.graph.remove_edge(sourceId, targetId)
+        await self.save()
 
     async def get_nodes(self) -> List[KnwlNode]:
         found = list(self.graph.nodes)
@@ -359,5 +412,5 @@ class NetworkXGraphStorage(StorageBase):
         return self.graph.get_edge_data(source_node_id, target_node_id).get("weight", 1.0)
 
     async def unsave(self) -> None:
-        if os.path.exists(self.file_path) and self.caching:
-            shutil.rmtree(self.parent_path)
+        if os.path.exists(self.path) and not self.memory:
+            shutil.rmtree(os.path.dirname(self.path))

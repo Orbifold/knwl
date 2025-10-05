@@ -63,6 +63,7 @@ default_config = {
         "nx": {
             "class": "knwl.storage.networkx_storage.NetworkXStorage",
             "format": "graphml",
+             "memory": False,
             "path": "$test/graph.graphml",
         },
     },

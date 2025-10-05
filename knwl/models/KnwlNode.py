@@ -1,12 +1,11 @@
+from typing import List, Optional
+
+from pydantic import BaseModel, Field, field_validator, model_validator
+
 from knwl.utils import hash_with_prefix
 
 
-from dataclasses import dataclass, field
-from typing import List
-
-
-@dataclass(frozen=True)
-class KnwlNode:
+class KnwlNode(BaseModel):
     """
     A class representing a knowledge node.
 
@@ -19,11 +18,28 @@ class KnwlNode:
         id (str): The unique identifier of the knowledge node, default is a new UUID.
     """
     name: str
-    type: str = field(default="UNKNOWN")
+    type: str = "UNKNOWN"
     typeName: str = "KnwlNode"
-    id: str = field(default=None)
-    description: str = field(default="")
-    chunkIds: List[str] = field(default_factory=list)
+    id: Optional[str] = Field(default=None, description="The unique identifier of the knowledge node")
+    description: str = Field(default="", description="A description of the knowledge node")
+    chunkIds: List[str] = Field(default=[], description="The chunk identifiers associated with the knowledge node.")
+
+    model_config = {"frozen": True}
+
+    @field_validator('name')
+    @classmethod
+    def validate_name(cls, v: str) -> str:
+        if v is None or len(str.strip(v)) == 0:
+            raise ValueError("Content of a KnwlNode cannot be None or empty.")
+        return v
+
+    @model_validator(mode='after')
+    def set_id(self) -> 'KnwlNode':
+        if self.name is not None and len(str.strip(self.name)) > 0:
+            object.__setattr__(self, "id", self.hash_node(self))
+        else:
+            object.__setattr__(self, "id", None)
+        return self
 
     @staticmethod
     def hash_node(n: 'KnwlNode') -> str:
@@ -39,8 +55,3 @@ class KnwlNode:
             object.__setattr__(self, "id", KnwlNode.hash_node(self))
         else:
             object.__setattr__(self, "id", None)
-
-    def __post_init__(self):
-        if self.name is None or len(str.strip(self.name)) == 0:
-            raise ValueError("Content of a KnwlNode cannot be None or empty.")
-        self.update_id()

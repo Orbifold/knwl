@@ -8,13 +8,10 @@ from knwl.models.KnwlEdge import KnwlEdge
 from knwl.models.KnwlNode import KnwlNode
 from knwl.storage.networkx_storage import NetworkXGraphStorage
 
-from knwl.config import config
-from knwl.utils import random_name
-
 
 @pytest.fixture
 def test_storage():
-    return NetworkXGraphStorage(namespace="test")
+    return NetworkXGraphStorage()
 
 
 @pytest.mark.asyncio
@@ -22,6 +19,7 @@ async def test_upsert_node(test_storage):
     await test_storage.upsert_node("node1", {"name": "xws"})
     node = await test_storage.get_node_by_id("node1")
     assert node.name == "xws"
+    assert os.path.exists(test_storage.path)
 
 
 @pytest.mark.asyncio
@@ -79,15 +77,10 @@ async def test_get_node_edges(test_storage):
 
 @pytest.mark.asyncio
 async def test_save():
-
-    store = NetworkXGraphStorage(namespace=random_name(), caching=True)
+    store = NetworkXGraphStorage(memory=True)
     await store.upsert_node("node1", {"description": "value1"})
     await store.save()
-    file_path = store.file_path
-    assert os.path.exists(file_path)
-    await store.unsave()
-    assert not os.path.exists(file_path)
-    config.reset()  # reset for the remaining tests
+    assert store.path is None
 
 
 @pytest.mark.asyncio
@@ -185,7 +178,7 @@ async def test_edge_exists_with_knwl_node():
 @pytest.mark.asyncio
 async def test_get_node_by_name():
     # Create a GraphStorage instance
-    graph_storage = NetworkXGraphStorage()
+    graph_storage = NetworkXGraphStorage(path=None)
 
     # Add nodes to the graph
     node1 = KnwlNode(name="Node1", type="A")
@@ -214,14 +207,14 @@ async def test_get_node_by_name():
 
 @pytest.mark.asyncio
 async def test_get_edges_empty_graph():
-    graph_storage = NetworkXGraphStorage()
+    graph_storage = NetworkXGraphStorage(memory=True)
     edges = await graph_storage.get_edges()
     assert edges == []
 
 
 @pytest.mark.asyncio
 async def test_get_edges_with_edges():
-    graph_storage = NetworkXGraphStorage()
+    graph_storage = NetworkXGraphStorage(path=None)
     node1 = KnwlNode(id="1", name="Node 1")
     node2 = KnwlNode(id="2", name="Node 2")
     edge = KnwlEdge(sourceId="1", targetId="2", weight=1.0)
@@ -256,7 +249,7 @@ async def test_get_edge_weight_existing_edge():
 
 @pytest.mark.asyncio
 async def test_get_edge_weight_non_existing_edge():
-    graph_storage = NetworkXGraphStorage()
+    graph_storage = NetworkXGraphStorage(path=None)
     source_node_id = "node1"
     target_node_id = "node2"
 
@@ -271,7 +264,7 @@ async def test_get_edge_weight_non_existing_edge():
 
 @pytest.mark.asyncio
 async def test_get_edge_weight_default_weight():
-    graph_storage = NetworkXGraphStorage()
+    graph_storage = NetworkXGraphStorage(memory=True)
     source_node_id = "node1"
     target_node_id = "node2"
 
@@ -375,14 +368,14 @@ async def test_remove_edge_with_invalid_data():
 
 @pytest.mark.asyncio
 async def test_get_nodes_empty_graph():
-    storage = NetworkXGraphStorage()
+    storage = NetworkXGraphStorage(path=None)
     nodes = await storage.get_nodes()
     assert nodes == []
 
 
 @pytest.mark.asyncio
 async def test_get_nodes_with_nodes():
-    storage = NetworkXGraphStorage()
+    storage = NetworkXGraphStorage(memory=True)
     node1 = KnwlNode(name="Node1")
     node2 = KnwlNode(name="Node2")
     await storage.upsert_node(node1.id, node1)

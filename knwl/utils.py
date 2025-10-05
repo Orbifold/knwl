@@ -323,7 +323,7 @@ def get_full_path(file_path: str, reference_path: str = None) -> str | None:
         return get_full_path(file_path, "$data")
 
     p = os.path.join(reference_path, file_path)
-    if os.path.isfile(p):
+    if not p.endswith('/') and not p.endswith('\\') and '.' in os.path.basename(p):
         os.makedirs(os.path.dirname(p), exist_ok=True)
     else:
         os.makedirs(p, exist_ok=True)
