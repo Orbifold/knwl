@@ -1,4 +1,3 @@
-from dataclasses import asdict
 
 import pytest
 
@@ -149,7 +148,7 @@ class TestActualExtraction:
 
         g: KnwlExtraction = await extract_entities(chunks)
 
-        print(">>", json.dumps(asdict(g), indent=2))
+        print(">>", g.model_dump(mode="json"))
 
         assert len(g.nodes) >= 2
         assert len(g.edges) >= 1
@@ -168,7 +167,7 @@ class TestActualExtraction:
 
         g: KnwlExtraction = await extract_entities(chunks)
 
-        print(json.dumps(asdict(g), indent=2))
+        print(g.model_dump(mode="json"))
 
         assert "JOHN" in g.nodes
         # likely three descriptions of who John is
@@ -181,7 +180,7 @@ class TestActualExtraction:
         found: KnwlExtraction = await extract_graph_elements_from_text(text)
         assert found.is_consistent()
         print()
-        print(json.dumps(asdict(found), indent=2))
+        print(found.model_dump(mode="json"))
         assert len(found.nodes) >= 3
         # Some LLM create an edge and some will  put the conceptual relationship in the description, like 'John is an artist who works in a museum in Chelsea and knows Maria.
         # So, in general it's not so simple to predict the number of edges.

@@ -1,4 +1,3 @@
-from dataclasses import asdict
 from typing import List
 
 import pytest
@@ -21,9 +20,10 @@ from knwl.models.KnwlInput import KnwlInput
 from knwl.models.KnwlNode import KnwlNode
 from knwl.models.KnwlResponse import KnwlResponse
 from knwl.models.QueryParam import QueryParam
-from knwl.prompt import GRAPH_FIELD_SEP
+from knwl.prompts import prompts
 from knwl.utils import hash_with_prefix
 
+GRAPH_FIELD_SEP = prompts.constants.GRAPH_FIELD_SEP
 faker = Faker()
 
 
@@ -112,9 +112,7 @@ class TestGraphCreation:
         """)
         # print(json.dumps(asdict(g), indent=2))
         g.write_graphml("field.graphml")
-        print()
-        # print("======================== Timing =====================================")
-        # print(f"timing: {g.total_time}s [{g.rag_time}s rag, {g.llm_time}s llm]")
+        print()  # print("======================== Timing =====================================")  # print(f"timing: {g.total_time}s [{g.rag_time}s rag, {g.llm_time}s llm]")
 
 
 class TestDocuments:
@@ -144,10 +142,8 @@ class TestDocuments:
         mocker.patch.object(s.document_storage, 'upsert')
         result = await s.save_sources(sources)
         assert len(result) == 2
-        assert all(key in result for key in new_keys)
-        # the following fails because of a small delta in the timestamp
-        # s.document_storage.upsert.assert_called_once_with({d.id: asdict(d) for d in documents})
-
+        assert all(key in result for key in new_keys)  # the following fails because of a small delta in the timestamp  # s.document_storage.upsert.assert_called_once_with({d.id: asdict(d) for d in documents})
+        
 
 class TestChunks:
     @pytest.mark.asyncio
@@ -159,14 +155,8 @@ class TestChunks:
     @pytest.mark.asyncio
     async def test_create_chunks_all_existing(self, mocker):
         s = Knwl()
-        sources = {
-            "source1": KnwlDocument(content="Content 1"),
-            "source2": KnwlDocument(content="Content 2")
-        }
-        chunks = {
-            hash_with_prefix("Content 1", prefix="chunk-"): {"content": "Content 1", "originId": "source1"},
-            hash_with_prefix("Content 2", prefix="chunk-"): {"content": "Content 2", "originId": "source2"}
-        }
+        sources = {"source1": KnwlDocument(content="Content 1"), "source2": KnwlDocument(content="Content 2")}
+        chunks = {hash_with_prefix("Content 1", prefix="chunk-"): {"content": "Content 1", "originId": "source1"}, hash_with_prefix("Content 2", prefix="chunk-"): {"content": "Content 2", "originId": "source2"}}
         mocker.patch.object(s.chunks_storage, 'filter_new_ids', return_value=[])
         mocker.patch.object(s.chunks_storage, 'upsert')
         mocker.patch.object(s.chunk_vectors, 'upsert')
@@ -190,7 +180,7 @@ class TestChunks:
         result = await s.create_chunks(sources)
         assert len(result) == 2
         assert set(new_chunk_keys) == set(result.keys())
-        s.chunks_storage.upsert.assert_called_once_with({v.id: asdict(v) for v in new_chunks})
+        s.chunks_storage.upsert.assert_called_once_with({v.id: v.model_dump(mode="json") for v in new_chunks})
         s.chunk_vectors.upsert.assert_called_once_with({v.id: {"content": v.content, "id": v.id} for v in new_chunks})
 
 
@@ -200,10 +190,7 @@ class TestGraphMerge:
     async def test_merge_nodes_into_graph_no_existing_node(self, mocker):
         s = Knwl()
         entity_name = "entity1"
-        nodes = [
-            KnwlNode(type="Person", description="John is a software engineer.", chunkIds=["chunk1"], name=entity_name),
-            KnwlNode(type="Person", description="John lives in Paris.", chunkIds=["chunk2"], name=entity_name)
-        ]
+        nodes = [KnwlNode(type="Person", description="John is a software engineer.", chunkIds=["chunk1"], name=entity_name), KnwlNode(type="Person", description="John lives in Paris.", chunkIds=["chunk2"], name=entity_name)]
         node_id = nodes[0].id
         mocker.patch.object(s.graph_storage, 'get_node_by_id', return_value=None)
         mocker.patch.object(s.graph_storage, 'upsert_node')
@@ -216,22 +203,14 @@ class TestGraphMerge:
         assert result.type == "Person"
         assert result.description == "John is a software engineer. John lives in Paris."
         assert set(result.chunkIds) == {"chunk1", "chunk2"}
-        s.graph_storage.upsert_node.assert_called_once_with(node_id, asdict(result))
+        s.graph_storage.upsert_node.assert_called_once_with(node_id, result.model_dump(mode="json"))
 
     @pytest.mark.asyncio
     async def test_merge_nodes_into_graph_existing_node(self, mocker):
         s = Knwl()
         entity_name = "entity1"
-        nodes = [
-            KnwlNode(type="Person", description="John is a software engineer.", chunkIds=["chunk1"], name=entity_name),
-            KnwlNode(type="Person", description="John lives in Paris.", chunkIds=["chunk2"], name=entity_name)
-        ]
-        existing_node = KnwlNode(**{
-            "name": entity_name,
-            "type": "Person",
-            "chunkIds": ["chunk3"],
-            "description": "John likes to travel."
-        })
+        nodes = [KnwlNode(type="Person", description="John is a software engineer.", chunkIds=["chunk1"], name=entity_name), KnwlNode(type="Person", description="John lives in Paris.", chunkIds=["chunk2"], name=entity_name)]
+        existing_node = KnwlNode(**{"name": entity_name, "type": "Person", "chunkIds": ["chunk3"], "description": "John likes to travel."})
         node_id = existing_node.id
         mocker.patch.object(s.graph_storage, 'get_node_by_id', return_value=existing_node)
         mocker.patch.object(s.graph_storage, 'upsert_node')
@@ -244,23 +223,15 @@ class TestGraphMerge:
         assert result.type == "Person"
         assert result.description == "John is a software engineer. John lives in Paris. John likes to travel."
         assert set(result.chunkIds) == {"chunk1", "chunk2", "chunk3"}
-        s.graph_storage.upsert_node.assert_called_once_with(node_id, asdict(result))
+        s.graph_storage.upsert_node.assert_called_once_with(node_id, result.model_dump(mode="json"))
 
     @pytest.mark.asyncio
     async def test_merge_nodes_into_graph_different_types(self, mocker):
         s = Knwl()
         entity_name = "entity1"
-        nodes = [
-            KnwlNode(type="Person", description="John is a software engineer.", chunkIds=["chunk1"], name=entity_name),
-            KnwlNode(type="Location", description="John lives in Paris.", chunkIds=["chunk2"], name=entity_name)
-        ]
+        nodes = [KnwlNode(type="Person", description="John is a software engineer.", chunkIds=["chunk1"], name=entity_name), KnwlNode(type="Location", description="John lives in Paris.", chunkIds=["chunk2"], name=entity_name)]
 
-        existing_node = KnwlNode(**{
-            "name": entity_name,
-            "type": "Person",
-            "chunkIds": ["chunk3"],
-            "description": "John likes to travel."
-        })
+        existing_node = KnwlNode(**{"name": entity_name, "type": "Person", "chunkIds": ["chunk3"], "description": "John likes to travel."})
         node_id = existing_node.id
         mocker.patch.object(s.graph_storage, 'get_node_by_id', return_value=existing_node)
         mocker.patch.object(s.graph_storage, 'upsert_node')
@@ -273,7 +244,7 @@ class TestGraphMerge:
         assert result.type == "Person"
         assert result.description == "John is a software engineer. John lives in Paris. John likes to travel."
         assert set(result.chunkIds) == {"chunk1", "chunk2", "chunk3"}
-        s.graph_storage.upsert_node.assert_called_once_with(node_id, asdict(result))
+        s.graph_storage.upsert_node.assert_called_once_with(node_id, result.model_dump(mode="json"))
 
     @pytest.mark.asyncio
     async def test_compactify_summary_no_smart_merge(self):
@@ -309,10 +280,7 @@ class TestGraphMerge:
     async def test_merge_edges_into_graph_no_existing_edge(self, mocker):
         s = Knwl()
         edge_id = "(source1,target1)"
-        edges = [
-            KnwlEdge(weight=1.0, sourceId="source1", targetId="target1", description="Edge 1", keywords=["keyword1"], chunkIds=["chunk1"]),
-            KnwlEdge(weight=2.0, sourceId="source1", targetId="target1", description="Edge 2", keywords=["keyword2"], chunkIds=["chunk2"])
-        ]
+        edges = [KnwlEdge(weight=1.0, sourceId="source1", targetId="target1", description="Edge 1", keywords=["keyword1"], chunkIds=["chunk1"]), KnwlEdge(weight=2.0, sourceId="source1", targetId="target1", description="Edge 2", keywords=["keyword2"], chunkIds=["chunk2"])]
 
         mocker.patch.object(s.graph_storage, 'edge_exists', return_value=False)
         mocker.patch.object(s.graph_storage, 'upsert_edge')
@@ -333,18 +301,8 @@ class TestGraphMerge:
     @pytest.mark.asyncio
     async def test_merge_edges_into_graph_existing_edge(self, mocker):
         s = Knwl()
-        edges = [
-            KnwlEdge(weight=1.0, sourceId="source1", targetId="target1", description="Edge 1", keywords=["keyword1"], chunkIds=["chunk1"]),
-            KnwlEdge(weight=2.0, sourceId="source1", targetId="target1", description="Edge 2", keywords=["keyword2"], chunkIds=["chunk2"])
-        ]
-        existing_edge = KnwlEdge(**{
-            "sourceId": "source1",
-            "targetId": "target1",
-            "weight": 1.5,
-            "chunkIds": ["chunk3"],
-            "description": "Existing edge",
-            "keywords": ["existing_keyword"]
-        })
+        edges = [KnwlEdge(weight=1.0, sourceId="source1", targetId="target1", description="Edge 1", keywords=["keyword1"], chunkIds=["chunk1"]), KnwlEdge(weight=2.0, sourceId="source1", targetId="target1", description="Edge 2", keywords=["keyword2"], chunkIds=["chunk2"])]
+        existing_edge = KnwlEdge(**{"sourceId": "source1", "targetId": "target1", "weight": 1.5, "chunkIds": ["chunk3"], "description": "Existing edge", "keywords": ["existing_keyword"]})
 
         mocker.patch.object(s.graph_storage, 'edge_exists', return_value=True)
         mocker.patch.object(s.graph_storage, 'get_edge', return_value=existing_edge)
@@ -366,10 +324,7 @@ class TestGraphMerge:
     async def test_merge_edges_into_graph_missing_nodes(self, mocker):
         s = Knwl()
         edge_id = "(source1,target1)"
-        edges = [
-            KnwlEdge(weight=1.0, sourceId="source1", targetId="target1", description="Edge 1", keywords=["keyword1"], chunkIds=["chunk1"]),
-            KnwlEdge(weight=2.0, sourceId="source1", targetId="target1", description="Edge 2", keywords=["keyword2"], chunkIds=["chunk2"])
-        ]
+        edges = [KnwlEdge(weight=1.0, sourceId="source1", targetId="target1", description="Edge 1", keywords=["keyword1"], chunkIds=["chunk1"]), KnwlEdge(weight=2.0, sourceId="source1", targetId="target1", description="Edge 2", keywords=["keyword2"], chunkIds=["chunk2"])]
 
         mocker.patch.object(s.graph_storage, 'edge_exists', return_value=False)
         mocker.patch.object(s.graph_storage, 'upsert_edge')
@@ -402,15 +357,7 @@ class TestGraphMerge:
         edge1 = KnwlEdge(weight=1.0, sourceId=node1.id, targetId=node2.id, description="Edge 1", keywords=["keyword1"], chunkIds=["chunk1"])
         edge2 = KnwlEdge(weight=2.0, sourceId=node1.id, targetId=node2.id, description="Edge 2", keywords=["keyword2"], chunkIds=["chunk2"])
         merged_edge = KnwlEdge(weight=3.0, sourceId=node1.id, targetId=node2.id, description="Edge 1 Edge 2", keywords=["keyword1", "keyword2"], chunkIds=["chunk1", "chunk2"])
-        extraction = KnwlExtraction(
-            nodes={
-                node1.name: [node1],
-                node2.name: [node2]
-            },
-            edges={
-                "(entity1,entity2)": [edge1, edge2],
-            }
-        )
+        extraction = KnwlExtraction(nodes={node1.name: [node1], node2.name: [node2]}, edges={"(entity1,entity2)": [edge1, edge2], })
 
         mocker.patch.object(s, 'merge_nodes_into_graph', side_effect=[node1, node2])
         mocker.patch.object(s, 'merge_edges_into_graph', side_effect=[merged_edge])
@@ -472,10 +419,7 @@ class TestQuery:
         query = "test query"
         query_param = QueryParam(top_k=5)
         found = [{"name": "node1", "id": "node1"}, {"name": "node2", "id": "node2"}]
-        node_datas = [
-            KnwlNode(name="node1", type="Person", description="Description 1", chunkIds=["chunk1"]),
-            KnwlNode(name="node2", type="Location", description="Description 2", chunkIds=["chunk2"])
-        ]
+        node_datas = [KnwlNode(name="node1", type="Person", description="Description 1", chunkIds=["chunk1"]), KnwlNode(name="node2", type="Location", description="Description 2", chunkIds=["chunk2"])]
         node_degrees = [3, 2]
 
         mocker.patch.object(s.node_vectors, 'query', return_value=found)
@@ -500,15 +444,8 @@ class TestQuery:
     async def test_get_attached_edges_with_nodes(self, mocker):
         s = Knwl()
         query_param = QueryParam()
-        nodes = [
-            KnwlNode(name="node1", type="Person", description="Description 1", chunkIds=["chunk1"]),
-            KnwlNode(name="node2", type="Location", description="Description 2", chunkIds=["chunk2"])
-        ]
-        edges = [
-            KnwlEdge(weight=1.1, sourceId="node1", targetId="node2", description="Edge 1", keywords="keyword1", chunkIds=["chunk1"]),
-            KnwlEdge(weight=2.2, sourceId="node2", targetId="node4", description="Edge 2", keywords="keyword2", chunkIds=["chunk2"]),
-            KnwlEdge(weight=3.3, sourceId="node2", targetId="node6", description="Edge 3", keywords="keyword2", chunkIds=["chunk43"])
-        ]
+        nodes = [KnwlNode(name="node1", type="Person", description="Description 1", chunkIds=["chunk1"]), KnwlNode(name="node2", type="Location", description="Description 2", chunkIds=["chunk2"])]
+        edges = [KnwlEdge(weight=1.1, sourceId="node1", targetId="node2", description="Edge 1", keywords="keyword1", chunkIds=["chunk1"]), KnwlEdge(weight=2.2, sourceId="node2", targetId="node4", description="Edge 2", keywords="keyword2", chunkIds=["chunk2"]), KnwlEdge(weight=3.3, sourceId="node2", targetId="node6", description="Edge 3", keywords="keyword2", chunkIds=["chunk43"])]
 
         mocker.patch.object(s.graph_storage, 'get_node_edges', return_value=edges)
 
@@ -524,14 +461,8 @@ class TestQuery:
     async def test_get_attached_edges_some_missing_edges(self, mocker):
         s = Knwl()
         query_param = QueryParam()
-        nodes = [
-            KnwlNode(name="node1", type="Person", description="Description 1", chunkIds=["chunk1"]),
-            KnwlNode(name="node2", type="Location", description="Description 2", chunkIds=["chunk2"])
-        ]
-        edges = [
-            [KnwlEdge(weight=1.0, sourceId="node1", targetId="node2", description="Edge 1", keywords="keyword1", chunkIds=["chunk1"])],
-            [KnwlEdge(weight=1.3, sourceId="node1", targetId="node3", description="Edge 2", keywords="keyword1", chunkIds=["chunk1"])],
-            [KnwlEdge(weight=1.3, sourceId="node1", targetId="node3", description="Edge 2", keywords="keyword1", chunkIds=["chunk1"])]  # duplicate edge by intention
+        nodes = [KnwlNode(name="node1", type="Person", description="Description 1", chunkIds=["chunk1"]), KnwlNode(name="node2", type="Location", description="Description 2", chunkIds=["chunk2"])]
+        edges = [[KnwlEdge(weight=1.0, sourceId="node1", targetId="node2", description="Edge 1", keywords="keyword1", chunkIds=["chunk1"])], [KnwlEdge(weight=1.3, sourceId="node1", targetId="node3", description="Edge 2", keywords="keyword1", chunkIds=["chunk1"])], [KnwlEdge(weight=1.3, sourceId="node1", targetId="node3", description="Edge 2", keywords="keyword1", chunkIds=["chunk1"])]  # duplicate edge by intention
         ]
 
         mocker.patch.object(s.graph_storage, 'get_node_edges', side_effect=edges)
@@ -579,10 +510,7 @@ class TestChunkStats:
     @pytest.mark.asyncio
     async def test_create_chunk_stats_no_edges(self, mocker):
         s = Knwl()
-        primary_nodes = [
-            KnwlNode(name="node1", type="Person", description="Description 1", chunkIds=["chunk1"]),
-            KnwlNode(name="node2", type="Location", description="Description 2", chunkIds=["chunk2"])
-        ]
+        primary_nodes = [KnwlNode(name="node1", type="Person", description="Description 1", chunkIds=["chunk1"]), KnwlNode(name="node2", type="Location", description="Description 2", chunkIds=["chunk2"])]
 
         mocker.patch.object(s, 'get_attached_edges', return_value=[])
         result = await s.create_chunk_stats_from_nodes(primary_nodes)

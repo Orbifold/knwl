@@ -54,7 +54,7 @@ def get_json_body(content: str) -> Union[str, None]:
             if stack:
                 stack.pop()
                 if not stack:
-                    return content[start: i + 1]
+                    return content[start : i + 1]
     if start != -1 and stack:
         return content[start:]
     else:
@@ -200,7 +200,9 @@ def pack_messages(*args: str):
               and a 'content' key with the corresponding message content.
     """
     roles = ["user", "assistant"]
-    return [{"role": roles[i % 2], "content": content} for i, content in enumerate(args)]
+    return [
+        {"role": roles[i % 2], "content": content} for i, content in enumerate(args)
+    ]
 
 
 def split_string_by_multi_markers(content: str, markers: list[str]) -> list[str]:
@@ -255,7 +257,9 @@ def is_float_regex(value):
 
 
 def list_of_list_to_csv(data: list[list]):
-    return "\n".join([",\t".join([str(data_dd) for data_dd in data_d]) for data_d in data])
+    return "\n".join(
+        [",\t".join([str(data_dd) for data_dd in data_d]) for data_d in data]
+    )
 
 
 def save_data_to_file(data, file_name):
@@ -277,7 +281,12 @@ def get_info() -> dict:
     name = pyproject_data["project"]["name"]
     author = pyproject_data["project"]["authors"][0]
     description = pyproject_data["project"]["description"]
-    return {"name": name, "version": version, "author": author, "description": description, }
+    return {
+        "name": name,
+        "version": version,
+        "author": author,
+        "description": description,
+    }
 
 
 def merge_dictionaries(source: dict, destination: dict) -> dict:
@@ -323,8 +332,62 @@ def get_full_path(file_path: str, reference_path: str = None) -> str | None:
         return get_full_path(file_path, "$data")
 
     p = os.path.join(reference_path, file_path)
-    if not p.endswith('/') and not p.endswith('\\') and '.' in os.path.basename(p):
+    if not p.endswith("/") and not p.endswith("\\") and "." in os.path.basename(p):
         os.makedirs(os.path.dirname(p), exist_ok=True)
     else:
         os.makedirs(p, exist_ok=True)
     return p
+
+
+def parse_llm_record(rec: str, delimiter: str = "|") -> list[str] | None:
+    """
+    Parses a record string formatted with custom delimiters and returns a list of its components.
+
+    The expected format of the record string is:
+    ("type"<|>"entity1"<|>"entity2"<|>"context"<|>"tags"<|>score)
+
+    Args:
+        rec (str): The record string to be parsed.
+
+    Returns:
+        list[str]|None: A list containing the components of the record if parsing is successful,
+                        otherwise None if the format is incorrect.
+    """
+    if rec is None or rec.strip() == "":
+        return None
+    record = re.search(r"\((.*)\)", rec)
+    if record is None:
+        raise ValueError(
+            f"Given text is likely not an LLM record. It should be wrapped in parentheses."
+        )
+    record = record.group(1)
+    parts = split_string_by_multi_markers(record, [delimiter])
+    return parts
+def is_entity(record: list[str]):
+    """
+    Check if the given record represents an entity.
+
+    Args:
+        record (list[str]): A list of strings representing a record.
+
+    Returns:
+        bool: True if the record is an entity, False otherwise.
+    """
+    if record is None:
+        return False
+    return len(record) >= 4 and record[0] == "entity"
+
+
+def is_relationship(record: list[str]):
+    """
+    Determines if the given record attributes represent a relationship.
+
+    Args:
+        record_attributes (list[str]): A list of strings representing the attributes of a record.
+
+    Returns:
+        bool: True if the record attributes represent a relationship, False otherwise.
+    """
+    if record is None:
+        return False
+    return len(record) >= 5 and record[0] == "relationship"

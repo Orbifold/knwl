@@ -1,25 +1,26 @@
-from dataclasses import dataclass, field
-from typing import List
+from typing import List, Optional
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from knwl.utils import hash_with_prefix
 
 
-@dataclass(frozen=False)
-class KnwlLLMAnswer:
-    messages: List[dict] = field(default_factory=list)
-    llm_model: str = field(default="qwen2.5:14b")
-    llm_service: str = field(default="ollama")
-    answer: str = field(default="")
-    timing: float = field(default=0.0)
-    category: str = field(default="")
-    input:str = field(default="")
+class KnwlLLMAnswer(BaseModel):
+    messages: List[dict] = Field(default_factory=list)
+    llm_model: str = Field(default="qwen2.5:14b")
+    llm_service: str = Field(default="ollama")
+    answer: str = Field(default="")
+    timing: float = Field(default=0.0)
+    key: str = Field(default="")
+    category: str = Field(default="")
+    question: str = Field(default="")
+    from_cache: bool = Field(default=False)
+    id: Optional[str] = Field(default=None)
 
-    from_cache: bool = field(default=False)
-    id: str = field(default=None)
-
-    def __post_init__(self):
+    @model_validator(mode='after')
+    def set_id_if_none(self):
         if self.id is None:
-            object.__setattr__(self, "id", KnwlLLMAnswer.hash_keys(self.messages, self.llm_service, self.llm_model))
+            self.id = KnwlLLMAnswer.hash_keys(self.messages, self.llm_service, self.llm_model)
+        return self
 
     @staticmethod
     def hash_keys(messages: List[dict], llm_service: str, llm_model: str) -> str:

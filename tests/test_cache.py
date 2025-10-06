@@ -1,10 +1,9 @@
 import pytest
 
-from knwl.llm.json_llm_cache import LLMCache
+from knwl.llm.json_llm_cache import JsonLLMCache
 from knwl.models import KnwlLLMAnswer
 
-cache = LLMCache("testing", True)
-
+cache = JsonLLMCache()
 
 @pytest.mark.asyncio
 async def test_llm_cache():

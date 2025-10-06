@@ -19,15 +19,15 @@ class KnwlEdge(BaseModel):
         typeName (str): The type name of the edge, default is "KnwlEdge".
         id (str): The unique identifier of the edge, default is a new UUID.
     """
-    
+
     model_config = {"frozen": True}
-    
+
     sourceId: str
     targetId: str
     typeName: str = "KnwlEdge"
     id: str = Field(default_factory=lambda: str(uuid4()))
-    chunkIds: List[str] = Field(default_factory=list)
-    keywords: List[str] = Field(default_factory=list)
+    chunkIds: Optional[list[str] ]= Field(default_factory=list)
+    keywords: Optional[list[str] ] = Field(default_factory=list)
     description: Optional[str] = None
     weight: float = 1.0
 

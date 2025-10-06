@@ -12,7 +12,12 @@ class FrameworkBase(ABC):
         self.id = str(uuid.uuid4())
 
     def get_service(self, service_name: str, variant_name: str = None, override=None):
-        return services.get_service(service_name, variant_name=variant_name, override=override)
+        return services.get_service(
+            service_name, variant_name=variant_name, override=override
+        )
+
+    def get_llm(self, llm_variant: str = None, override=None):
+        return self.get_service("llm", llm_variant, override=override)
 
     def get_user_home(self) -> str:
         home = Path.home()

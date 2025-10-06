@@ -13,13 +13,35 @@ class OllamaClient(LLMBase):
         self.client = ollama.AsyncClient()
         config = kwargs.get("override", None)
 
-        self.model = self.get_param(["llm", "ollama", "model"], args, kwargs, default="qwen2.5:14b", override=config)
-        self.temperature = self.get_param(["llm", "ollama", "temperature"], args, kwargs, 0.1, config)
-        self.context_window = self.get_param(["llm", "ollama", "context_window"], args, kwargs, 32768, config)
-        self.caching_service_name = self.get_param(["llm", "ollama", "caching"], args, kwargs, False, config)
-        self.caching_service = self.get_caching_service(self.caching_service_name, override=config)
+        self.model = self.get_param(
+            ["llm", "ollama", "model"],
+            args,
+            kwargs,
+            default="qwen2.5:14b",
+            override=config,
+        )
+        self.temperature = self.get_param(
+            ["llm", "ollama", "temperature"], args, kwargs, 0.1, config
+        )
+        self.context_window = self.get_param(
+            ["llm", "ollama", "context_window"], args, kwargs, 32768, config
+        )
+        self.caching_service_name = self.get_param(
+            ["llm", "ollama", "caching"], args, kwargs, False, config
+        )
+        self.caching_service = self.get_caching_service(
+            self.caching_service_name, override=config
+        )
 
-    async def ask(self, messages: List[dict] | str) -> KnwlLLMAnswer:
+    async def ask(
+        self,
+        question: str,
+        system_message: str = None,
+        extra_messages: list[dict] = None,
+        key: str = None,
+        category: str = None,
+    ) -> KnwlLLMAnswer:
+        messages = self.assemble_messages(question, system_message, extra_messages)
         if isinstance(messages, str):
             messages = [{"role": "user", "content": messages}]
         # Check cache first
@@ -28,10 +50,22 @@ class OllamaClient(LLMBase):
             if cached is not None:
                 return cached
         start_time = time.time()
-        response = await self.client.chat(model=self.model, messages=messages, options={"temperature": self.temperature, "num_ctx": self.context_window}, )
+        response = await self.client.chat(
+            model=self.model,
+            messages=messages,
+            options={"temperature": self.temperature, "num_ctx": self.context_window},
+        )
         end_time = time.time()
         content = response["message"]["content"]
-        answer = KnwlLLMAnswer(answer=content, messages=messages, timing=round(end_time - start_time, 2), llm_model=self.model, llm_service="ollama", )
+        answer = KnwlLLMAnswer(
+            answer=content,
+            messages=messages,
+            timing=round(end_time - start_time, 2),
+            llm_model=self.model,
+            llm_service="ollama",
+            key=key if key else question,
+            category=category if category else "none",
+        )
         if self.caching_service is not None:
             await self.caching_service.upsert(answer)
         return answer

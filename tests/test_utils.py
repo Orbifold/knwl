@@ -1,6 +1,5 @@
 import asyncio
 import json
-from dataclasses import asdict
 from hashlib import md5
 
 import pytest
@@ -348,7 +347,7 @@ def test_edge_class():
 
 def test_args_hash():
     a = KnwlLLMAnswer(messages=[{"content": "Hello"}], llm_service="ollama", llm_model="qwen2.5:14b")
-    print(asdict(a))
+    print(a.model_dump_json())
 
 
 def test_get_full_path():

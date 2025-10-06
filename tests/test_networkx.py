@@ -1,6 +1,5 @@
 import os
 import random
-from dataclasses import asdict
 
 import pytest
 

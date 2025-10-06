@@ -32,6 +32,16 @@ default_config = {
             "chunker": "tiktoken",
         },
     },
+    "extraction": {
+        "default": "glean",
+        "glean": {
+            "class": "knwl.extraction.glean_extraction.GleaningExtraction",
+            "llm": "glean",
+            "chunker": "tiktoken",
+            "temperature": 0.1,
+            "max_retries": 3,
+        },
+    },
     "llm": {
         "default": "ollama",
         "ollama": {
@@ -46,6 +56,20 @@ default_config = {
             "model": "gpt-4o-mini",
             "caching": "json",
             "temperature": 0.1,
+            "context_window": 32768,
+        },
+        "glean": {
+            "class": "knwl.llm.ollama.OllamaClient",
+            "model": "gemma3:4b",
+            "caching": "json",
+            "temperature": 0.1,
+            "context_window": 32768,
+        },
+        "glean-qwen": {
+            "class": "knwl.llm.ollama.OllamaClient",
+            "model": "qwen2.5:7b",
+            "caching": "json",
+            "temperature": 0.0,
             "context_window": 32768,
         },
     },

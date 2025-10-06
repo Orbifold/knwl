@@ -1,16 +1,17 @@
+from typing import List
+from uuid import uuid4
+
+from pydantic import BaseModel, Field, model_validator
+
 from knwl.models.KnwlEdge import KnwlEdge
 from knwl.models.KnwlNode import KnwlNode
 
 
-from dataclasses import dataclass, field
-from typing import List
-from uuid import uuid4
-
-
-@dataclass(frozen=True)
-class KnwlGraph:
+class KnwlGraph(BaseModel):
     """
     A class used to represent a Knowledge Graph.
+    This class is almost identical to KnwlExtraction, but the KnwlExtraction can have an entity name mapping to multiple nodes (eg. "Apple" can be a company or a fruit).
+    In contrast, KnwlGraph has a flat list of nodes and edges.
 
     Attributes
     ----------
@@ -26,7 +27,9 @@ class KnwlGraph:
     nodes: List[KnwlNode]
     edges: List[KnwlEdge]
     typeName: str = "KnwlGraph"
-    id: str = field(default=str(uuid4()))
+    id: str = Field(default_factory=lambda: str(uuid4()))
+
+    model_config = {"frozen": True}
 
     def is_consistent(self) -> bool:
         """
@@ -46,6 +49,9 @@ class KnwlGraph:
     def get_edge_ids(self) -> List[str]:
         return [edge.id for edge in self.edges]
 
-    def __post_init__(self):
+    @model_validator(mode='after')
+    def validate_consistency(self):
+        """Validate that the graph is consistent after initialization."""
         if not self.is_consistent():
             raise ValueError("The graph is not consistent.")
+        return self

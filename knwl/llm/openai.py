@@ -13,12 +13,32 @@ class OpenAIClient(LLMBase):
         self.client = openai.AsyncClient()
         config = kwargs.get("override", None)
 
-        self.model = self.get_param(["llm", "openai", "model"], args, kwargs, default="gpt-4o-mini", override=config)
-        self.temperature = self.get_param(["llm", "openai", "temperature"], args, kwargs, default=1.0, override=config)
-        self.caching_service_name = self.get_param(["llm", "ollama", "caching"], args, kwargs, False, config)
-        self.caching_service = self.get_caching_service(self.caching_service_name, override=config)
+        self.model = self.get_param(
+            ["llm", "openai", "model"],
+            args,
+            kwargs,
+            default="gpt-4o-mini",
+            override=config,
+        )
+        self.temperature = self.get_param(
+            ["llm", "openai", "temperature"], args, kwargs, default=1.0, override=config
+        )
+        self.caching_service_name = self.get_param(
+            ["llm", "ollama", "caching"], args, kwargs, False, config
+        )
+        self.caching_service = self.get_caching_service(
+            self.caching_service_name, override=config
+        )
 
-    async def ask(self, messages: List[dict] | str) -> KnwlLLMAnswer:
+    async def ask(
+        self,
+        question: str,
+        system_message: str = None,
+        extra_messages: list[dict] = None,
+        key: str = None,
+        category: str = None,
+    ) -> KnwlLLMAnswer:
+        messages = self.assemble_messages(question, system_message, extra_messages)
         if isinstance(messages, str):
             messages = [{"role": "user", "content": messages}]
         # Check cache first
@@ -27,10 +47,20 @@ class OpenAIClient(LLMBase):
             if cached is not None:
                 return cached
         start_time = time.time()
-        found = await self.client.chat.completions.create(messages=messages, model=self.model)
+        found = await self.client.chat.completions.create(
+            messages=messages, model=self.model
+        )
         end_time = time.time()
         content = found.choices[0].message.content
-        answer = KnwlLLMAnswer(answer=content, messages=messages, timing=round(end_time - start_time, 2), llm_model=self.model, llm_service="openai")
+        answer = KnwlLLMAnswer(
+            answer=content,
+            messages=messages,
+            timing=round(end_time - start_time, 2),
+            llm_model=self.model,
+            llm_service="openai",
+            key=key if key else question,
+            category=category if category else "none",
+        )
         if self.caching_service is not None:
             await self.caching_service.upsert(answer)
         return answer

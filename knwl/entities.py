@@ -1,7 +1,7 @@
 from collections import defaultdict
 from typing import Dict
 
-from knwl.prompt import PROMPTS
+from knwl.prompts import prompts
 
 from .models.KnwlChunk import KnwlChunk
 from .models.KnwlEdge import KnwlEdge
@@ -9,6 +9,12 @@ from .models.KnwlExtraction import KnwlExtraction
 from .models.KnwlNode import KnwlNode
 from .utils import *
 
+GRAPH_FIELD_SEP = prompts.constants.GRAPH_FIELD_SEP
+DEFAULT_TUPLE_DELIMITER = prompts.constants.DEFAULT_TUPLE_DELIMITER
+DEFAULT_RECORD_DELIMITER = prompts.constants.DEFAULT_RECORD_DELIMITER
+DEFAULT_COMPLETION_DELIMITER = prompts.constants.DEFAULT_COMPLETION_DELIMITER
+DEFAULT_ENTITY_TYPES = prompts.constants.DEFAULT_ENTITY_TYPES
+ENTITY_EXTRACTION_PROMPT = prompts.extraction.full_entity_extraction
 
 async def extract_entities(chunks: Dict[str, KnwlChunk]) -> KnwlExtraction | None:
     """
@@ -113,14 +119,13 @@ async def fast_entity_extraction_from_text(text: str) -> list[KnwlNode]:
     It does try to merge multiple entities with the same name.
     Mostly for experimentation and CLI, it is not used in the actual graph RAG flow.
     """
-    entity_extraction_prompt = PROMPTS["fast_entity_extraction"]
     context_base = dict(
-        tuple_delimiter=PROMPTS["DEFAULT_TUPLE_DELIMITER"],
-        record_delimiter=PROMPTS["DEFAULT_RECORD_DELIMITER"],
-        completion_delimiter=PROMPTS["DEFAULT_COMPLETION_DELIMITER"],
-        entity_types=",".join(PROMPTS["DEFAULT_ENTITY_TYPES"]),
+        tuple_delimiter=DEFAULT_TUPLE_DELIMITER,
+        record_delimiter=DEFAULT_RECORD_DELIMITER,
+        completion_delimiter=DEFAULT_COMPLETION_DELIMITER,
+        entity_types=",".join(DEFAULT_ENTITY_TYPES),
     )
-    final_prompt = entity_extraction_prompt.format(**context_base, input_text=text)
+    final_prompt = ENTITY_EXTRACTION_PROMPT.format(**context_base, input_text=text)
     # print(final_prompt)
     final_answer = await llm.ask(
         final_prompt, core_input=text, category=CATEGORY_KEYWORD_EXTRACTION
@@ -166,17 +171,17 @@ async def extract_graph_elements_from_text(
     Returns:
 
     """
-    elements_extract_prompt = PROMPTS["elements_extraction"]
-    continue_prompt = PROMPTS["entity_continue_extraction"]
-    if_loop_prompt = PROMPTS["entity_if_loop_extraction"]
+    
+    continue_prompt = prompts.extraction.iterate_entity_extraction
+    if_loop_prompt = prompts.extraction.glean_break
 
     context_base = dict(
-        tuple_delimiter=PROMPTS["DEFAULT_TUPLE_DELIMITER"],
-        record_delimiter=PROMPTS["DEFAULT_RECORD_DELIMITER"],
-        completion_delimiter=PROMPTS["DEFAULT_COMPLETION_DELIMITER"],
-        entity_types=",".join(PROMPTS["DEFAULT_ENTITY_TYPES"]),
+        tuple_delimiter=DEFAULT_TUPLE_DELIMITER,
+        record_delimiter=DEFAULT_RECORD_DELIMITER,
+        completion_delimiter=DEFAULT_COMPLETION_DELIMITER,
+        entity_types=",".join(DEFAULT_ENTITY_TYPES),
     )
-    final_prompt = elements_extract_prompt.format(**context_base, input_text=text)
+    final_prompt = ENTITY_EXTRACTION_PROMPT.format(**context_base, input_text=text)
     final_answer = await llm.ask(
         final_prompt, core_input=text, category=CATEGORY_KEYWORD_EXTRACTION
     )

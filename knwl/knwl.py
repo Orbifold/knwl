@@ -1,11 +1,10 @@
 import time
 from collections import Counter
-from dataclasses import asdict
 from typing import List
 
 from knwl.chunking.tiktoken_chunking import TiktokenChunking
+from knwl.config import get_config
 from knwl.entities import extract_entities
-from knwl.storage.json_storage import JsonStorage
 from knwl.logging import set_logger
 from knwl.models.KnwlBasicGraph import KnwlBasicGraph
 from knwl.models.KnwlChunk import KnwlChunk
@@ -25,11 +24,16 @@ from knwl.models.KnwlRagReference import KnwlRagReference
 from knwl.models.KnwlRagText import KnwlRagText
 from knwl.models.KnwlResponse import KnwlResponse
 from knwl.models.QueryParam import QueryParam
-from knwl.prompt import GRAPH_FIELD_SEP, PROMPTS
-from knwl.config import get_config
-
-from knwl.utils import *
+from knwl.prompts import prompts
+from knwl.storage.json_storage import JsonStorage
 from knwl.storage.vector_storage_base import VectorStorageBase
+from knwl.utils import *
+
+GRAPH_FIELD_SEP = prompts.constants.GRAPH_FIELD_SEP
+DEFAULT_TUPLE_DELIMITER = prompts.constants.DEFAULT_TUPLE_DELIMITER
+DEFAULT_RECORD_DELIMITER = prompts.constants.DEFAULT_RECORD_DELIMITER
+DEFAULT_COMPLETION_DELIMITER = prompts.constants.DEFAULT_COMPLETION_DELIMITER
+DEFAULT_ENTITY_TYPES = prompts.constants.DEFAULT_ENTITY_TYPES
 
 logger = set_logger()
 
@@ -46,6 +50,7 @@ class Knwl:
             return TiktokenChunking()
         else:
             raise ValueError(f"Unknown chunking method '{method}'")
+
     def count_tokens(self, text: str) -> int:
         chunker = self.get_chunker()
         return chunker.count_tokens(text)
@@ -160,10 +165,7 @@ class Knwl:
         return await self.extraction_to_graph(extraction)
 
     async def extraction_to_graph(self, extraction: KnwlExtraction) -> KnwlBasicGraph:
-        graph = {
-            "nodes": [],
-            "edges": []
-        }
+        graph = {"nodes": [], "edges": []}
         id_map = {}
         for name in extraction.nodes:
             nodes = extraction.nodes[name]
@@ -172,19 +174,10 @@ class Knwl:
                 if self.count_tokens(descriptions) > config.max_tokens:
                     descriptions = await self.compactify_summary(name, descriptions)
                 majority_entity_type = sorted(Counter([dp.type for dp in nodes]).items(), key=lambda x: x[1], reverse=True, )[0][0]
-                graph["nodes"].append({
-                    "name": name,
-                    "type": majority_entity_type,
-                    "description": descriptions
-                })
+                graph["nodes"].append({"name": name, "type": majority_entity_type, "description": descriptions})
             else:
                 node = nodes[0]
-                graph["nodes"].append({
-                    "id": name,
-                    "name": name,
-                    "type": node.type,
-                    "description": node.description
-                })
+                graph["nodes"].append({"id": name, "name": name, "type": node.type, "description": node.description})
         for name in extraction.edges:
             edges = extraction.edges[name]
             match = re.match(r"\((.*?),(.*?)\)", name)
@@ -199,18 +192,10 @@ class Knwl:
                 if self.count_tokens(descriptions) > config.max_tokens:
                     descriptions = await self.compactify_summary(name, descriptions)
 
-                graph["edges"].append({
-                    "sourceId": source_id,
-                    "targetId": target_id,
-                    "description": descriptions
-                })
+                graph["edges"].append({"sourceId": source_id, "targetId": target_id, "description": descriptions})
             else:
                 edge = edges[0]
-                graph["edges"].append({
-                    "sourceId": source_id,
-                    "targetId": target_id,
-                    "description": edge.description
-                })
+                graph["edges"].append({"sourceId": source_id, "targetId": target_id, "description": edge.description})
 
         return KnwlBasicGraph.from_json_graph(graph)
 
@@ -277,7 +262,7 @@ class Knwl:
             return {}
         logger.info(f"[New Chunks] inserting {len(actual_chunks)} chunk(s)")
 
-        await self.chunks_storage.upsert({k: asdict(v) for k, v in actual_chunks.items()})
+        await self.chunks_storage.upsert({k: v.model_dump(mode="json") for k, v in actual_chunks.items()})
         await self.chunk_vectors.upsert({k: {"content": v.content, "id": v.id} for k, v in actual_chunks.items()})
         return actual_chunks
 
@@ -309,7 +294,7 @@ class Knwl:
             logger.warning("All sources are already in the storage")
             return {}
         logger.info(f"[New Docs] inserting {len(new_sources)} source(s)")
-        await self.document_storage.upsert({k: asdict(v) for k, v in new_sources.items() if k in new_keys})
+        await self.document_storage.upsert({k: v.model_dump(mode="json") for k, v in new_sources.items() if k in new_keys})
         return new_sources
 
     async def merge_graph_into_vector_storage(self, g: KnwlGraph):
@@ -327,10 +312,10 @@ class Knwl:
             None
         """
 
-        nodes = {n.id: asdict(n) for n in g.nodes}
+        nodes = {n.id: n.model_dump(mode="json") for n in g.nodes}
         await self.node_vectors.upsert(nodes)
 
-        edges = {e.id: asdict(e) for e in g.edges}
+        edges = {e.id: e.model_dump(mode="json") for e in g.edges}
         await self.edge_vectors.upsert(edges)
 
     async def merge_extraction_into_knowledge_graph(self, g: KnwlExtraction) -> KnwlGraph:
@@ -668,7 +653,7 @@ class Knwl:
             logger.warning("Some nodes are missing, maybe the storage is damaged")
         # degree might also come in one go
         node_degrees = await asyncio.gather(*[self.graph_storage.node_degree(r["name"]) for r in found])
-        nodes = [KnwlDegreeNode(degree=d, **asdict(n)) for k, n, d in zip(found, node_datas, node_degrees) if n is not None]
+        nodes = [KnwlDegreeNode(degree=d, **n.model_dump(mode="json")) for k, n, d in zip(found, node_datas, node_degrees) if n is not None]
         return nodes
 
     async def get_attached_edges(self, nodes: List[KnwlNode]) -> List[KnwlEdge]:
@@ -796,7 +781,7 @@ class Knwl:
 
     async def get_graph_rag_relations_from_edges(self, vector_edges: List[KnwlEdge]) -> List[KnwlRagEdge]:
         edge_degrees = await asyncio.gather(*[self.graph_storage.edge_degree(r.sourceId, r.targetId) for r in vector_edges])
-        degree_edges = [KnwlDegreeEdge(degree=d, **asdict(e)) for e, d in zip(vector_edges, edge_degrees)]
+        degree_edges = [KnwlDegreeEdge(degree=d, **e.model_dump(mode="json")) for e, d in zip(vector_edges, edge_degrees)]
         degree_edges = sorted(degree_edges, key=lambda x: (x.degree, x.weight), reverse=True)
         edge_endpoint_ids = unique_strings([e.sourceId for e in vector_edges] + [e.targetId for e in vector_edges])
         edge_endpoint_names = await self.node_id_to_name(edge_endpoint_ids)

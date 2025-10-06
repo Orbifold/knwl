@@ -1,4 +1,3 @@
-from dataclasses import asdict
 from typing import List
 
 from knwl.llm.llm_cache_base import LLMCacheBase
@@ -57,7 +56,7 @@ class JsonLLMCache(LLMCacheBase):
     async def upsert(self, a: KnwlLLMAnswer):
         if a is None:
             raise ValueError("Cannot upsert None in LLMCache.")
-        data = asdict(a)
+        data = a.model_dump(mode="json")
         data["from_cache"] = True
         blob = {}
         blob[a.id] = data
