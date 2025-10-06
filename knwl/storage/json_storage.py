@@ -2,10 +2,11 @@ import os
 from datetime import datetime
 from typing import cast
 
+from knwl.logging import log
 from knwl.models.KnwlChunk import KnwlChunk
 from knwl.models.KnwlDocument import KnwlDocument
 from knwl.storage.kv_storage_base import KeyValueStorageBase
-from knwl.utils import load_json, logger, write_json, get_full_path
+from knwl.utils import load_json,  write_json, get_full_path
 
 
 class JsonStorage(KeyValueStorageBase):
@@ -49,7 +50,7 @@ class JsonStorage(KeyValueStorageBase):
             self.ensure_path_exists(os.path.dirname(self.file_path))
             self.data = load_json(self.file_path) or {}
             if len(self.data) > 0:
-                logger.info(f"Loaded '{self.file_path}' JSON with {len(self.data)} items.")
+                log(f"Loaded '{self.file_path}' JSON with {len(self.data)} items.")
         else:
             self.data = {}
             self.file_path = None

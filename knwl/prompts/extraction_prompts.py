@@ -42,7 +42,6 @@ class ExtractionPrompts:
             text=text,
         )
 
-    @property
     def iterate_entity_extraction(self) -> str:
         if self._iterate_entity_template is None:
             with open(

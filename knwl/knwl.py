@@ -5,7 +5,6 @@ from typing import List
 from knwl.chunking.tiktoken_chunking import TiktokenChunking
 from knwl.config import get_config
 from knwl.entities import extract_entities
-from knwl.logging import set_logger
 from knwl.models.KnwlBasicGraph import KnwlBasicGraph
 from knwl.models.KnwlChunk import KnwlChunk
 from knwl.models.KnwlContext import KnwlContext

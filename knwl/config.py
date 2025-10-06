@@ -4,12 +4,17 @@
 # ============================================================================================
 
 default_config = {
+    "global": {},
+    "logging": {
+        "enabled": True,
+        "level": "DEBUG",
+        "path": "$root/knwl.log"
+        },
     "knwl": {
         "summarization": {
             "enabled": True,
         }
     },
-    "global": {},
     "chunking": {
         "default": "tiktoken",
         "tiktoken": {
@@ -37,6 +42,11 @@ default_config = {
         "basic": {
             "class": "knwl.extraction.basic_extraction.BasicExtraction",
             "llm": "gemma-small",
+        },
+        "glean": {
+            "class": "knwl.extraction.glean_extraction.GleanExtraction",
+            "llm": "ollama",
+            "max_glean":3
         },
     },
     "llm": {
@@ -70,7 +80,7 @@ default_config = {
             "path": "$test/llm.json",
         },
     },
-    "logging": {"enabled": True, "level": "DEBUG", "path": "knwl.log"},
+
     "vector": {
         "default": "chroma",
         "chroma": {

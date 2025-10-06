@@ -9,7 +9,6 @@ from functools import wraps
 from hashlib import md5
 from typing import Any, Union, List
 
-from .logging import logger
 
 CATEGORY_KEYWORD_EXTRACTION = "Keywords Extraction"
 CATEGORY_NAIVE_QUERY = "Naive Query"
@@ -307,10 +306,15 @@ def get_full_path(file_path: str, reference_path: str = None) -> str | None:
         return get_full_path("." + file_path[5:], "$test")
     if file_path.startswith("$data"):
         return get_full_path("." + file_path[6:], "$data")
+    if file_path.startswith("$root"):
+        return get_full_path("." + file_path[6:], "$root")
 
     if reference_path == "$data":
         current_dir = os.path.dirname(os.path.abspath(__file__))
         reference_path = os.path.join(current_dir, "..", "data")
+    if reference_path == "$root":
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        reference_path = os.path.join(current_dir, "..")
     if reference_path == "$test":
         current_dir = os.path.dirname(os.path.abspath(__file__))
         reference_path = os.path.join(current_dir, "..", "tests", "data")
@@ -363,6 +367,8 @@ def parse_llm_record(rec: str, delimiter: str = "|") -> list[str] | None:
     record = record.group(1)
     parts = split_string_by_multi_markers(record, [delimiter])
     return parts
+
+
 def is_entity(record: list[str]):
     """
     Check if the given record represents an entity.

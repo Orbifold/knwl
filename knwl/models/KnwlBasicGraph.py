@@ -1,5 +1,4 @@
 from knwl.models.KnwlBasicNode import KnwlBasicNode
-from knwl.logging import logger
 from knwl.models.KnwlBasicEdge import KnwlBasicEdge
 
 
