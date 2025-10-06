@@ -33,13 +33,10 @@ default_config = {
         },
     },
     "extraction": {
-        "default": "glean",
-        "glean": {
-            "class": "knwl.extraction.glean_extraction.GleaningExtraction",
-            "llm": "glean",
-            "chunker": "tiktoken",
-            "temperature": 0.1,
-            "max_retries": 3,
+        "default": "basic",
+        "basic": {
+            "class": "knwl.extraction.basic_extraction.BasicExtraction",
+            "llm": "gemma-small",
         },
     },
     "llm": {
@@ -58,18 +55,11 @@ default_config = {
             "temperature": 0.1,
             "context_window": 32768,
         },
-        "glean": {
+        "gemma-small": {
             "class": "knwl.llm.ollama.OllamaClient",
             "model": "gemma3:4b",
             "caching": "json",
             "temperature": 0.1,
-            "context_window": 32768,
-        },
-        "glean-qwen": {
-            "class": "knwl.llm.ollama.OllamaClient",
-            "model": "qwen2.5:7b",
-            "caching": "json",
-            "temperature": 0.0,
             "context_window": 32768,
         },
     },

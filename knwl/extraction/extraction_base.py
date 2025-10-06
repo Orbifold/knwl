@@ -4,6 +4,7 @@ from knwl.framework_base import FrameworkBase
 from knwl.models import KnwlEdge
 from knwl.models.KnwlEdge import KnwlEdge
 from knwl.models.KnwlExtraction import KnwlExtraction
+from knwl.models.KnwlGraph import KnwlGraph
 from knwl.models.KnwlNode import KnwlNode
 
 
@@ -12,7 +13,7 @@ class ExtractionBase(FrameworkBase, ABC):
         super().__init__(*args, **kwargs)
 
     @abstractmethod
-    async def extract(self, text: str, entities: list[str] = None) -> KnwlExtraction | None:
+    async def extract(self, text: str, entities: list[str] = None, chunk_id:str=None) -> KnwlExtraction | None:
         pass
 
     @abstractmethod
@@ -20,10 +21,15 @@ class ExtractionBase(FrameworkBase, ABC):
         pass
 
     @abstractmethod
-    async def extract_json(self, text: str, entities: list[str] = None) -> dict | None:
+    async def extract_json(self, text: str, entities: list[str] = None ) -> dict | None:
         pass
 
-    def records_to_json(self, records: list[list]) -> dict:
+    @abstractmethod
+    async def extract_graph(self, text: str, entities: list[str] = None, chunk_id:str=None) -> KnwlGraph | None:
+        pass
+
+    @staticmethod
+    def records_to_json(records: list[list]) -> dict:
         result = {"entities": [], "relationships": [], "keywords": [], }
         for rec in records:
             if rec[0] == "entity":
@@ -34,15 +40,16 @@ class ExtractionBase(FrameworkBase, ABC):
                 result["keywords"] = rec[1].split(", ")
         return result
 
-    def records_to_extraction(self, records: list[list]) -> KnwlExtraction:
-        dic = self.records_to_json(records)
+    @staticmethod
+    def records_to_extraction(records: list[list], chunk_id:str=None) -> KnwlExtraction:
+        dic = ExtractionBase.records_to_json(records)
 
         nodes: dict[str, list[KnwlNode]] = {}
         edges: dict[str, list[KnwlEdge]] = {}
 
         node_map = {}  # map of node names to node ids
         for item in dic["entities"]:
-            node = KnwlNode(name=item["name"], type=item["type"], description=item["description"])
+            node = KnwlNode(name=item["name"], type=item["type"], description=item["description"], chunkIds=[chunk_id] if chunk_id else [])
             if node.name not in nodes:
                 nodes[node.name] = [node]
             else:
@@ -52,7 +59,7 @@ class ExtractionBase(FrameworkBase, ABC):
                     coll.append(node)
             node_map[node.name] = node.id
         for item in dic["relationships"]:
-            edge = KnwlEdge(sourceId=item["source"], targetId=item["target"], description=item["description"], keywords=item["types"], weight=item["weight"])
+            edge = KnwlEdge(sourceId=item["source"], targetId=item["target"], description=item["description"], keywords=item["types"], weight=item["weight"], chunkIds=[chunk_id] if chunk_id else [])
             # the edge key is the tuple of the source and target names, NOT the ids. Is corrected below
             edge_key = f"({edge.sourceId},{edge.targetId})"
             if (edge.sourceId, edge.targetId) not in edges:
@@ -78,3 +85,16 @@ class ExtractionBase(FrameworkBase, ABC):
                 corrected_edge = KnwlEdge(sourceId=source_id, targetId=target_id, description=e.description, keywords=e.keywords, weight=e.weight, chunkIds=e.chunkIds, )
                 corrected_edges[key].append(corrected_edge)
         return KnwlExtraction(nodes=nodes, edges=corrected_edges, keywords=dic["keywords"] or [])
+
+    @staticmethod
+    def extraction_to_graph(extraction: KnwlExtraction) -> KnwlGraph:
+        nodes = []
+        edges = []
+
+        for name in extraction.nodes:
+            for node in extraction.nodes[name]:
+                nodes.append(node)
+        for key in extraction.edges:
+            for edge in extraction.edges[key]:
+                edges.append(edge)
+        return KnwlGraph(nodes=nodes, edges=edges, keywords=extraction.keywords or [])

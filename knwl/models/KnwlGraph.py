@@ -26,6 +26,7 @@ class KnwlGraph(BaseModel):
     """
     nodes: List[KnwlNode]
     edges: List[KnwlEdge]
+    keywords: List[str] = Field(default_factory=list)
     typeName: str = "KnwlGraph"
     id: str = Field(default_factory=lambda: str(uuid4()))
 
