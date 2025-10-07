@@ -9,16 +9,7 @@ default_config = {
         "host": "0.0.0.0",
         "port": 9000,
     },
-    "logging": {
-        "enabled": True,
-        "level": "INFO",
-        "path": "$root/knwl.log"
-        },
-    "knwl": {
-        "summarization": {
-            "enabled": True,
-        }
-    },
+    "logging": {"enabled": True, "level": "INFO", "path": "$root/knwl.log"},
     "chunking": {
         "default": "tiktoken",
         "tiktoken": {
@@ -52,15 +43,29 @@ default_config = {
         "default": "basic",
         "basic": {
             "class": "knwl.extraction.basic_graph_extraction.BasicGraphExtraction",
-            "mode":"full", # fast or full
+            "mode": "full",  # fast or full
             "llm": "gemma-small",
         },
         "glean": {
             "class": "knwl.extraction.glean_graph_extraction.GleanGraphExtraction",
             "llm": "ollama",
-            "mode":"full", # fast or full
-            "max_glean":3
+            "mode": "full",  # fast or full
+            "max_glean": 3,
         },
+    },
+    "semantic": {
+        "default": "rag",
+        "graph-rag": {
+            "class": "knwl.semantic.graph_rag.GraphRAG",
+            "graph-store": "graph/graph-store",  # the topology
+            "node-store": "json/node-store",  # the node data
+            "edge-store": "json/edge-store",  # the edge data
+            "node-embeddings": "vector/nodes",  # embeddings of the nodes
+            "edge-embeddings": "vector/edges",  # embeddings of the edges
+            "document-store": "json/document-store",  # for document data
+            "chunk-store": "json/chunk-store",  # for chunks data
+        },
+        "rag": {},
     },
     "llm": {
         "default": "ollama",
@@ -93,7 +98,6 @@ default_config = {
             "path": "$test/llm.json",
         },
     },
-
     "vector": {
         "default": "chroma",
         "chroma": {
@@ -102,6 +106,18 @@ default_config = {
             "path": "$test/vector",
             "collection": "default",
             "metadata": [],
+        },
+        "nodes": {
+            "class": "knwl.storage.chroma_storage.ChromaStorage",
+            "memory": False,
+            "path": "$test/graphrag",
+            "collection": "nodes",
+        },
+        "edges": {
+            "class": "knwl.storage.chroma_storage.ChromaStorage",
+            "memory": False,
+            "path": "$test/graphrag",
+            "collection": "edges",
         },
     },
     "graph": {
@@ -112,12 +128,34 @@ default_config = {
             "memory": False,
             "path": "$test/graph.graphml",
         },
+        "graph-store": {
+            "class": "knwl.storage.networkx_storage.NetworkXStorage",
+            "format": "graphml",
+            "memory": False,
+            "path": "$test/graphrag/graph.graphml",
+        },
     },
     "json": {
         "default": "basic",
         "basic": {
             "class": "knwl.storage.json_storage.JsonStorage",
             "path": "$test/data.json",
+        },
+        "node-store": {
+            "class": "knwl.storage.json_storage.JsonStorage",
+            "path": "$test/graphrag/node_store.json",
+        },
+        "edge-store": {
+            "class": "knwl.storage.json_storage.JsonStorage",
+            "path": "$test/graphrag/edge_store.json",
+        },
+        "document-store": {
+            "class": "knwl.storage.json_storage.JsonStorage",
+            "path": "$test/graphrag/document_store.json",
+        },
+        "chunk-store": {
+            "class": "knwl.storage.json_storage.JsonStorage",
+            "path": "$test/graphrag/chunk_store.json",
         },
     },
 }

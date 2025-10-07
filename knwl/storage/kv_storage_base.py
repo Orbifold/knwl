@@ -9,7 +9,7 @@ class KeyValueStorageBase(StorageBase, ABC):
     """
 
     def __init__(self, *args, **kwargs):
-        pass
+        super().__init__(*args, **kwargs)
 
     @abstractmethod
     async def get_all_ids(self) -> list[str]:

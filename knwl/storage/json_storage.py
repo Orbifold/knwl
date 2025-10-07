@@ -6,7 +6,7 @@ from knwl.logging import log
 from knwl.models.KnwlChunk import KnwlChunk
 from knwl.models.KnwlDocument import KnwlDocument
 from knwl.storage.kv_storage_base import KeyValueStorageBase
-from knwl.utils import load_json,  write_json, get_full_path
+from knwl.utils import load_json, write_json, get_full_path
 
 
 class JsonStorage(KeyValueStorageBase):
@@ -19,42 +19,44 @@ class JsonStorage(KeyValueStorageBase):
     def __init__(self, *args, **kwargs):
         """
         Initialize the JsonSingleStorage instance.
-
-        Args:
-            *args:
-                - Use simply "test" as path to create a temporary file in the test directory.
-                - Use "memory", "none" or "false" to disable file storage and keep data only in memory.
-                - Otherwise, the first argument is treated as the file path to store the JSON data.
-            **kwargs:
-                enabled: Whether to enable file storage (default: True). If False, data is only kept in memory.
         """
         super().__init__(*args, **kwargs)
-        if len(args) > 0:
-            if isinstance(args[0], str):
-                if args[0] == "test":
-                    self.file_path = os.path.join(self.get_test_dir(), f"test_{round(datetime.now().timestamp())}.json", )
-                    self.enabled = (False if str(kwargs.get("enabled", "True")) == "False" else True)
-                elif args[0] == "memory" or args[0] == "none" or args[0] == "false":
-                    self.enabled = False
-                    self.file_path = None
+        config = kwargs.get("override", None)
+        self.path = self.get_param(
+            ["json", "basic", "path"],
+            args,
+            kwargs,
+            default="$test/data.json",
+            override=config,
+        )
+        self.enabled = self.get_param(
+            ["json", "basic", "enabled"], args, kwargs, default=True, override=config
+        )
+        try:
+            if self.path == "memory" or self.path == "none" or self.path == "false":
+                self.enabled = False
+                self.path = None
+            else:
+                if not self.path.endswith(".json"):
+                    log.warn(f"Json storage path '{self.path}' does not end with .json, appending .json")
+                    self.path += ".json"
+                self.path = get_full_path(self.path)
+                self.enabled = True
+
+            if self.enabled:
+                if os.path.exists(self.path) and not os.path.isdir(self.path):
+                    self.data = load_json(self.path) or {}
+                    if len(self.data) > 0:
+                        log(f"Loaded '{self.path}' JSON with {len(self.data)} items.")
                 else:
-                    self.file_path = args[0]
-                    self.enabled = True
-        else:
-            self.enabled = True if str(kwargs.get("enabled", "True")) == "True" else False
-            self.file_path = kwargs.get("path", "data.json")
-        if self.enabled:
-            if not self.file_path.endswith(".json"):
-                raise ValueError(f"File path '{self.file_path}' must end with '.json'.")
-            self.file_path = get_full_path(self.file_path)
-            self.ensure_path_exists(os.path.dirname(self.file_path))
-            self.data = load_json(self.file_path) or {}
-            if len(self.data) > 0:
-                log(f"Loaded '{self.file_path}' JSON with {len(self.data)} items.")
-        else:
-            self.data = {}
-            self.file_path = None
-            self.parent_path = None
+                    self.data = {}
+                    self.path = self.path
+            else:
+                self.data = {}
+                self.path = None
+        except Exception as e:
+            log(e)
+
 
     async def get_all_ids(self) -> list[str]:
         """
@@ -69,7 +71,7 @@ class JsonStorage(KeyValueStorageBase):
         Returns: None
         """
         if self.enabled:
-            write_json(self.data, self.file_path)
+            write_json(self.data, self.path)
 
     async def clear_cache(self):
         """
@@ -82,8 +84,8 @@ class JsonStorage(KeyValueStorageBase):
             OSError: If an error occurs during file removal.
         """
 
-        if self.enabled and os.path.exists(self.file_path):
-            os.remove(self.file_path)
+        if self.enabled and os.path.exists(self.path):
+            os.remove(self.path)
 
     async def get_by_id(self, id):
         """
@@ -105,7 +107,14 @@ class JsonStorage(KeyValueStorageBase):
         """
         if fields is None:
             return [self.data.get(id, None) for id in ids]
-        return [({k: v for k, v in self.data[id].items() if k in fields} if self.data.get(id, None) else None) for id in ids]
+        return [
+            (
+                {k: v for k, v in self.data[id].items() if k in fields}
+                if self.data.get(id, None)
+                else None
+            )
+            for id in ids
+        ]
 
     async def filter_new_ids(self, data: list[str]) -> set[str]:
         """
@@ -138,8 +147,8 @@ class JsonStorage(KeyValueStorageBase):
         Clear all data from the storage and delete the file if it exists.
         """
         self.data = {}
-        if self.enabled and os.path.exists(self.file_path):
-            os.remove(self.file_path)
+        if self.enabled and os.path.exists(self.path):
+            os.remove(self.path)
 
     async def count(self):
         """

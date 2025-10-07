@@ -1,6 +1,9 @@
 from abc import abstractmethod
+from typing import Union
 
 from knwl.framework_base import FrameworkBase
+from knwl.models import KnwlEdge
+from knwl.models import KnwlNode
 
 
 class GraphBase(FrameworkBase):
@@ -14,11 +17,20 @@ class GraphBase(FrameworkBase):
         pass
 
     @abstractmethod
-    def get_node_by_id(self, node_id):
+    def get_node_by_id(self, node_id) -> Union[KnwlNode, None]:
         pass
 
     @abstractmethod
-    def get_node_by_name(self, node_name):
+    def get_node_by_name(self, node_name) -> Union[list[KnwlNode], None]:
+        """
+        Retrieves a node(s) by its name.
+        Args:
+            node_name: The name of the node to retrieve.
+
+        Returns:
+            List[KnwlNode] | None: Since the name is not unique and can appear with different semantic types (e.g. Apple as fruit and as company), a list of KnwlNode objects is returned if found, None otherwise.
+
+        """
         pass
 
     @abstractmethod
@@ -30,7 +42,7 @@ class GraphBase(FrameworkBase):
         pass
 
     @abstractmethod
-    def get_edge(self, source_node_id, target_node_id):
+    def get_edge(self, source_node_id, target_node_id) -> Union[KnwlEdge, None]:
         pass
 
     @abstractmethod

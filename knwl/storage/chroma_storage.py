@@ -26,7 +26,7 @@ class ChromaStorage(VectorStorageBase):
         config = kwargs.get("override", None)
         self.metadata = self.get_param(["vector", "chroma", "metadata"], args, kwargs, default=[], override=config, )
         self.memory = self.get_param(["vector", "chroma", "memory"], args, kwargs, default=False, override=config)
-        self.namespace = self.get_param(["vector", "chroma", "collection"], args, kwargs, default="default", override=config, )
+        self.collection_name = self.get_param(["vector", "chroma", "collection"], args, kwargs, default="default", override=config, )
         self.path = self.get_param(["vector", "chroma", "path"], args, kwargs, default="$test/vector", override=config, )
         if self.path is not None and "." in self.path.split("/")[-1]:
             log.warn(f"The Chroma path '{self.path}' contains a '.' but should be a directory, not a file.")
@@ -37,7 +37,7 @@ class ChromaStorage(VectorStorageBase):
         else:
             self.client = chromadb.Client()
 
-        self.collection = self.client.get_or_create_collection(name=self.namespace)
+        self.collection = self.client.get_or_create_collection(name=self.collection_name)
 
     async def query(self, query: str, top_k: int = 1) -> list[dict]:
         """
@@ -71,8 +71,8 @@ class ChromaStorage(VectorStorageBase):
         return data
 
     async def clear(self):
-        self.client.delete_collection(self.namespace)
-        self.collection = self.client.get_or_create_collection(name=self.namespace)
+        self.client.delete_collection(self.collection_name)
+        self.collection = self.client.get_or_create_collection(name=self.collection_name)
 
     async def count(self):
         return self.collection.count()
@@ -100,3 +100,6 @@ class ChromaStorage(VectorStorageBase):
         if result["documents"]:
             return json.loads(result["documents"][0])
         return None
+
+    async def get_collection_names(self):
+        return [col.name for col in self.client.list_collections()]

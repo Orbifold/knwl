@@ -1,21 +1,11 @@
 from fastapi import APIRouter, HTTPException
 
+from api.models.JsonRequest import JsonRequest
+from api.models.GraphRequest import GraphRequest
 from knwl.logging import log
 
 router = APIRouter()
 
-from pydantic import BaseModel, Field
-
-
-class JsonRequest(BaseModel):
-    text: str = Field(..., description="The text to extract the graph from.")
-    entities: list[str] | None = Field(None, description="The entities to extract.")
-
-
-class GraphRequest(BaseModel):
-    text: str = Field(..., description="The text to extract the graph from.")
-    chunk_id: str | None = Field(None, description="The chunk Id to tag the extraction with.")
-    entities: list[str] | None = Field(None, description="The entities to extract.")
 
 
 @router.post("/json", summary="Extract graph as JSON. The set of entities is optional and can be used to guide the extraction.")

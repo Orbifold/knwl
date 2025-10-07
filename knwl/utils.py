@@ -8,7 +8,7 @@ import string
 from functools import wraps
 from hashlib import md5
 from typing import Any, Union, List
-
+from datetime import datetime
 
 CATEGORY_KEYWORD_EXTRACTION = "Keywords Extraction"
 CATEGORY_NAIVE_QUERY = "Naive Query"
@@ -53,7 +53,7 @@ def get_json_body(content: str) -> Union[str, None]:
             if stack:
                 stack.pop()
                 if not stack:
-                    return content[start : i + 1]
+                    return content[start: i + 1]
     if start != -1 and stack:
         return content[start:]
     else:
@@ -74,30 +74,6 @@ def random_name(length=8):
     return "".join(random.choice(letters) for i in range(length))
 
 
-def convert_response_to_json(response: str) -> dict:
-    """
-    If there is a JSON-like thing in the response, it gets extracted.
-
-    Nothing magical here, simply trying to fetch it via a regex.
-
-    Args:
-        response (str): The response string containing the JSON data.
-
-    Returns:
-        dict: The parsed JSON data as a dictionary.
-
-    Raises:
-        AssertionError: If the JSON string cannot be located in the response.
-        json.JSONDecodeError: If the JSON string cannot be parsed into a dictionary.
-    """
-    json_str = get_json_body(response)
-    assert json_str is not None, f"Unable to parse JSON from response: {response}"
-    try:
-        data = json.loads(json_str)
-        return data
-    except json.JSONDecodeError as e:
-        logger.error(f"Failed to parse JSON: {json_str}")
-        raise e from None
 
 
 def hash_args(*args):
@@ -199,9 +175,7 @@ def pack_messages(*args: str):
               and a 'content' key with the corresponding message content.
     """
     roles = ["user", "assistant"]
-    return [
-        {"role": roles[i % 2], "content": content} for i, content in enumerate(args)
-    ]
+    return [{"role": roles[i % 2], "content": content} for i, content in enumerate(args)]
 
 
 def split_string_by_multi_markers(content: str, markers: list[str]) -> list[str]:
@@ -256,9 +230,7 @@ def is_float_regex(value):
 
 
 def list_of_list_to_csv(data: list[list]):
-    return "\n".join(
-        [",\t".join([str(data_dd) for data_dd in data_d]) for data_d in data]
-    )
+    return "\n".join([",\t".join([str(data_dd) for data_dd in data_d]) for data_d in data])
 
 
 def save_data_to_file(data, file_name):
@@ -280,12 +252,7 @@ def get_project_info() -> dict:
     name = pyproject_data["project"]["name"]
     author = pyproject_data["project"]["authors"][0]
     description = pyproject_data["project"]["description"]
-    return {
-        "name": name,
-        "version": version,
-        "author": author,
-        "description": description,
-    }
+    return {"name": name, "version": version, "author": author, "description": description, }
 
 
 def merge_dictionaries(source: dict, destination: dict) -> dict:
@@ -298,58 +265,181 @@ def merge_dictionaries(source: dict, destination: dict) -> dict:
             destination[key] = value
     return destination
 
+def get_full_path(file_path: str, reference_path: str = None, create_dirs: bool = True) -> str | None:
+    """
+    Resolves a file path to its full absolute path, supporting special path prefixes.
 
-def get_full_path(file_path: str, reference_path: str = None) -> str | None:
+    Special prefixes:
+    - $data: Resolves to the project's data directory
+    - $root: Resolves to the project root directory
+    - $test: Resolves to the test data directory
+    - "test": Creates a timestamped test file in $test directory
+
+    Args:
+        file_path (str): The file path to resolve. Can use special prefixes.
+        reference_path (str, optional): Base directory or special prefix to resolve relative to.
+        create_dirs (bool): Whether to create directories if they don't exist.
+
+    Returns:
+        str | None: The resolved absolute path, or None if file_path is None.
+
+    Raises:
+        ValueError: If file_path is not a string or reference_path format is invalid.
+        FileNotFoundError: If reference_path is not absolute when required.
+        OSError: If directory creation fails.
+    """
     if file_path is None:
         return None
-    if file_path.startswith("$test"):
-        rest = file_path[5:]
-        if rest.startswith("/"):
-            rest = "." + rest
-        return get_full_path(rest , "$test")
-    if file_path.startswith("$data"):
-        rest = file_path[6:]
-        if rest.startswith("/"):
-            rest = "." + rest
-        return get_full_path(rest, "$data")
-    if file_path.startswith("$root"):
-        rest = file_path[6:]
-        if rest.startswith("/"):
-            rest = "." + rest
-        return get_full_path(rest, "$root")
 
-    if reference_path == "$data":
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        reference_path = os.path.join(current_dir, "..", "data")
-    if reference_path == "$root":
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        reference_path = os.path.join(current_dir, "..")
-    if reference_path == "$test":
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        reference_path = os.path.join(current_dir, "..", "tests", "data")
-    if reference_path is not None:
-        if not os.path.isabs(reference_path):
-            raise FileNotFoundError(reference_path)
-        # ensure the reference path is a string
-        if not isinstance(reference_path, str):
-            raise ValueError("Reference path must be a string")
-        if not os.path.exists(reference_path):
-            os.makedirs(reference_path, exist_ok=True)
-
-    if file_path is None:
-        raise ValueError("File path cannot be None")
     if not isinstance(file_path, str):
         raise ValueError("File path must be a string")
 
-    if reference_path is None:
-        return get_full_path(file_path, "$data")
+    # Handle special "test" shorthand
+    if file_path.lower() == "test":
+        timestamp = round(datetime.now().timestamp())
+        return get_full_path(f"test_{timestamp}.json", "$test", create_dirs)
 
-    p = os.path.join(reference_path, file_path)
-    if not p.endswith("/") and not p.endswith("\\") and "." in os.path.basename(p):
-        os.makedirs(os.path.dirname(p), exist_ok=True)
+    # Process special prefixes
+    file_path, resolved_reference = _resolve_special_prefixes(file_path)
+    if resolved_reference:
+        reference_path = resolved_reference
+
+    # Resolve reference path to absolute directory
+    if reference_path is not None:
+        reference_path = _resolve_reference_path(reference_path, create_dirs)
     else:
-        os.makedirs(p, exist_ok=True)
-    return p
+        # Default to $data directory
+        reference_path = _resolve_reference_path("$data", create_dirs)
+
+    # Construct final path
+    full_path = os.path.join(reference_path, file_path)
+
+    # Create directories if needed
+    if create_dirs:
+        _ensure_directories_exist(full_path)
+
+    return os.path.abspath(full_path)
+
+
+def _resolve_special_prefixes(file_path: str) -> tuple[str, str | None]:
+    """Resolve special prefixes in file path and return cleaned path and reference."""
+    prefix_map = {
+        "$test": ("$test", 5),
+        "$data": ("$data", 5),
+        "$root": ("$root", 5)
+    }
+
+    for prefix, (ref_path, prefix_len) in prefix_map.items():
+        if file_path.startswith(prefix):
+            rest = file_path[prefix_len:]
+            if rest.startswith("/"):
+                rest = "." + rest
+            return rest, ref_path
+
+    return file_path, None
+
+
+def _resolve_reference_path(reference_path: str, create_dirs: bool) -> str:
+    """Resolve reference path to absolute directory path."""
+    if not isinstance(reference_path, str):
+        raise ValueError("Reference path must be a string")
+
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+
+    special_paths = {
+        "$data": os.path.join(current_dir, "..", "data"),
+        "$root": os.path.join(current_dir, ".."),
+        "$test": os.path.join(current_dir, "..", "tests", "data")
+    }
+
+    if reference_path in special_paths:
+        resolved_path = os.path.abspath(special_paths[reference_path])
+    else:
+        if not os.path.isabs(reference_path):
+            raise FileNotFoundError(f"Reference path must be absolute: {reference_path}")
+        resolved_path = reference_path
+
+    if create_dirs and not os.path.exists(resolved_path):
+        try:
+            os.makedirs(resolved_path, exist_ok=True)
+        except OSError as e:
+            raise OSError(f"Failed to create directory {resolved_path}: {e}")
+
+    return resolved_path
+
+
+def _ensure_directories_exist(full_path: str) -> None:
+    """Ensure parent directories exist for the given path."""
+    try:
+        # Check if path appears to be a file (has extension) or directory
+        if ("." in os.path.basename(full_path) and
+            not full_path.endswith(("/", "\\"))):
+            # It's a file, create parent directory
+            parent_dir = os.path.dirname(full_path)
+            if parent_dir and not os.path.exists(parent_dir):
+                os.makedirs(parent_dir, exist_ok=True)
+        else:
+            # It's a directory, create it
+            if not os.path.exists(full_path):
+                os.makedirs(full_path, exist_ok=True)
+    except OSError as e:
+        raise OSError(f"Failed to create directories for {full_path}: {e}")
+# def get_full_path(file_path: str, reference_path: str = None, create_dirs: bool = True) -> str | None:
+#     if file_path is None:
+#         return None
+
+#     if file_path.lower() == "test":
+#         from datetime import datetime
+#         return get_full_path(f"test_{round(datetime.now().timestamp())}.json", "$test")
+#     if file_path.startswith("$test"):
+#         rest = file_path[5:]
+#         if rest.startswith("/"):
+#             rest = "." + rest
+#         return get_full_path(rest, "$test")
+#     if file_path.startswith("$data"):
+#         rest = file_path[6:]
+#         if rest.startswith("/"):
+#             rest = "." + rest
+#         return get_full_path(rest, "$data")
+#     if file_path.startswith("$root"):
+#         rest = file_path[6:]
+#         if rest.startswith("/"):
+#             rest = "." + rest
+#         return get_full_path(rest, "$root")
+
+#     if reference_path == "$data":
+#         current_dir = os.path.dirname(os.path.abspath(__file__))
+#         reference_path = os.path.join(current_dir, "..", "data")
+#     if reference_path == "$root":
+#         current_dir = os.path.dirname(os.path.abspath(__file__))
+#         reference_path = os.path.join(current_dir, "..")
+#     if reference_path == "$test":
+#         current_dir = os.path.dirname(os.path.abspath(__file__))
+#         reference_path = os.path.join(current_dir, "..", "tests", "data")
+#     if reference_path is not None:
+#         if not os.path.isabs(reference_path):
+#             raise FileNotFoundError(reference_path)
+#         # ensure the reference path is a string
+#         if not isinstance(reference_path, str):
+#             raise ValueError("Reference path must be a string")
+#         if create_dirs and not os.path.exists(reference_path):
+#             os.makedirs(reference_path, exist_ok=True)
+
+#     if file_path is None:
+#         raise ValueError("File path cannot be None")
+#     if not isinstance(file_path, str):
+#         raise ValueError("File path must be a string")
+
+#     if reference_path is None:
+#         return get_full_path(file_path, "$data")
+
+#     p = os.path.join(reference_path, file_path)
+#     if create_dirs and not os.path.exists(p):
+#         if not p.endswith("/") and not p.endswith("\\") and "." in os.path.basename(p):
+#             os.makedirs(os.path.dirname(p), exist_ok=True)
+#         else:
+#             os.makedirs(p, exist_ok=True)
+#     return p
 
 
 def parse_llm_record(rec: str, delimiter: str = "|") -> list[str] | None:
@@ -370,9 +460,7 @@ def parse_llm_record(rec: str, delimiter: str = "|") -> list[str] | None:
         return None
     record = re.search(r"\((.*)\)", rec)
     if record is None:
-        raise ValueError(
-            f"Given text is likely not an LLM record. It should be wrapped in parentheses."
-        )
+        raise ValueError(f"Given text is likely not an LLM record. It should be wrapped in parentheses.")
     record = record.group(1)
     parts = split_string_by_multi_markers(record, [delimiter])
     return parts

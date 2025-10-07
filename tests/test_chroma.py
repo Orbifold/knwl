@@ -66,15 +66,27 @@ async def test_ids(dummy_store):
 async def test_auto_embedding():
     # chroma does auto-embedding based on all-MiniLM-L6-v2
     from chromadb import Client
+
     coll = Client()
     collection = coll.get_or_create_collection(name="test_auto_embedding")
     data = {"key1": "This is a test document."}
     collection.upsert(ids=list(data.keys()), documents=list(data.values()))
     all = collection.get(include=["embeddings"])
-    assert len(all["embeddings"][0]) == 384  # all-MiniLM-L6-v2 produces 384-dimensional embeddings
+    assert (len(all["embeddings"][0]) == 384)  # all-MiniLM-L6-v2 produces 384-dimensional embeddings
 
 
 @pytest.mark.asyncio
 async def test_chroma_via_service():
     chroma = services.create_service("vector")
     assert chroma.path == get_full_path(get_config("vector", "chroma", "path"))
+    await chroma.upsert({"a1": {"content": "a1"}})
+    names = await chroma.get_collection_names()
+    assert chroma.collection_name in names
+    config = {"vector": {"special": {"class": "knwl.storage.chroma_storage.ChromaStorage", "memory": False, "collection": "special", "path": "$test/v2"}, }}
+    chroma = services.create_service("vector", "special", override=config)
+    assert chroma.collection_name == "special"
+    await chroma.upsert({"b1": {"content": "b1"}})
+    names = await chroma.get_collection_names()
+    assert "special" in names
+    found = await chroma.get_by_id("b1")
+    assert found is not None
