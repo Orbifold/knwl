@@ -4,14 +4,15 @@ from abc import ABC
 from pathlib import Path
 
 from knwl.config import get_config
-from knwl.services import services
 
 
 class FrameworkBase(ABC):
     def __init__(self, *args, **kwargs):
         self.id = str(uuid.uuid4())
 
+
     def get_service(self, service_name: str, variant_name: str = None, override=None):
+        from knwl.services import services
         return services.get_service(
             service_name, variant_name=variant_name, override=override
         )

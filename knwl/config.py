@@ -54,18 +54,23 @@ default_config = {
         },
     },
     "semantic": {
-        "default": "rag",
+        "default": "local",
         "graph-rag": {
             "class": "knwl.semantic.graph_rag.GraphRAG",
-            "graph-store": "graph/graph-store",  # the topology
-            "node-store": "json/node-store",  # the node data
-            "edge-store": "json/edge-store",  # the edge data
             "node-embeddings": "vector/nodes",  # embeddings of the nodes
             "edge-embeddings": "vector/edges",  # embeddings of the edges
             "document-store": "json/document-store",  # for document data
             "chunk-store": "json/chunk-store",  # for chunks data
         },
-        "rag": {},
+
+        "local": {
+            "graph": {
+                "graph-store": "graph/graph-store",  # the topology
+                "node-embeddings": "vector/nodes",  # the node embeddings
+                "edge-embeddings": "vector/edges",  # the edge embeddings
+                "summarization": "summarization/ollama",  # how to summarize long texts
+             }
+        }
     },
     "llm": {
         "default": "ollama",
@@ -123,13 +128,13 @@ default_config = {
     "graph": {
         "default": "nx",
         "nx": {
-            "class": "knwl.storage.networkx_storage.NetworkXStorage",
+            "class": "knwl.storage.networkx_storage.NetworkXGraphStorage",
             "format": "graphml",
             "memory": False,
             "path": "$test/graph.graphml",
         },
         "graph-store": {
-            "class": "knwl.storage.networkx_storage.NetworkXStorage",
+            "class": "knwl.storage.networkx_storage.NetworkXGraphStorage",
             "format": "graphml",
             "memory": False,
             "path": "$test/graphrag/graph.graphml",

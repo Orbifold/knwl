@@ -1,8 +1,6 @@
+PROMPTS = {}
 
-
-PROMPTS[
-    "rag_response"
-] = """---Role---
+PROMPTS["rag_response"] = """---Role---
 
 You are a helpful assistant responding to questions about data in the tables provided.
 
@@ -24,9 +22,7 @@ Do not include information where the supporting evidence for it is not provided.
 Add sections and commentary to the response as appropriate for the length and format. Style the response in markdown.
 """
 
-PROMPTS[
-    "keywords_extraction"
-] = """---Role---
+PROMPTS["keywords_extraction"] = """---Role---
 
 You are a helpful assistant tasked with identifying both high-level and low-level keywords in the user's query.
 
@@ -82,9 +78,7 @@ Output:
 
 """
 
-PROMPTS[
-    "naive_rag_response"
-] = """You're a helpful assistant
+PROMPTS["naive_rag_response"] = """You're a helpful assistant
 Below are the knowledge you know:
 {content_data}
 ---

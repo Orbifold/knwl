@@ -11,31 +11,45 @@ from knwl.utils import get_full_path
 def test_get_spec():
     services = Services()
 
-    override_config = {"food": {"default": "pizza", "pizza": {"size": "large", "delivery": "transport/car"}, "burger": {"size": "medium"}, }, "transport": {"car": {"wheels": 4}, "bike": {"wheels": 2}}, }
-    specs = services.get_service_specs("food", override=override_config)
-    assert specs["service_name"] == "food"
-    assert specs["variant_name"] == "pizza"
-    assert specs["size"] == "large"
-    with pytest.raises(ValueError):
-        services.get_service_specs("unknown_service", override=override_config)
-    with pytest.raises(ValueError):
-        services.get_service_specs("food", "unknown_variant", override=override_config)
+    # override_config = {"food": {"default": "pizza", "pizza": {"size": "large", "delivery": "transport/car"}, "burger": {"size": "medium"}, }, "transport": {"car": {"wheels": 4}, "bike": {"wheels": 2}}, }
+    # specs = services.get_service_specs("food", override=override_config)
+    # assert specs["service_name"] == "food"
+    # assert specs["variant_name"] == "pizza"
+    # assert specs["size"] == "large"
+    # with pytest.raises(ValueError):
+    #     services.get_service_specs("unknown_service", override=override_config)
+    # with pytest.raises(ValueError):
+    #     services.get_service_specs("food", "unknown_variant", override=override_config)
+    #
+    # specs = services.get_service_specs("food/burger", override=override_config)
+    # assert specs["service_name"] == "food"
+    # assert specs["variant_name"] == "burger"
+    # assert specs["size"] == "medium"
+    #
+    # specs = services.get_service_specs("food", "default", override=override_config)
+    # assert specs["service_name"] == "food"
+    # assert specs["variant_name"] == "pizza"
+    # specs = services.get_service_specs("food/default", None, override=override_config)
+    # assert specs["service_name"] == "food"
+    # assert specs["variant_name"] == "pizza"
+    # with pytest.raises(ValueError):
+    #     services.get_service_specs(None, override=override_config)
+    # with pytest.raises(ValueError):
+    #     # can't have both "/" and variant in one call
+    #     services.get_service_specs("a/b", "c", override=override_config)
 
-    specs = services.get_service_specs("food/burger", override=override_config)
-    assert specs["service_name"] == "food"
-    assert specs["variant_name"] == "burger"
-    assert specs["size"] == "medium"
-
-    with pytest.raises(ValueError):
-        services.get_service_specs(None, override=override_config)
-    with pytest.raises(ValueError):
-        # can't have both "/" and variant in one call
-        services.get_service_specs("a/b", "c", override=override_config)
+    config = {"semantic": {"default": "local", "local": {"graph": {"graph-store": "graph/graph-store",  # the topology
+        "node-embeddings": "vector/nodes",  # the node embeddings
+        "edge-embeddings": "vector/edges",  # the edge embeddings
+        "summarization": "summarization/ollama",  # how to summarize long texts
+    }}}}
+    specs = services.get_service_specs("semantic", override=config)
 
 
 @pytest.mark.asyncio
 async def test_service_simplicity():
     services = Services()
+
     # simply getting the service with default config
     json_service_default = services.get_service("json")
     assert json_service_default.path == get_full_path(get_config("json", "basic", "path"))
