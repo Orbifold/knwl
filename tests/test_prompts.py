@@ -12,7 +12,7 @@ ABC""") > -1
 
 
 def test_extraction():
-    prompt = prompts.extraction.full_entity_extraction("This is a test")
+    prompt = prompts.extraction.full_graph_extraction("This is a test")
     assert prompt.index("Text: This is a test") > -1
     print("")
     print(prompt)

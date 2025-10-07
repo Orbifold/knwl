@@ -10,7 +10,7 @@ from knwl.models import KnwlLLMAnswer
 class OllamaClient(LLMBase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.client = ollama.AsyncClient()
+        self.client = ollama.Client() # the AsyncClient has issues with parallel unit tests and switching models
         config = kwargs.get("override", None)
 
         self.model = self.get_param(
@@ -50,7 +50,7 @@ class OllamaClient(LLMBase):
             if cached is not None:
                 return cached
         start_time = time.time()
-        response = await self.client.chat(
+        response = self.client.chat(
             model=self.model,
             messages=messages,
             options={"temperature": self.temperature, "num_ctx": self.context_window},

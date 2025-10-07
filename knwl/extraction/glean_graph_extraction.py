@@ -1,10 +1,10 @@
 from knwl.prompts import prompts
-from knwl.extraction.basic_extraction import BasicExtraction
+from knwl.extraction.basic_graph_extraction import BasicGraphExtraction
 from knwl.utils import split_string_by_multi_markers, parse_llm_record
 from knwl.logging import log
 
 
-class GleanExtraction(BasicExtraction):
+class GleanGraphExtraction(BasicGraphExtraction):
     """
     An advanced extraction class that iteratively refines entity extraction through multiple gleaning passes.
 
@@ -37,7 +37,7 @@ class GleanExtraction(BasicExtraction):
         config = kwargs.get("override", None)
         # IMPORTANT: gleaning only works with larger models, something like gemma3:7b will not work, it does not understand the gleaning iteration question.
         llm_variant = self.get_param(
-            ["extraction", "glean", "llm"],
+            ["graph_extraction", "glean", "llm"],
             args,
             kwargs,
             default="ollama",
@@ -46,7 +46,7 @@ class GleanExtraction(BasicExtraction):
 
         self.llm = self.get_llm(llm_variant, override=config)
         self.max_glean = self.get_param(
-            ["extraction", "glean", "max_glean"],
+            ["graph_extraction", "glean", "max_glean"],
             args,
             kwargs,
             default=3,
@@ -68,11 +68,10 @@ class GleanExtraction(BasicExtraction):
 
         if not text or text.strip() == "":
             return None
-        extraction_prompt = prompts.extraction.full_entity_extraction(
-            text, entity_types=entities
+        extraction_prompt = self.get_extraction_prompt(            text, entity_types=entities
         )
         found = await self.llm.ask(
-            question=extraction_prompt, key=text, category="extraction"
+            question=extraction_prompt, key=text, category="graph-extraction"
         )
         if not found or found.answer.strip() == "":
             return None

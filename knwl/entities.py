@@ -14,7 +14,7 @@ DEFAULT_TUPLE_DELIMITER = prompts.constants.DEFAULT_TUPLE_DELIMITER
 DEFAULT_RECORD_DELIMITER = prompts.constants.DEFAULT_RECORD_DELIMITER
 DEFAULT_COMPLETION_DELIMITER = prompts.constants.DEFAULT_COMPLETION_DELIMITER
 DEFAULT_ENTITY_TYPES = prompts.constants.DEFAULT_ENTITY_TYPES
-ENTITY_EXTRACTION_PROMPT = prompts.extraction.full_entity_extraction
+ENTITY_EXTRACTION_PROMPT = prompts.extraction.full_graph_extraction
 
 async def extract_entities(chunks: Dict[str, KnwlChunk]) -> KnwlExtraction | None:
     """

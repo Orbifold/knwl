@@ -1,12 +1,13 @@
 import pytest
 
-from knwl.extraction.basic_extraction import BasicExtraction
-from knwl.extraction.glean_extraction import GleanExtraction
+from knwl.extraction.basic_entity_extraction import BasicEntityExtraction
+from knwl.extraction.basic_graph_extraction import BasicGraphExtraction
+from knwl.extraction.glean_graph_extraction import GleanGraphExtraction
 
 
 @pytest.mark.asyncio
 async def test_extraction():
-    extractor = BasicExtraction()
+    extractor = BasicGraphExtraction()
     text = "Barack Obama was born in Hawaii. He was elected president in 2008."
     result = await extractor.extract_json(text)
     assert len(result["keywords"]) > 0
@@ -30,7 +31,7 @@ async def test_extraction():
 async def test_extraction_specific_entities():
     text = "Barack Obama was born in Hawaii. He was elected president in 2008."
 
-    extractor = BasicExtraction()
+    extractor = BasicGraphExtraction()
     g = await extractor.extract(text, entities=["person"])
     assert g is not None
     assert len(g.nodes) > 0
@@ -45,7 +46,7 @@ async def test_extraction_specific_entities():
 async def test_extraction_multi_type():
     text = "Apple is an amazing company, they made the iPhone in California. Note that apple is also a fruit."
 
-    extractor = BasicExtraction()
+    extractor = BasicGraphExtraction()
     g = await extractor.extract(text, entities=["company", "fruit"])
     assert g is not None
     assert len(g.nodes["Apple"]) == 2  # company and fruit
@@ -62,7 +63,7 @@ async def test_extraction_multiple():
     John Field had a tumultuous personal life, marked by struggles with alcoholism and financial difficulties.
     """
 
-    extractor = BasicExtraction()
+    extractor = BasicGraphExtraction()
     g = await extractor.extract(text, entities=["person"],chunk_id="abc")
     assert len(g.nodes) == 1  # only one person despite appearing multiple times
     assert g.nodes["John Field"][0].chunkIds == ["abc"]
@@ -73,7 +74,7 @@ async def test_extraction_multiple():
 async def test_extraction_no_entities():
     text = "This text has no recognizable entities."
 
-    extractor = BasicExtraction()
+    extractor = BasicGraphExtraction()
     g = await extractor.extract(text)
     assert g is not None
     assert len(g.nodes) == 0
@@ -87,10 +88,32 @@ async def test_gleaning():
     text = """Alice went to the park. There she met Bob. They decided to go for ice cream.
     Later, Alice and Bob went to see a movie together. After the movie, they had dinner at a nearby restaurant.
     """
-    extractor = GleanExtraction()
+    extractor = GleanGraphExtraction()
     g = await extractor.extract(text)
     assert g is not None
     assert len(g.nodes) > 0
     assert len(g.edges) > 0
     print("")
     print(g.model_dump_json(indent=2))
+
+@pytest.mark.asyncio
+async def test_fast_entity_extraction():
+    text = "Barack Obama was born in Hawaii. He was elected president in 2008."
+
+    extractor = BasicEntityExtraction()
+    result = await extractor.extract(text)
+    assert result is not None
+    assert len(result) > 0
+    # assert len(result["relationships"]) > 0
+    # assert len(result["entities"]) > 0
+    result = await extractor.extract_json(text)
+    assert result is not None
+    assert len(result) > 0
+
+    print("")
+    print(result)
+
+    extractor = BasicEntityExtraction()
+    text = "This text has no recognizable entities and none should be found."
+    result = await extractor.extract(text)
+    assert len(result) ==0

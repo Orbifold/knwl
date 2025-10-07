@@ -37,15 +37,24 @@ default_config = {
             "chunker": "tiktoken",
         },
     },
-    "extraction": {
+    "entity_extraction": {
         "default": "basic",
         "basic": {
-            "class": "knwl.extraction.basic_extraction.BasicExtraction",
+            "class": "knwl.extraction.basic_entity_extraction.BasicEntityExtraction",
+            "llm": "gemma-small",
+        },
+    },
+    "graph_extraction": {
+        "default": "basic",
+        "basic": {
+            "class": "knwl.extraction.basic_graph_extraction.BasicGraphExtraction",
+            "mode":"full", # fast or full
             "llm": "gemma-small",
         },
         "glean": {
-            "class": "knwl.extraction.glean_extraction.GleanExtraction",
+            "class": "knwl.extraction.glean_graph_extraction.GleanGraphExtraction",
             "llm": "ollama",
+            "mode":"full", # fast or full
             "max_glean":3
         },
     },

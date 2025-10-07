@@ -12,10 +12,10 @@ class ExtractionPrompts:
         self._iterate_entity_template = None
         self._glean_break_template = None
 
-    def fast_entity_extraction(self, text: str, entity_types: list[str] = None) -> str:
+    def fast_graph_extraction(self, text: str, entity_types: list[str] = None) -> str:
         if self._fast_entity_extraction_template is None:
             with open(
-                os.path.join(current_dir, "templates", "fast_entity_extraction.txt"),
+                os.path.join(current_dir, "templates", "fast_graph_extraction.txt"),
                 "r",
             ) as f:
                 self._fast_entity_extraction_template = f.read()
@@ -27,14 +27,28 @@ class ExtractionPrompts:
             text=text,
         )
 
-    def full_entity_extraction(self, text: str, entity_types: list[str] = None) -> str:
+    def full_graph_extraction(self, text: str, entity_types: list[str] = None) -> str:
         if self._full_entity_extraction_template is None:
             with open(
-                os.path.join(current_dir, "templates", "full_entity_extraction.txt"),
+                os.path.join(current_dir, "templates", "full_graph_extraction.txt"),
                 "r",
             ) as f:
                 self._full_entity_extraction_template = f.read()
         return self._full_entity_extraction_template.format(
+            tuple_delimiter=PromptConstants.DEFAULT_TUPLE_DELIMITER,
+            record_delimiter=PromptConstants.DEFAULT_RECORD_DELIMITER,
+            completion_delimiter=PromptConstants.DEFAULT_COMPLETION_DELIMITER,
+            entities=", ".join(entity_types or PromptConstants.DEFAULT_ENTITY_TYPES),
+            text=text,
+        )
+    def fast_entity_extraction(self, text: str, entity_types: list[str] = None) -> str:
+        if self._fast_entity_extraction_template is None:
+            with open(
+                os.path.join(current_dir, "templates", "fast_entity_extraction.txt"),
+                "r",
+            ) as f:
+                self._fast_entity_extraction_template = f.read()
+        return self._fast_entity_extraction_template.format(
             tuple_delimiter=PromptConstants.DEFAULT_TUPLE_DELIMITER,
             record_delimiter=PromptConstants.DEFAULT_RECORD_DELIMITER,
             completion_delimiter=PromptConstants.DEFAULT_COMPLETION_DELIMITER,

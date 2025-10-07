@@ -103,26 +103,5 @@ Do not include information where the supporting evidence for it is not provided.
 PROMPTS[
     "fast_entity_extraction"
 ] = """
-Given a text document that is potentially relevant to this activity and a list of entity types, identify all entities of those types from the text.
 
--Steps-
-1. Identify all entities. For each identified entity, extract the following information:
-- entity_name: Name of the entity, capitalized
-- entity_type: One of the following types: [{entity_types}]
-- entity_description: Comprehensive description of the entity's attributes and activities
-
-2. Format each entity as ("entity"{tuple_delimiter}<entity_name>{tuple_delimiter}<entity_type>{tuple_delimiter}<entity_description>)
-
-3. If an entity is mentioned multiple times, summarize the descriptions into a single comprehensive description.
-
-4. Return output in English as a single list of all the entities identified in steps 1. Use **{record_delimiter}** as the list delimiter.
-
-5. When finished, output {completion_delimiter}
-
--Real Data-
-######################
-Entity_types: {entity_types}
-Text: {input_text}
-######################
-Output:
 """

@@ -6,11 +6,15 @@ from knwl.models.KnwlEdge import KnwlEdge
 from knwl.models.KnwlExtraction import KnwlExtraction
 from knwl.models.KnwlGraph import KnwlGraph
 from knwl.models.KnwlNode import KnwlNode
+from knwl.prompts import prompts
 
 
-class ExtractionBase(FrameworkBase, ABC):
+class GraphExtractionBase(FrameworkBase, ABC):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        config = kwargs.get("override", None)
+
+        self.extraction_mode = self.get_param(["graph_extraction", "basic", "mode"], args, kwargs, default="full", override=config)
 
     @abstractmethod
     async def extract(
@@ -74,7 +78,7 @@ class ExtractionBase(FrameworkBase, ABC):
     def records_to_extraction(
         records: list[list], chunk_id: str = None
     ) -> KnwlExtraction:
-        dic = ExtractionBase.records_to_json(records)
+        dic = GraphExtractionBase.records_to_json(records)
         if len(dic["entities"]) == 0:
             return KnwlExtraction(nodes={}, edges={}, keywords=[])
         nodes: dict[str, list[KnwlNode]] = {}
@@ -160,3 +164,11 @@ class ExtractionBase(FrameworkBase, ABC):
             for edge in extraction.edges[key]:
                 edges.append(edge)
         return KnwlGraph(nodes=nodes, edges=edges, keywords=extraction.keywords or [])
+
+    def get_extraction_prompt(self, text, entity_types=None):
+        if self.extraction_mode == "fast":
+            return prompts.extraction.fast_entity_extraction(text, entity_types)
+        if self.extraction_mode == "full":
+            return prompts.extraction.full_entity_extraction(text, entity_types)
+        else:
+            raise ValueError(f"Unknown extraction mode: {self.extraction_mode}")
