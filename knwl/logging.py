@@ -1,30 +1,9 @@
 import logging
 from logging.handlers import RotatingFileHandler
 from knwl.framework_base import FrameworkBase
-
 from knwl.utils import get_full_path
 
-# logger = logging.getLogger("knwl")
-
-
-# # disable logging if not enabled in the settings
-# if not get_config("logging", "enabled", default=True):
-#     logger.setLevel(logging.CRITICAL)
-#     return logger
-# logging.basicConfig(
-#     force=True,
-#     level=logging.INFO,
-#     format="%(asctime)s %(levelname)s %(message)s",
-#     handlers=[
-#         logging.FileHandler(get_config("logging", "path", default="knwl.log")),
-#         logging.StreamHandler()
-#     ],
-# )
-
-
 class Log(FrameworkBase):
-    logger = None
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         config = kwargs.get("override", None)
@@ -38,14 +17,16 @@ class Log(FrameworkBase):
             ["logging", "path"], args, kwargs, default="$root/knwl.log", override=config
         )
         self.path = get_full_path(self.path)
+        
+        # Initialize logger
+        self.logger = None
         if self.enabled:
             self.logger = logging.getLogger("knwl")
-
-            self.set_level()
-            self.setup_file_logging()
+            # Prevent adding duplicate handlers
+            if not self.logger.handlers:
+                self.setup_logging()
 
     def __call__(self, *args, **kwargs):
-
         if args:
             arg0 = args[0]
             if isinstance(arg0, Exception):
@@ -57,25 +38,37 @@ class Log(FrameworkBase):
                 "You can only call the log directly with an exception or message."
             )
 
-    def set_level(self):
-        if self.logging_level not in ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]:
+    def setup_logging(self):
+        """Set up both file and console logging"""
+        level = self.get_logging_level()
+        
+        # Set logger level
+        self.logger.setLevel(level)
+        
+        # Set up file handler
+        self.setup_file_logging(level)
+        
+        # Set up console handler
+        self.setup_console_logging(level)
+
+    def get_logging_level(self):
+        """Convert string level to logging constant"""
+        level_map = {
+            "DEBUG": logging.DEBUG,
+            "INFO": logging.INFO,
+            "WARNING": logging.WARNING,
+            "ERROR": logging.ERROR,
+            "CRITICAL": logging.CRITICAL
+        }
+        
+        if self.logging_level not in level_map:
             raise ValueError(f"Invalid LOGGING_LEVEL: {self.logging_level}")
-        else:
-            print(f"Setting logging level to {self.logging_level}")
-        if self.logging_level == "DEBUG":
-            self.logging_level = logging.DEBUG
-        elif self.logging_level == "INFO":
-            self.logging_level = logging.INFO
-        elif self.logging_level == "WARNING":
-            self.logging_level = logging.WARNING
-        elif self.logging_level == "ERROR":
-            self.logging_level = logging.ERROR
-        elif self.logging_level == "CRITICAL":
-            self.logging_level = logging.CRITICAL
+        
+        return level_map[self.logging_level]
 
-    def setup_file_logging(self) -> None:
+    def setup_file_logging(self, level) -> None:
+        """Set up rotating file handler"""
         try:
-
             file_handler = RotatingFileHandler(
                 self.path,
                 maxBytes=10 * 1024 * 1024,  # 10MB per file
@@ -83,17 +76,31 @@ class Log(FrameworkBase):
                 delay=True,  # Only create log file when needed
             )
 
-            # Set formatting for file logs
             formatter = logging.Formatter(
                 "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
             )
             file_handler.setFormatter(formatter)
-            file_handler.setLevel(self.logging_level)
-
+            file_handler.setLevel(level)
+            
             self.logger.addHandler(file_handler)
 
         except Exception as e:
             print(f"Failed to set up file logging: {e}")
+
+    def setup_console_logging(self, level) -> None:
+        """Set up console handler"""
+        try:
+            console_handler = logging.StreamHandler()
+            formatter = logging.Formatter(
+                "%(asctime)s - %(levelname)s - %(message)s"
+            )
+            console_handler.setFormatter(formatter)
+            console_handler.setLevel(level)
+            
+            self.logger.addHandler(console_handler)
+
+        except Exception as e:
+            print(f"Failed to set up console logging: {e}")
 
     def info(self, message: str) -> None:
         if self.logger:
@@ -120,26 +127,20 @@ class Log(FrameworkBase):
             print(f"DEBUG: {message}")
 
     def exception(self, e: Exception) -> None:
-        """
-        Logs an exception with traceback.
-        """
+        """Logs an exception with traceback"""
         if self.logger:
             self.logger.exception(e)
         else:
+            import traceback
             print(f"EXCEPTION: {e}")
+            traceback.print_exc()
 
     def shutdown(self) -> None:
-        """
-        Shuts down the logging system, flushing all logs and closing handlers.
-        """
+        """Shuts down the logging system"""
         if self.logger:
-            for handler in self.logger.handlers:
+            for handler in self.logger.handlers[:]:  # Copy list to avoid modification during iteration
                 handler.close()
                 self.logger.removeHandler(handler)
-            logging.shutdown()
             print("Logging system shut down successfully.")
-        else:
-            print("No logger to shut down.")
-
 
 log = Log()

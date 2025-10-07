@@ -95,13 +95,3 @@ Do not include information where the supporting evidence for it is not provided.
 ---Target response length and format---
 {response_type}
 """
-
-# ============================================================================================
-# Fast named entity extraction.
-# This prompt does give examples and is less correct than the full entity-relation extraction.
-# ============================================================================================
-PROMPTS[
-    "fast_entity_extraction"
-] = """
-
-"""

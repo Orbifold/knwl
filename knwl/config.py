@@ -7,7 +7,7 @@ default_config = {
     "global": {},
     "logging": {
         "enabled": True,
-        "level": "DEBUG",
+        "level": "INFO",
         "path": "$root/knwl.log"
         },
     "knwl": {

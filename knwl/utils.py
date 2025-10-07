@@ -303,11 +303,20 @@ def get_full_path(file_path: str, reference_path: str = None) -> str | None:
     if file_path is None:
         return None
     if file_path.startswith("$test"):
-        return get_full_path("." + file_path[5:], "$test")
+        rest = file_path[5:]
+        if rest.startswith("/"):
+            rest = "." + rest
+        return get_full_path(rest , "$test")
     if file_path.startswith("$data"):
-        return get_full_path("." + file_path[6:], "$data")
+        rest = file_path[6:]
+        if rest.startswith("/"):
+            rest = "." + rest
+        return get_full_path(rest, "$data")
     if file_path.startswith("$root"):
-        return get_full_path("." + file_path[6:], "$root")
+        rest = file_path[6:]
+        if rest.startswith("/"):
+            rest = "." + rest
+        return get_full_path(rest, "$root")
 
     if reference_path == "$data":
         current_dir = os.path.dirname(os.path.abspath(__file__))

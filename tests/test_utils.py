@@ -378,3 +378,4 @@ def test_split_string_by_multi_markers_edge_cases():
     assert split_string_by_multi_markers("Hello!!!World???Test", ["!!!", "???"]) == ["Hello", "World", "Test"]
 
     assert (split_string_by_multi_markers("a|b|c$c|d|e$<END>k|l|m$<END>", ["$", "<END>"])) == ['a|b|c', 'c|d|e', 'k|l|m']
+
