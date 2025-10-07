@@ -4,7 +4,7 @@ from rich.text import Text
 
 from knwl.entities import fast_entity_extraction_from_text
 from knwl.knwl import Knwl
-from knwl.utils import get_info
+from knwl.utils import get_project_info
 import asyncio
 C = Console()
 
@@ -20,7 +20,7 @@ def cli():
 @cli.command()
 def version():
     """Show the version of KNWL"""
-    info = get_info()
+    info = get_project_info()
     C.print(
         Text(
             f"KNWL version {info['version']}. {info['description']}", style="bold green"
@@ -31,7 +31,7 @@ def version():
 @cli.command()
 def info():
     """Show information about KNWL"""
-    info = get_info()
+    info = get_project_info()
     C.print(
         Text(
             f"KNWL version {info['version']}. {info['description']}", style="bold green"

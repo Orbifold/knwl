@@ -266,7 +266,7 @@ def save_data_to_file(data, file_name):
         json.dump(data, f, ensure_ascii=False, indent=4)
 
 
-def get_info() -> dict:
+def get_project_info() -> dict:
     """
     Retrieves project information from the `pyproject.toml` file.
     """

@@ -31,3 +31,7 @@ class VectorStorageBase(StorageBase, ABC):
     @abstractmethod
     async def save(self):
         pass
+
+    @abstractmethod
+    async def get_by_id(self, id: str):
+        pass

@@ -4,7 +4,6 @@ from typing import List
 
 from knwl.chunking.tiktoken_chunking import TiktokenChunking
 from knwl.config import get_config
-from knwl.entities import extract_entities
 from knwl.models.KnwlBasicGraph import KnwlBasicGraph
 from knwl.models.KnwlChunk import KnwlChunk
 from knwl.models.KnwlContext import KnwlContext
@@ -27,14 +26,14 @@ from knwl.prompts import prompts
 from knwl.storage.json_storage import JsonStorage
 from knwl.storage.vector_storage_base import VectorStorageBase
 from knwl.utils import *
-
+from knwl.logging import log
 GRAPH_FIELD_SEP = prompts.constants.GRAPH_FIELD_SEP
 DEFAULT_TUPLE_DELIMITER = prompts.constants.DEFAULT_TUPLE_DELIMITER
 DEFAULT_RECORD_DELIMITER = prompts.constants.DEFAULT_RECORD_DELIMITER
 DEFAULT_COMPLETION_DELIMITER = prompts.constants.DEFAULT_COMPLETION_DELIMITER
 DEFAULT_ENTITY_TYPES = prompts.constants.DEFAULT_ENTITY_TYPES
 
-logger = set_logger()
+
 
 
 class Knwl:

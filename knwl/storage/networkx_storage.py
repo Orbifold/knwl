@@ -9,7 +9,7 @@ from knwl.models.KnwlNode import KnwlNode
 from knwl.storage.graph_base import GraphBase
 from knwl.utils import *
 import ast
-
+from knwl.logging import log
 
 class NetworkXGraphStorage(GraphBase):
     """
@@ -28,12 +28,14 @@ class NetworkXGraphStorage(GraphBase):
         self.path = self.get_param(["graph", "nx", "path"], args, kwargs, default="$test/vector", override=config, )
         self.format = self.get_param(["graph", "nx", "format"], args, kwargs, default="graphml", override=config)
         if not self.memory and self.path is not None:
-            # self.file_path = os.path.join(config.working_dir, f"graphdb_{self.namespace}", f"data.graphml")
+            if not self.path.endswith(".graphml"):
+                log.warn(f"The configured path '{self.path}' does not end with '.graphml'. Appending the extension.")
+                self.path += ".graphml"
             self.path = get_full_path(self.path)
             if os.path.exists(self.path):
                 preloaded_graph = NetworkXGraphStorage.load(self.path)
                 if preloaded_graph is not None:
-                    logger.info(f"Loaded graph from {self.path} with {preloaded_graph.number_of_nodes()} nodes, {preloaded_graph.number_of_edges()} edges")
+                    log.info(f"Loaded graph from {self.path} with {preloaded_graph.number_of_nodes()} nodes, {preloaded_graph.number_of_edges()} edges")
                     # remove the label attributes if present
                     # todo: why is this needed?
                     for node in preloaded_graph.nodes:
@@ -105,12 +107,12 @@ class NetworkXGraphStorage(GraphBase):
             if os.path.exists(file_name):
                 return nx.read_graphml(file_name)
         except Exception as e:
-            logger.error(f"Error loading graph from {file_name}: {e}")
+            log.error(f"Error loading graph from {file_name}: {e}")
             return None
 
     @staticmethod
     def write(graph: nx.Graph, file_name):
-        logger.info(f"Writing graph with {graph.number_of_nodes()} nodes, {graph.number_of_edges()} edges")
+        log.info(f"Writing graph with {graph.number_of_nodes()} nodes, {graph.number_of_edges()} edges")
         # the label is the id, helps with visualization
         nx.set_node_attributes(graph, {id: str(id) for id in graph.nodes}, "label")
 

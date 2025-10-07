@@ -1,9 +1,9 @@
 import json
-import os
 
 import chromadb
 import pandas as pd
 
+from knwl.logging import log
 from knwl.storage.vector_storage_base import VectorStorageBase
 from knwl.utils import get_full_path
 
@@ -28,7 +28,8 @@ class ChromaStorage(VectorStorageBase):
         self.memory = self.get_param(["vector", "chroma", "memory"], args, kwargs, default=False, override=config)
         self.namespace = self.get_param(["vector", "chroma", "collection"], args, kwargs, default="default", override=config, )
         self.path = self.get_param(["vector", "chroma", "path"], args, kwargs, default="$test/vector", override=config, )
-
+        if self.path is not None and "." in self.path.split("/")[-1]:
+            log.warn(f"The Chroma path '{self.path}' contains a '.' but should be a directory, not a file.")
         if not self.memory and self.path is not None:
             self.path = get_full_path(self.path)
             self.client = chromadb.PersistentClient(path=self.path)
@@ -93,3 +94,9 @@ class ChromaStorage(VectorStorageBase):
     async def save(self):
         # happens automatically
         pass
+
+    async def get_by_id(self, id: str):
+        result = self.collection.get(ids=[id], include=["documents", "metadatas"])
+        if result["documents"]:
+            return json.loads(result["documents"][0])
+        return None

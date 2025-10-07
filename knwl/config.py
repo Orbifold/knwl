@@ -4,7 +4,11 @@
 # ============================================================================================
 
 default_config = {
-    "global": {},
+    "api": {
+        "development": True,
+        "host": "0.0.0.0",
+        "port": 9000,
+    },
     "logging": {
         "enabled": True,
         "level": "INFO",

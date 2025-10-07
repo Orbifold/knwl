@@ -21,11 +21,23 @@ from knwl.models.KnwlNode import KnwlNode
 from knwl.models.KnwlResponse import KnwlResponse
 from knwl.models.QueryParam import QueryParam
 from knwl.prompts import prompts
+from knwl.storage import JsonStorage, ChromaStorage, NetworkXGraphStorage
 from knwl.utils import hash_with_prefix
 
 GRAPH_FIELD_SEP = prompts.constants.GRAPH_FIELD_SEP
 faker = Faker()
 
+@pytest.mark.asyncio
+async def test_storage_setup():
+    documents = JsonStorage(path="$test/space/documents.json")
+    chunks = JsonStorage(path="$test/space/chunks.json")
+    await documents.upsert({"name": "test 1"})
+    await chunks.upsert({"name": "test 2"})
+    vectors = ChromaStorage(path="$test/space/vectors")
+    await vectors.upsert({"swa": {"content": "test 3"}})
+    found = await vectors.get_by_id("swa")
+    graphs = NetworkXGraphStorage(path="$test/space/graphs")
+    await graphs.upsert_node("node1", {"name": "node1"})
 
 def create_dummy_documents(n=10):
     sources = {}
@@ -143,7 +155,7 @@ class TestDocuments:
         result = await s.save_sources(sources)
         assert len(result) == 2
         assert all(key in result for key in new_keys)  # the following fails because of a small delta in the timestamp  # s.document_storage.upsert.assert_called_once_with({d.id: asdict(d) for d in documents})
-        
+
 
 class TestChunks:
     @pytest.mark.asyncio
@@ -463,7 +475,7 @@ class TestQuery:
         query_param = QueryParam()
         nodes = [KnwlNode(name="node1", type="Person", description="Description 1", chunkIds=["chunk1"]), KnwlNode(name="node2", type="Location", description="Description 2", chunkIds=["chunk2"])]
         edges = [[KnwlEdge(weight=1.0, sourceId="node1", targetId="node2", description="Edge 1", keywords="keyword1", chunkIds=["chunk1"])], [KnwlEdge(weight=1.3, sourceId="node1", targetId="node3", description="Edge 2", keywords="keyword1", chunkIds=["chunk1"])], [KnwlEdge(weight=1.3, sourceId="node1", targetId="node3", description="Edge 2", keywords="keyword1", chunkIds=["chunk1"])]  # duplicate edge by intention
-        ]
+                 ]
 
         mocker.patch.object(s.graph_storage, 'get_node_edges', side_effect=edges)
 
