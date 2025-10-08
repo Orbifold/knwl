@@ -5,6 +5,7 @@ from faker import Faker
 from knwl.llm.openai import OpenAIClient
 from knwl.models.KnwlLLMAnswer import KnwlLLMAnswer
 from knwl.utils import get_full_path
+pytestmark=pytest.mark.llm
 
 fake = Faker()
 

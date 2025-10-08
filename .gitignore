@@ -13,3 +13,4 @@ workdir/
 .vscode
 **/*.log
 
+/data/

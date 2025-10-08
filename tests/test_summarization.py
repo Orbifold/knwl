@@ -2,6 +2,7 @@ import pytest
 
 from knwl.summarization.ollama import OllamaSummarization
 
+pytestmark=pytest.mark.llm
 
 @pytest.mark.asyncio
 async def test_summarization():

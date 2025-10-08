@@ -4,6 +4,7 @@ from knwl.chunking import TiktokenChunking
 from knwl.models.KnwlChunk import KnwlChunk
 
 from knwl.services import services
+pytestmark=pytest.mark.llm
 
 
 def test_encode_string():

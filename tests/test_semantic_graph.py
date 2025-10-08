@@ -2,6 +2,7 @@ import pytest
 
 from knwl.semantic.graph.semantic_graph import SemanticGraph
 from tests.fixtures import random_edges, random_nodes
+pytestmark=pytest.mark.llm
 
 g = SemanticGraph()
 

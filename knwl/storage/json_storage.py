@@ -33,7 +33,7 @@ class JsonStorage(KeyValueStorageBase):
             ["json", "basic", "enabled"], args, kwargs, default=True, override=config
         )
         try:
-            if self.path == "memory" or self.path == "none" or self.path == "false":
+            if self.path == "memory" or self.path == "none" or self.path == "false" or (len(args)>0 and args[0] in ["memory", "none", "false"]) or (isinstance(self.path, bool) and not self.path) or (isinstance(self.enabled, bool) and not self.enabled):
                 self.enabled = False
                 self.path = None
             else:

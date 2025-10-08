@@ -36,3 +36,12 @@ The simply gives the question to the chunks and is added as context.
 
 The hybrid mode is a combination of the local and global modes.
 It takes the local and global contexts, combines it as augmentation.
+
+# Unit tests
+
+To test things which do not require any LLM calls, run:
+
+```bash
+uv run pytest  -m "not llm"
+```
+

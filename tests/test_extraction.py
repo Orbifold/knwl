@@ -4,6 +4,7 @@ from knwl.extraction.basic_entity_extraction import BasicEntityExtraction
 from knwl.extraction.basic_graph_extraction import BasicGraphExtraction
 from knwl.extraction.glean_graph_extraction import GleanGraphExtraction
 
+pytestmark=pytest.mark.llm
 
 @pytest.mark.asyncio
 async def test_extraction():

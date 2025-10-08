@@ -1,13 +1,11 @@
 
 import pytest
 
-from knwl.entities import convert_record_to_edge, is_entity, is_relationship, extract_entities, extract_graph_elements_from_text, fast_entity_extraction_from_text
-from knwl.entities import convert_record_to_node
 from knwl.models.KnwlChunk import KnwlChunk
 from knwl.models.KnwlEdge import KnwlEdge
 from knwl.models.KnwlExtraction import KnwlExtraction
 from knwl.models.KnwlNode import KnwlNode
-from knwl.config import config
+from knwl.config import get_config
 from knwl.utils import *
 pytestmark=pytest.mark.llm
 

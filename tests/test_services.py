@@ -6,6 +6,7 @@ from knwl.config import get_config
 from knwl.llm.ollama import OllamaClient
 from knwl.services import Services
 from knwl.utils import get_full_path
+pytestmark=pytest.mark.llm
 
 
 def test_get_spec():

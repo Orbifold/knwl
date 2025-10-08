@@ -27,7 +27,7 @@ async def test_save_somewhere():
     data = {"key1": {"value": "data1"}}
     await storage.upsert(data)
     await storage.save()
-    file_path = storage.file_path
+    file_path = storage.path
     assert os.path.exists(file_path)
     # remove the JSON file and the directory again
     os.remove(file_path)
@@ -95,7 +95,7 @@ async def test_save():
     data = {"key1": {"value": "data1"}}
     await store.upsert(data)
     await store.save()
-    file_path = store.file_path
+    file_path = store.path
     await asyncio.sleep(1)  # give os a moment to write the file
     assert os.path.exists(file_path)
     data = load_json(file_path)
@@ -106,14 +106,14 @@ async def test_save():
 
 @pytest.mark.asyncio
 async def test_memory_only():
-    store = JsonStorage("test", enabled=False)
+    store = JsonStorage("memory")
     await store.clear_cache()
     await store.clear()
 
     data = {"key1": {"value": "data1"}}
     await store.upsert(data)
     await store.save()
-    assert store.file_path is None
+    assert store.path is None
     found = await store.get_by_id("key1")
     assert found == {"value": "data1"}
     await store.clear_cache()

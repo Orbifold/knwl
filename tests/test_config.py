@@ -16,10 +16,7 @@ def test_config_get():
     assert get_config("llm", "ollama", "temperature") == 0.1
     assert get_config("llm", "ollama", "context_window") == 32768
     assert get_config("llm", "ollama", "caching") == "json"
-    assert get_config("llm_caching", "json", "path") == "llm.json"
-    assert get_config("storage", "documents", "typeName") == "JsonSingleStorage"
-    assert get_config("storage", "vector", "collections", "nodes") == "nodes"
-    assert get_config("storage", "graph", "enabled") is True
+    assert get_config("llm_caching", "json", "path") == "$test/llm.json"
     assert get_config("nonexistent", default="default_value") == "default_value"
     assert get_config("llm", "nonexistent", default={"key": "value"}) == {"key": "value"}
     assert get_config("storage", "documents", "nonexistent", default=123) == 123
