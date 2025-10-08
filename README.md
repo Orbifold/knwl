@@ -2,7 +2,7 @@
 
 A clean Graph RAG implementation.
 
-The current implementation is rather old and there is a major effort ongoing in the v2 branch.
+**The current implementation is rather old and there is a major effort ongoing in the v2 branch.**
 
 # Query modes
 
