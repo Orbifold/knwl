@@ -1,0 +1,105 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_type:
+        description: 'Version bump type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+      
+      - name: Install bump2version
+        run: pip install bump2version
+      
+      - name: Configure git
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+      
+      - name: Bump version
+        run: |
+          # Extract current version from pyproject.toml
+          CURRENT_VERSION=$(grep -Po '(?<=version = ")[^"]*' pyproject.toml)
+          echo "Current version: $CURRENT_VERSION"
+          
+          # Calculate new version based on input
+          case ${{ github.event.inputs.version_type }} in
+            "major")
+              NEW_VERSION=$(python -c "
+          import re
+          v = '$CURRENT_VERSION'
+          parts = v.split('.')
+          parts[0] = str(int(parts[0]) + 1)
+          parts[1] = '0'
+          parts[2] = '0'
+          print('.'.join(parts))
+          ")
+              ;;
+            "minor")
+              NEW_VERSION=$(python -c "
+          import re
+          v = '$CURRENT_VERSION'
+          parts = v.split('.')
+          parts[1] = str(int(parts[1]) + 1)
+          parts[2] = '0'
+          print('.'.join(parts))
+          ")
+              ;;
+            "patch")
+              NEW_VERSION=$(python -c "
+          import re
+          v = '$CURRENT_VERSION'
+          parts = v.split('.')
+          parts[2] = str(int(parts[2]) + 1)
+          print('.'.join(parts))
+          ")
+              ;;
+          esac
+          
+          echo "New version: $NEW_VERSION"
+          
+          # Update version in pyproject.toml
+          sed -i "s/version = \"$CURRENT_VERSION\"/version = \"$NEW_VERSION\"/" pyproject.toml
+          
+          # Commit changes
+          git add pyproject.toml
+          git commit -m "Bump version to $NEW_VERSION"
+          git push
+          
+          # Create tag and release
+          git tag "v$NEW_VERSION"
+          git push origin "v$NEW_VERSION"
+          
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+      
+      - name: Create Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ env.NEW_VERSION }}
+          release_name: Release v${{ env.NEW_VERSION }}
+          draft: false
+          prerelease: false
