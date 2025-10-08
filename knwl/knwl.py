@@ -401,7 +401,7 @@ class Knwl:
         if edges is None or len(edges) == 0:
             return None
         # all the edges have the same source and target
-        source_id: str = edges[0].sourceId
+        source_id: str = edges[0].source_id
         target_id: str = edges[0].targetId
         found_weights = []
         found_chunk_ids = []
@@ -426,7 +426,7 @@ class Knwl:
                 # await self.graph_storage.upsert_node(need_insert_id, node_data={"chunkIds": chunk_ids, "description": description, "type": '"UNKNOWN"'})
                 raise ValueError(f"Node {need_insert_id} referenced by an edge and not found")
 
-        edge = KnwlEdge(sourceId=source_id, targetId=target_id, weight=weight, description=compactified_description, keywords=keywords, chunkIds=chunk_ids)
+        edge = KnwlEdge(source_id=source_id, targetId=target_id, weight=weight, description=compactified_description, keywords=keywords, chunkIds=chunk_ids)
         await self.graph_storage.upsert_edge(source_id, target_id, edge)
         return edge
 
@@ -706,12 +706,12 @@ class Knwl:
         edge_chunk_ids = {}
         stats = {}
         for edge in all_edges:
-            if edge.sourceId not in node_map:
-                node_map[edge.sourceId] = await self.graph_storage.get_node_by_id(edge.sourceId)
+            if edge.source_id not in node_map:
+                node_map[edge.source_id] = await self.graph_storage.get_node_by_id(edge.source_id)
             if edge.targetId not in node_map:
                 node_map[edge.targetId] = await self.graph_storage.get_node_by_id(edge.targetId)
             # take the chunkId in both nodes
-            source_chunks = node_map[edge.sourceId].chunkIds
+            source_chunks = node_map[edge.source_id].chunkIds
             target_chunks = node_map[edge.targetId].chunkIds
             common_chunk_ids = list(set(source_chunks).intersection(target_chunks))
             edge_chunk_ids[edge.id] = common_chunk_ids
@@ -754,7 +754,7 @@ class Knwl:
             List[KnwlRagNode]: A list of KnwlRagNode records containing node information and their degrees.
         """
 
-        node_ids = unique_strings([e.sourceId for e in primary_edges] + [e.targetId for e in primary_edges])
+        node_ids = unique_strings([e.source_id for e in primary_edges] + [e.targetId for e in primary_edges])
         all_nodes = await asyncio.gather(*[self.graph_storage.get_node_by_id(n) for n in node_ids])
         all_degrees = await asyncio.gather(*[self.graph_storage.node_degree(n) for n in node_ids])
         records = []
@@ -778,15 +778,15 @@ class Knwl:
         return all_edges_data
 
     async def get_graph_rag_relations_from_edges(self, vector_edges: List[KnwlEdge]) -> List[KnwlRagEdge]:
-        edge_degrees = await asyncio.gather(*[self.graph_storage.edge_degree(r.sourceId, r.targetId) for r in vector_edges])
+        edge_degrees = await asyncio.gather(*[self.graph_storage.edge_degree(r.source_id, r.targetId) for r in vector_edges])
         degree_edges = [KnwlDegreeEdge(degree=d, **e.model_dump(mode="json")) for e, d in zip(vector_edges, edge_degrees)]
         degree_edges = sorted(degree_edges, key=lambda x: (x.degree, x.weight), reverse=True)
-        edge_endpoint_ids = unique_strings([e.sourceId for e in vector_edges] + [e.targetId for e in vector_edges])
+        edge_endpoint_ids = unique_strings([e.source_id for e in vector_edges] + [e.targetId for e in vector_edges])
         edge_endpoint_names = await self.node_id_to_name(edge_endpoint_ids)
         all_edges_data = []
         for i, e in enumerate(degree_edges):
             if e is not None:
-                all_edges_data.append(KnwlRagEdge(order=e.degree, source=edge_endpoint_names[e.sourceId], target=edge_endpoint_names[e.targetId], keywords=e.keywords, description=e.description, weight=e.weight, id=e.id, index=str(i)))
+                all_edges_data.append(KnwlRagEdge(order=e.degree, source=edge_endpoint_names[e.source_id], target=edge_endpoint_names[e.targetId], keywords=e.keywords, description=e.description, weight=e.weight, id=e.id, index=str(i)))
         return all_edges_data
 
     async def node_id_to_name(self, node_ids: List[str]) -> dict[str:str]:
@@ -880,7 +880,7 @@ class Knwl:
     async def create_description_stats_from_edges(self, primary_edge: list[KnwlEdge], query_param: QueryParam):
         stats = {}
         for edge in primary_edge:
-            degree = await self.graph_storage.edge_degree(edge.sourceId, edge.targetId)
+            degree = await self.graph_storage.edge_degree(edge.source_id, edge.targetId)
             stats[edge.id] = degree
         return stats
 

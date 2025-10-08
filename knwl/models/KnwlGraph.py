@@ -40,7 +40,7 @@ class KnwlGraph(BaseModel):
         edge_ids = self.get_edge_ids()
 
         for edge in self.edges:
-            if edge.sourceId not in node_ids or edge.targetId not in node_ids:
+            if edge.source_id not in node_ids or edge.targetId not in node_ids:
                 return False
         return True
 

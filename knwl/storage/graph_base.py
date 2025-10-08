@@ -42,7 +42,7 @@ class GraphBase(FrameworkBase):
         pass
 
     @abstractmethod
-    def get_edge(self, source_node_id, target_node_id) -> Union[KnwlEdge, None]:
+    async def get_edge(self, source_node_id, target_node_id, label:str) -> Union[list[KnwlEdge], None]:
         pass
 
     @abstractmethod
@@ -140,3 +140,4 @@ class GraphBase(FrameworkBase):
     @abstractmethod
     def get_edge_weight(self, source_node_id, target_node_id):
         pass
+

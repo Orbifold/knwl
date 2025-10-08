@@ -111,7 +111,7 @@ async def test_edge_exists(test_storage):
 
 
 def test_from_knwl_edge_with_valid_edge():
-    edge = KnwlEdge(sourceId="node1", targetId="node2", weight=1.0)
+    edge = KnwlEdge(source_id="node1", target_id="node2", weight=1.0)
     expected = edge.model_dump(mode="json")
     result = NetworkXGraphStorage.from_knwl_edge(edge)
     assert result == expected
@@ -139,8 +139,8 @@ async def test_edge_exists_with_invalid_edge():
 @pytest.mark.asyncio
 async def test_edge_exists_with_edge_object():
     graph_storage = NetworkXGraphStorage()
-    edge = KnwlEdge(sourceId="node1", targetId="node2")
-    graph_storage.graph.add_edge(edge.sourceId, edge.targetId)
+    edge = KnwlEdge(source_id="node1", target_id="node2")
+    graph_storage.graph.add_edge(edge.source_id, edge.target_id)
     assert await graph_storage.edge_exists(edge)
 
 
@@ -162,7 +162,7 @@ async def test_edge_exists_with_invalid_format():
 async def test_edge_exists_with_dict():
     graph_storage = NetworkXGraphStorage()
     graph_storage.graph.add_edge("node1", "node2")
-    assert await graph_storage.edge_exists({"sourceId": "node1"}, {"targetId": "node2"}) is True
+    assert await graph_storage.edge_exists({"source_id": "node1"}, {"target_id": "node2"}) is True
 
 
 @pytest.mark.asyncio
@@ -216,16 +216,16 @@ async def test_get_edges_with_edges():
     graph_storage = NetworkXGraphStorage(path=None)
     node1 = KnwlNode(id="1", name="Node 1")
     node2 = KnwlNode(id="2", name="Node 2")
-    edge = KnwlEdge(sourceId="1", targetId="2", weight=1.0)
+    edge = KnwlEdge(source_id="1", target_id="2", weight=1.0)
 
     await graph_storage.upsert_node(node1.id, node1)
     await graph_storage.upsert_node(node2.id, node2)
-    await graph_storage.upsert_edge(edge.sourceId, edge.targetId, edge)
+    await graph_storage.upsert_edge(edge.source_id, edge.target_id, edge)
 
     edges = await graph_storage.get_edges()
     assert len(edges) == 1
-    assert edges[0].sourceId == "1"
-    assert edges[0].targetId == "2"
+    assert edges[0].source_id == "1"
+    assert edges[0].target_id == "2"
     assert edges[0].weight == 1.0
 
 
@@ -283,7 +283,7 @@ async def test_get_edge_weight_knwl_edge():
     source_node_id = "node1"
     target_node_id = "node2"
     weight = 3.5
-    edge = KnwlEdge(sourceId=source_node_id, targetId=target_node_id, weight=weight)
+    edge = KnwlEdge(source_id=source_node_id, target_id=target_node_id, weight=weight)
 
     # Add nodes and edge to the graph
     await graph_storage.upsert_node(source_node_id, {"name": "Node 1"})
@@ -298,7 +298,7 @@ async def test_get_edge_weight_knwl_edge():
 @pytest.mark.asyncio
 async def test_remove_edge_with_edge_object():
     graph_storage = NetworkXGraphStorage()
-    edge = KnwlEdge(sourceId="node1", targetId="node2", weight=1.0)
+    edge = KnwlEdge(source_id="node1", target_id="node2", weight=1.0)
     await graph_storage.upsert_node("node1", KnwlNode(id="node1", name="Node 1"))
     await graph_storage.upsert_node("node2", KnwlNode(id="node2", name="Node 2"))
     await graph_storage.upsert_edge(edge)
@@ -315,7 +315,7 @@ async def test_remove_edge_with_tuple():
     graph_storage = NetworkXGraphStorage()
     await graph_storage.upsert_node("node1", KnwlNode(id="node1", name="Node 1"))
     await graph_storage.upsert_node("node2", KnwlNode(id="node2", name="Node 2"))
-    await graph_storage.upsert_edge("node1", "node2", KnwlEdge(sourceId="node1", targetId="node2", weight=1.0))
+    await graph_storage.upsert_edge("node1", "node2", KnwlEdge(source_id="node1", target_id="node2", weight=1.0))
 
     assert await graph_storage.edge_exists("node1", "node2")
 
@@ -331,7 +331,7 @@ async def test_remove_edge_with_node_objects():
     node2 = KnwlNode(id="node2", name="Node 2")
     await graph_storage.upsert_node(node1.id, node1)
     await graph_storage.upsert_node(node2.id, node2)
-    await graph_storage.upsert_edge(node1.id, node2.id, KnwlEdge(sourceId=node1.id, targetId=node2.id, weight=1.0))
+    await graph_storage.upsert_edge(node1.id, node2.id, KnwlEdge(source_id=node1.id, target_id=node2.id, weight=1.0))
 
     assert await graph_storage.edge_exists(node1.id, node2.id)
 
@@ -345,7 +345,7 @@ async def test_remove_edge_with_node_ids():
     graph_storage = NetworkXGraphStorage()
     await graph_storage.upsert_node("node1", KnwlNode(id="node1", name="Node 1"))
     await graph_storage.upsert_node("node2", KnwlNode(id="node2", name="Node 2"))
-    await graph_storage.upsert_edge("node1", "node2", KnwlEdge(sourceId="node1", targetId="node2", weight=1.0))
+    await graph_storage.upsert_edge("node1", "node2", KnwlEdge(source_id="node1", target_id="node2", weight=1.0))
 
     assert await graph_storage.edge_exists("node1", "node2")
 
@@ -359,7 +359,7 @@ async def test_remove_edge_with_invalid_data():
     graph_storage = NetworkXGraphStorage()
     await graph_storage.upsert_node("node1", KnwlNode(id="node1", name="Node 1"))
     await graph_storage.upsert_node("node2", KnwlNode(id="node2", name="Node 2"))
-    await graph_storage.upsert_edge("node1", "node2", KnwlEdge(sourceId="node1", targetId="node2", weight=1.0))
+    await graph_storage.upsert_edge("node1", "node2", KnwlEdge(source_id="node1", target_id="node2", weight=1.0))
 
     with pytest.raises(ValueError):
         await graph_storage.remove_edge("node1")

@@ -106,7 +106,7 @@ class GraphExtractionBase(FrameworkBase, ABC):
             node_map[node.name] = node.id
         for item in dic["relationships"]:
             edge = KnwlEdge(
-                sourceId=item["source"],
+                source_id=item["source"],
                 targetId=item["target"],
                 description=item["description"],
                 keywords=item["types"],
@@ -114,8 +114,8 @@ class GraphExtractionBase(FrameworkBase, ABC):
                 chunkIds=[chunk_id] if chunk_id else [],
             )
             # the edge key is the tuple of the source and target names, NOT the ids. Is corrected below
-            edge_key = f"({edge.sourceId},{edge.targetId})"
-            if (edge.sourceId, edge.targetId) not in edges:
+            edge_key = f"({edge.source_id},{edge.targetId})"
+            if (edge.source_id, edge.targetId) not in edges:
                 edges[edge_key] = [edge]
             else:
                 coll = edges[edge_key]
@@ -132,15 +132,15 @@ class GraphExtractionBase(FrameworkBase, ABC):
         for key in edges:
             for e in edges[key]:
 
-                if e.sourceId not in node_map or e.targetId not in node_map:
+                if e.source_id not in node_map or e.targetId not in node_map:
                     #  happens if the LLM creates edges to entities that are not in the graph
                     continue
                 if key not in corrected_edges:
                     corrected_edges[key] = []
-                source_id = node_map[e.sourceId]
+                source_id = node_map[e.source_id]
                 target_id = node_map[e.targetId]
                 corrected_edge = KnwlEdge(
-                    sourceId=source_id,
+                    source_id=source_id,
                     targetId=target_id,
                     description=e.description,
                     keywords=e.keywords,

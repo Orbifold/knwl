@@ -292,7 +292,7 @@ class TestGraphMerge:
     async def test_merge_edges_into_graph_no_existing_edge(self, mocker):
         s = Knwl()
         edge_id = "(source1,target1)"
-        edges = [KnwlEdge(weight=1.0, sourceId="source1", targetId="target1", description="Edge 1", keywords=["keyword1"], chunkIds=["chunk1"]), KnwlEdge(weight=2.0, sourceId="source1", targetId="target1", description="Edge 2", keywords=["keyword2"], chunkIds=["chunk2"])]
+        edges = [KnwlEdge(weight=1.0, source_id="source1", targetId="target1", description="Edge 1", keywords=["keyword1"], chunkIds=["chunk1"]), KnwlEdge(weight=2.0, source_id="source1", targetId="target1", description="Edge 2", keywords=["keyword2"], chunkIds=["chunk2"])]
 
         mocker.patch.object(s.graph_storage, 'edge_exists', return_value=False)
         mocker.patch.object(s.graph_storage, 'upsert_edge')
@@ -302,7 +302,7 @@ class TestGraphMerge:
 
         result = await s.merge_edges_into_graph(edges)
 
-        assert result.sourceId == "source1"
+        assert result.source_id == "source1"
         assert result.targetId == "target1"
         assert result.weight == 3.0
         assert result.description == "Edge 1 Edge 2"
@@ -313,7 +313,7 @@ class TestGraphMerge:
     @pytest.mark.asyncio
     async def test_merge_edges_into_graph_existing_edge(self, mocker):
         s = Knwl()
-        edges = [KnwlEdge(weight=1.0, sourceId="source1", targetId="target1", description="Edge 1", keywords=["keyword1"], chunkIds=["chunk1"]), KnwlEdge(weight=2.0, sourceId="source1", targetId="target1", description="Edge 2", keywords=["keyword2"], chunkIds=["chunk2"])]
+        edges = [KnwlEdge(weight=1.0, source_id="source1", targetId="target1", description="Edge 1", keywords=["keyword1"], chunkIds=["chunk1"]), KnwlEdge(weight=2.0, source_id="source1", targetId="target1", description="Edge 2", keywords=["keyword2"], chunkIds=["chunk2"])]
         existing_edge = KnwlEdge(**{"sourceId": "source1", "targetId": "target1", "weight": 1.5, "chunkIds": ["chunk3"], "description": "Existing edge", "keywords": ["existing_keyword"]})
 
         mocker.patch.object(s.graph_storage, 'edge_exists', return_value=True)
@@ -324,7 +324,7 @@ class TestGraphMerge:
 
         result = await s.merge_edges_into_graph(edges)
 
-        assert result.sourceId == "source1"
+        assert result.source_id == "source1"
         assert result.targetId == "target1"
         assert result.weight == 4.5
         assert result.description == "Edge 1 Edge 2 Existing edge"
@@ -336,7 +336,7 @@ class TestGraphMerge:
     async def test_merge_edges_into_graph_missing_nodes(self, mocker):
         s = Knwl()
         edge_id = "(source1,target1)"
-        edges = [KnwlEdge(weight=1.0, sourceId="source1", targetId="target1", description="Edge 1", keywords=["keyword1"], chunkIds=["chunk1"]), KnwlEdge(weight=2.0, sourceId="source1", targetId="target1", description="Edge 2", keywords=["keyword2"], chunkIds=["chunk2"])]
+        edges = [KnwlEdge(weight=1.0, source_id="source1", targetId="target1", description="Edge 1", keywords=["keyword1"], chunkIds=["chunk1"]), KnwlEdge(weight=2.0, source_id="source1", targetId="target1", description="Edge 2", keywords=["keyword2"], chunkIds=["chunk2"])]
 
         mocker.patch.object(s.graph_storage, 'edge_exists', return_value=False)
         mocker.patch.object(s.graph_storage, 'upsert_edge')
@@ -366,9 +366,9 @@ class TestGraphMerge:
         s = Knwl()
         node1 = KnwlNode(type="Person", description="John is a software engineer.", chunkIds=["chunk1"], name="entity1")
         node2 = KnwlNode(type="Location", description="Paris is a city.", chunkIds=["chunk2"], name="entity2")
-        edge1 = KnwlEdge(weight=1.0, sourceId=node1.id, targetId=node2.id, description="Edge 1", keywords=["keyword1"], chunkIds=["chunk1"])
-        edge2 = KnwlEdge(weight=2.0, sourceId=node1.id, targetId=node2.id, description="Edge 2", keywords=["keyword2"], chunkIds=["chunk2"])
-        merged_edge = KnwlEdge(weight=3.0, sourceId=node1.id, targetId=node2.id, description="Edge 1 Edge 2", keywords=["keyword1", "keyword2"], chunkIds=["chunk1", "chunk2"])
+        edge1 = KnwlEdge(weight=1.0, source_id=node1.id, targetId=node2.id, description="Edge 1", keywords=["keyword1"], chunkIds=["chunk1"])
+        edge2 = KnwlEdge(weight=2.0, source_id=node1.id, targetId=node2.id, description="Edge 2", keywords=["keyword2"], chunkIds=["chunk2"])
+        merged_edge = KnwlEdge(weight=3.0, source_id=node1.id, targetId=node2.id, description="Edge 1 Edge 2", keywords=["keyword1", "keyword2"], chunkIds=["chunk1", "chunk2"])
         extraction = KnwlExtraction(nodes={node1.name: [node1], node2.name: [node2]}, edges={"(entity1,entity2)": [edge1, edge2], })
 
         mocker.patch.object(s, 'merge_nodes_into_graph', side_effect=[node1, node2])
@@ -457,16 +457,16 @@ class TestQuery:
         s = Knwl()
         query_param = QueryParam()
         nodes = [KnwlNode(name="node1", type="Person", description="Description 1", chunkIds=["chunk1"]), KnwlNode(name="node2", type="Location", description="Description 2", chunkIds=["chunk2"])]
-        edges = [KnwlEdge(weight=1.1, sourceId="node1", targetId="node2", description="Edge 1", keywords="keyword1", chunkIds=["chunk1"]), KnwlEdge(weight=2.2, sourceId="node2", targetId="node4", description="Edge 2", keywords="keyword2", chunkIds=["chunk2"]), KnwlEdge(weight=3.3, sourceId="node2", targetId="node6", description="Edge 3", keywords="keyword2", chunkIds=["chunk43"])]
+        edges = [KnwlEdge(weight=1.1, source_id="node1", targetId="node2", description="Edge 1", keywords="keyword1", chunkIds=["chunk1"]), KnwlEdge(weight=2.2, source_id="node2", targetId="node4", description="Edge 2", keywords="keyword2", chunkIds=["chunk2"]), KnwlEdge(weight=3.3, source_id="node2", targetId="node6", description="Edge 3", keywords="keyword2", chunkIds=["chunk43"])]
 
         mocker.patch.object(s.graph_storage, 'get_node_edges', return_value=edges)
 
         result = await s.get_attached_edges(nodes)
 
         assert len(result) == 3
-        assert result[0].sourceId == "node1"
+        assert result[0].source_id == "node1"
         assert result[0].targetId == "node2"
-        assert result[1].sourceId == "node2"
+        assert result[1].source_id == "node2"
         assert result[1].targetId == "node4"
 
     @pytest.mark.asyncio
@@ -474,7 +474,7 @@ class TestQuery:
         s = Knwl()
         query_param = QueryParam()
         nodes = [KnwlNode(name="node1", type="Person", description="Description 1", chunkIds=["chunk1"]), KnwlNode(name="node2", type="Location", description="Description 2", chunkIds=["chunk2"])]
-        edges = [[KnwlEdge(weight=1.0, sourceId="node1", targetId="node2", description="Edge 1", keywords="keyword1", chunkIds=["chunk1"])], [KnwlEdge(weight=1.3, sourceId="node1", targetId="node3", description="Edge 2", keywords="keyword1", chunkIds=["chunk1"])], [KnwlEdge(weight=1.3, sourceId="node1", targetId="node3", description="Edge 2", keywords="keyword1", chunkIds=["chunk1"])]  # duplicate edge by intention
+        edges = [[KnwlEdge(weight=1.0, source_id="node1", targetId="node2", description="Edge 1", keywords="keyword1", chunkIds=["chunk1"])], [KnwlEdge(weight=1.3, source_id="node1", targetId="node3", description="Edge 2", keywords="keyword1", chunkIds=["chunk1"])], [KnwlEdge(weight=1.3, source_id="node1", targetId="node3", description="Edge 2", keywords="keyword1", chunkIds=["chunk1"])]  # duplicate edge by intention
                  ]
 
         mocker.patch.object(s.graph_storage, 'get_node_edges', side_effect=edges)
@@ -483,9 +483,9 @@ class TestQuery:
 
         assert len(result) == 2
 
-        assert result[0].sourceId == "node1"
+        assert result[0].source_id == "node1"
         assert result[0].targetId == "node2"
-        assert result[1].sourceId == "node1"
+        assert result[1].source_id == "node1"
         assert result[1].targetId == "node3"
 
     @pytest.mark.asyncio
@@ -540,9 +540,9 @@ class TestChunkStats:
         node3 = KnwlNode(name="node3", type="Location", description="Description 3", chunkIds=["chunk1", "chunk3"])
         node4 = KnwlNode(name="node4", type="Something", description="Description 4", chunkIds=["chunk4"])
 
-        edge12 = KnwlEdge(weight=1.0, sourceId=node1.id, targetId=node2.id, description="Edge 12", keywords=["keyword1"], chunkIds=["chunk1"])
-        edge13 = KnwlEdge(weight=1.0, sourceId=node1.id, targetId=node3.id, description="Edge 13", keywords=["keyword1"], chunkIds=["chunk3"])
-        edge14 = KnwlEdge(weight=1.0, sourceId=node1.id, targetId=node4.id, description="Edge 14", keywords=["keyword1"], chunkIds=["chunk4"])
+        edge12 = KnwlEdge(weight=1.0, source_id=node1.id, targetId=node2.id, description="Edge 12", keywords=["keyword1"], chunkIds=["chunk1"])
+        edge13 = KnwlEdge(weight=1.0, source_id=node1.id, targetId=node3.id, description="Edge 13", keywords=["keyword1"], chunkIds=["chunk3"])
+        edge14 = KnwlEdge(weight=1.0, source_id=node1.id, targetId=node4.id, description="Edge 14", keywords=["keyword1"], chunkIds=["chunk4"])
 
         primary_nodes = [node1, node2]
 

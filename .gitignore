@@ -11,4 +11,5 @@ tests/data/**/*
 workdir/
 .idea
 .vscode
-**/.log
+**/*.log
+

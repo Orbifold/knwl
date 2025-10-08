@@ -17,24 +17,43 @@ class KnwlNode(BaseModel):
         typeName (str): The type name of the knowledge node, default is "KnwlNode".
         id (str): The unique identifier of the knowledge node, default is a new UUID.
     """
-    name: str
-    type: str = "UNKNOWN"
-    typeName: str = "KnwlNode"
-    id: Optional[str] = Field(default=None, description="The unique identifier of the knowledge node")
-    description: str = Field(default="", description="A description of the knowledge node")
-    chunkIds: List[str] = Field(default=[], description="The chunk identifiers associated with the knowledge node.")
+
+    name: str = Field(
+        description="The name of the knowledge node. Can be unique but in a refined model it should not. For example, 'apple' can be both a noun and a company. The name+type should be unique instead."
+    )
+    type: str = Field(
+        default="Unknown",
+        description="The type of the knowledge node. In a property modeled graph this should be an ontology class.",
+    )
+    type_name: str = Field(
+        default="KnwlNode",
+        frozen=True,
+        description="The type name of the knowledge node for (de)serialization purposes.",
+    )
+    id: Optional[str] = Field(
+        default=None, description="The unique identifier of the knowledge node"
+    )
+    description: str = Field(
+        default="",
+        description="The content or description which normally comes from the extracted text. This can be used for embedding purposes, together with the name and the type",
+    )
+    chunk_ids: List[str] = Field(
+        default_factory=list,
+        description="The chunk identifiers associated with the knowledge node.",
+        alias="chunkIds",
+    )
 
     model_config = {"frozen": True}
 
-    @field_validator('name')
+    @field_validator("name")
     @classmethod
     def validate_name(cls, v: str) -> str:
         if v is None or len(str.strip(v)) == 0:
             raise ValueError("Content of a KnwlNode cannot be None or empty.")
         return v
 
-    @model_validator(mode='after')
-    def set_id(self) -> 'KnwlNode':
+    @model_validator(mode="after")
+    def set_id(self) -> "KnwlNode":
         if self.name is not None and len(str.strip(self.name)) > 0:
             object.__setattr__(self, "id", self.hash_node(self))
         else:
@@ -42,7 +61,7 @@ class KnwlNode(BaseModel):
         return self
 
     @staticmethod
-    def hash_node(n: 'KnwlNode') -> str:
+    def hash_node(n: "KnwlNode") -> str:
         # name and type form the primary key
         return KnwlNode.hash_keys(n.name, n.type)
 

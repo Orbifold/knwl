@@ -324,9 +324,9 @@ def test_node_class():
 
 def test_edge_class():
     with pytest.raises(ValueError):
-        KnwlEdge(sourceId="", targetId="")
+        KnwlEdge(source_id="", targetId="")
 
-    c = KnwlEdge(sourceId="a", targetId="b")
+    c = KnwlEdge(source_id="a", targetId="b")
     # id is assigned based on the content
     assert "edge-" in c.id
     assert c.id == KnwlEdge.hash_edge(c)

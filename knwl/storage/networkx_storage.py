@@ -47,11 +47,11 @@ class NetworkXGraphStorage(GraphBase):
                     self.graph = preloaded_graph
                 else:
                     # failed to load the graph from file
-                    self.graph = nx.Graph()
+                    self.graph = nx.MultiGraph()
             else:
-                self.graph = nx.Graph()
+                self.graph = nx.MultiGraph()
         else:
-            self.graph = nx.Graph()
+            self.graph = nx.MultiGraph() # allow multiple edges between two nodes with different labels
             self.path = None
 
     @staticmethod
@@ -154,8 +154,8 @@ class NetworkXGraphStorage(GraphBase):
         target_id = None
         if target_node_id is None:
             if isinstance(source_or_key, KnwlEdge):
-                source_id = source_or_key.sourceId
-                target_id = source_or_key.targetId
+                source_id = source_or_key.source_id
+                target_id = source_or_key.target_id
 
             if isinstance(source_or_key, tuple):
                 source_id = source_or_key[0]
@@ -173,13 +173,13 @@ class NetworkXGraphStorage(GraphBase):
             if isinstance(source_or_key, KnwlNode):
                 source_id = source_or_key.id
             elif isinstance(source_or_key, dict):
-                source_id = source_or_key.get("sourceId", None)
+                source_id = source_or_key.get("source_id", None)
             else:
                 source_id = source_or_key
             if isinstance(target_node_id, KnwlNode):
                 target_id = target_node_id.id
             elif isinstance(target_node_id, dict):
-                target_id = target_node_id.get("targetId", None)
+                target_id = target_node_id.get("target_id", None)
             else:
                 target_id = target_node_id
         if source_id is None or target_id is None:
@@ -207,7 +207,7 @@ class NetworkXGraphStorage(GraphBase):
     async def edge_degree(self, source_id: str, target_id: str) -> int:
         return self.graph.degree(source_id) + self.graph.degree(target_id)
 
-    async def get_edge(self, source_node_id: str, target_node_id: str = None) -> Union[KnwlEdge, None]:
+    async def get_edge(self, source_node_id: str, target_node_id: str = None, label:str=None) -> Union[list[KnwlEdge], None]:
         if target_node_id is None:
             match = re.match(r"\((.*?),(.*?)\)", source_node_id)
             if match:
@@ -215,12 +215,13 @@ class NetworkXGraphStorage(GraphBase):
                 source_id = str.strip(source_id)
                 target_id = str.strip(target_id)
             else:
-                raise ValueError(f"Invalid edge_id format: {source_node_id}")
+                raise ValueError(f"Invalid edge_id format '{source_node_id}' for this NetworkX implementation, it should be (source_id,target_id).")
             found = self.graph.edges.get((source_id, target_id))
-        found = self.graph.edges.get((source_node_id, target_node_id))
+        else:
+            found = self.graph.edges.get((source_node_id, target_node_id))
         if found:
-            found["sourceId"] = source_node_id
-            found["targetId"] = target_node_id
+            found["source_id"] = source_node_id
+            found["target_id"] = target_node_id
             return NetworkXGraphStorage.to_knwl_edge(found)
         else:
             return None
@@ -238,7 +239,7 @@ class NetworkXGraphStorage(GraphBase):
         if await self.node_exists(source_node_id):
             tuples = list(self.graph.edges(source_node_id))
 
-            raw = [{"sourceId": t[0], "targetId": t[1], **self.graph.get_edge_data(t[0], t[1], {})} for t in tuples]
+            raw = [{"source_id": t[0], "target_id": t[1], **self.graph.get_edge_data(t[0], t[1], {})} for t in tuples]
             return [NetworkXGraphStorage.to_knwl_edge(edge) for edge in raw]
         return None
 
@@ -270,7 +271,7 @@ class NetworkXGraphStorage(GraphBase):
         Returns:
             List[int]: A list of degrees for the given edges.
         """
-        return await asyncio.gather(*[self.edge_degree(e.sourceId, e.targetId) for e in edges])
+        return await asyncio.gather(*[self.edge_degree(e.source_id, e.target_id) for e in edges])
 
     async def get_semantic_endpoints(self, edge_ids: List[str]) -> dict[str, tuple[str, str]]:
         """
@@ -285,8 +286,8 @@ class NetworkXGraphStorage(GraphBase):
         edges = await asyncio.gather(*[self.get_edge_by_id(id) for id in edge_ids])
         coll = {}
         for e in edges:
-            source_id = e.sourceId
-            target_id = e.targetId
+            source_id = e.source_id
+            target_id = e.target_id
             source_node = await self.get_node_by_id(source_id)
             target_node = await self.get_node_by_id(target_id)
             if source_node and target_node:
@@ -330,8 +331,8 @@ class NetworkXGraphStorage(GraphBase):
     async def upsert_edge(self, source_node_id: str, target_node_id: str = None, edge_data: object = None):
         if isinstance(source_node_id, KnwlEdge):
             edge_data = source_node_id.model_dump(mode="json")
-            source_node_id = edge_data.get("sourceId", None)
-            target_node_id = edge_data.get("targetId", None)
+            source_node_id = edge_data.get("source_id", None)
+            target_node_id = edge_data.get("target_id", None)
         if isinstance(source_node_id, tuple):
             source_node_id, target_node_id = source_node_id
             edge_data = cast(dict, edge_data or {})
@@ -340,8 +341,8 @@ class NetworkXGraphStorage(GraphBase):
         if isinstance(target_node_id, KnwlNode):
             target_node_id = target_node_id.id
         if isinstance(edge_data, KnwlEdge):
-            source_node_id = edge_data.sourceId
-            target_node_id = edge_data.targetId
+            source_node_id = edge_data.source_id
+            target_node_id = edge_data.target_id
             edge_data = edge_data.model_dump(mode="json")
         if isinstance(source_node_id, str):
             if target_node_id is None:
@@ -354,8 +355,8 @@ class NetworkXGraphStorage(GraphBase):
             raise ValueError("Insufficient data to upsert edge, missing source node id")
         if "id" not in edge_data:
             edge_data["id"] = str(uuid4())
-        edge_data["sourceId"] = source_node_id
-        edge_data["targetId"] = target_node_id
+        edge_data["source_id"] = source_node_id
+        edge_data["target_id"] = target_node_id
         self.graph.add_edge(source_node_id, target_node_id, **edge_data)
         await self.save()
 
@@ -377,24 +378,24 @@ class NetworkXGraphStorage(GraphBase):
         await self.save()
 
     async def remove_edge(self, source_node_id: object, target_node_id: str = None):
-        sourceId = None
-        targetId = None
+        source_id = None
+        target_id = None
         if isinstance(source_node_id, KnwlEdge):
-            sourceId = source_node_id.sourceId
-            targetId = source_node_id.targetId
+            source_id = source_node_id.source_id
+            target_id = source_node_id.target_id
         if isinstance(source_node_id, tuple):
-            sourceId, targetId = source_node_id
+            source_id, target_id = source_node_id
         if isinstance(source_node_id, KnwlNode):
-            sourceId = source_node_id.id
+            source_id = source_node_id.id
         if isinstance(target_node_id, KnwlNode):
-            targetId = target_node_id.id
+            target_id = target_node_id.id
         if isinstance(source_node_id, str):
-            sourceId = source_node_id
+            source_id = source_node_id
             if target_node_id is None:
                 raise ValueError("Insufficient data to remove edge, missing target node id")
             else:
-                targetId = target_node_id
-        self.graph.remove_edge(sourceId, targetId)
+                target_id = target_node_id
+        self.graph.remove_edge(source_id, target_id)
         await self.save()
 
     async def get_nodes(self) -> List[KnwlNode]:

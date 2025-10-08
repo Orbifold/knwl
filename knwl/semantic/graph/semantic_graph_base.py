@@ -25,9 +25,16 @@ class SemanticGraphBase(FrameworkBase, ABC):
     @abstractmethod
     async def embed_node(self, node: KnwlNode):
         pass
+    @abstractmethod
+    async def embed_nodes(self, nodes: list[KnwlNode]):
+        pass
 
     @abstractmethod
-    async def embed_edge(self, sedge: KnwlEdge):
+    async def embed_edge(self, edge: KnwlEdge):
+        pass
+
+    @abstractmethod
+    async def embed_edges(self, edge: list[KnwlEdge]):
         pass
 
     @abstractmethod

@@ -1,9 +1,16 @@
 import pytest
 
 from knwl.semantic.graph.semantic_graph import SemanticGraph
+from tests.fixtures import random_edges, random_nodes
+
+g = SemanticGraph()
 
 
 @pytest.mark.asyncio
-async def test_service_basic():
-    s = SemanticGraph()
-
+async def test_embeddings(random_nodes, random_edges):
+    await g.embed_nodes(random_nodes)
+    await g.embed_edges(random_edges)
+    node1 = await g.get_node_by_id(random_nodes[0].id)
+    assert node1 is not None
+    edge1 = await g.get_edge_by_id(random_edges[0].id)
+    assert edge1 is not None
