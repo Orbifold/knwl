@@ -5,6 +5,7 @@ import pytest
 from knwl.llm import llm, LLMClient
 from knwl.models import KnwlLLMAnswer
 from knwl.settings import settings
+pytestmark = pytest.mark.llm
 
 
 @pytest.mark.asyncio

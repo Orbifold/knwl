@@ -8,6 +8,7 @@ from knwl.tokenize import (
     truncate_content,
 )
 from knwl.models.KnwlChunk import KnwlChunk
+pytestmark = pytest.mark.llm
 
 
 def test_encode_string_by_tiktoken():

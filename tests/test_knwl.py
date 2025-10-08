@@ -6,6 +6,10 @@ import pytest
 import pytest_asyncio
 from faker import Faker
 
+# Mark entire module as requiring LLM integration
+# All tests in this module will be skipped in CI environments
+pytestmark = pytest.mark.llm
+
 import knwl
 from knwl.knwl import Knwl
 from knwl.models import KnwlLLMAnswer
@@ -42,6 +46,7 @@ class TestRealCases:
         return cls.knwl
 
     @pytest.mark.asyncio
+    @pytest.mark.llm
     async def test_local(self, knwl):
         response = await knwl.query("Who is John?", QueryParam(mode="local"))
 
@@ -57,6 +62,7 @@ class TestRealCases:
         print(f"timing: {response.total_time}s [{response.rag_time}s rag, {response.llm_time}s llm]")
 
     @pytest.mark.asyncio
+    @pytest.mark.llm
     async def test_global(self, knwl):
         response = await knwl.query("Who is John?", QueryParam(mode="global"))
         print()
@@ -74,6 +80,7 @@ class TestRealCases:
         print(f"timing: {response.total_time}s [{response.rag_time}s rag, {response.llm_time}s llm]")
 
     @pytest.mark.asyncio
+    @pytest.mark.llm
     async def test_naive(self, knwl):
         response = await knwl.query("Who is John?", QueryParam(mode="naive"))
         print()
@@ -89,6 +96,7 @@ class TestRealCases:
         print(f"timing: {response.total_time}s [{response.rag_time}s rag, {response.llm_time}s llm]")
 
     @pytest.mark.asyncio
+    @pytest.mark.llm
     async def test_hybrid(self, knwl):
         response = await knwl.query("Who is John?", QueryParam(mode="hybrid"))
         print()
@@ -105,6 +113,7 @@ class TestRealCases:
 
 class TestGraphCreation:
     @pytest.mark.asyncio
+    @pytest.mark.llm
     async def test_direct_kg_creation(self):
         s = Knwl()
         g = await s.create_kg("""
@@ -548,6 +557,7 @@ class TestQuery:
         assert result[1].targetId == "node3"
 
     @pytest.mark.asyncio
+    @pytest.mark.llm
     async def test_basic_rag(self):
         doc1 = "John is a software engineer and he is 34 years old."
         doc2 = "The QZ3 theory is about quantum topology and it is a new approach to quantum mechanics."

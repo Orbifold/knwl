@@ -10,7 +10,7 @@ from knwl.models.KnwlExtraction import KnwlExtraction
 from knwl.models.KnwlNode import KnwlNode
 from knwl.settings import settings
 from knwl.utils import *
-
+pytestmark=pytest.mark.llm
 
 class TestBasic:
 
