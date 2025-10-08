@@ -24,12 +24,34 @@ class ChromaStorage(VectorStorageBase):
         # def __init__(self, namespace: str = "default", metadata=None, caching: bool = False):
         super().__init__(*args, **kwargs)
         config = kwargs.get("override", None)
-        self.metadata = self.get_param(["vector", "chroma", "metadata"], args, kwargs, default=[], override=config, )
-        self.memory = self.get_param(["vector", "chroma", "memory"], args, kwargs, default=False, override=config)
-        self.collection_name = self.get_param(["vector", "chroma", "collection"], args, kwargs, default="default", override=config, )
-        self.path = self.get_param(["vector", "chroma", "path"], args, kwargs, default="$test/vector", override=config, )
+        self.metadata = self.get_param(
+            ["vector", "chroma", "metadata"],
+            args,
+            kwargs,
+            default=[],
+            override=config,
+        )
+        self.memory = self.get_param(
+            ["vector", "chroma", "memory"], args, kwargs, default=False, override=config
+        )
+        self.collection_name = self.get_param(
+            ["vector", "chroma", "collection"],
+            args,
+            kwargs,
+            default="default",
+            override=config,
+        )
+        self.path = self.get_param(
+            ["vector", "chroma", "path"],
+            args,
+            kwargs,
+            default="$test/vector",
+            override=config,
+        )
         if self.path is not None and "." in self.path.split("/")[-1]:
-            log.warn(f"The Chroma path '{self.path}' contains a '.' but should be a directory, not a file.")
+            log.warn(
+                f"The Chroma path '{self.path}' contains a '.' but should be a directory, not a file."
+            )
         if not self.memory and self.path is not None:
             self.path = get_full_path(self.path)
             self.client = chromadb.PersistentClient(path=self.path)
@@ -37,17 +59,26 @@ class ChromaStorage(VectorStorageBase):
         else:
             self.client = chromadb.Client()
 
-        self.collection = self.client.get_or_create_collection(name=self.collection_name)
+        self.collection = self.client.get_or_create_collection(
+            name=self.collection_name
+        )
 
     async def query(self, query: str, top_k: int = 1) -> list[dict]:
-        """
-        Note that Chroma has auto-embedding based on all-MiniLM-L6-v2, so you don't need to provide embeddings.
-        The `query_texts` is auto=transformed using this model. The embedding dimension is only 384, so it really is rather shallow for most purposes.
-        """
+        # ====================================================================================        
+        # Note that Chroma has auto-embedding based on all-MiniLM-L6-v2, so you don't need to provide embeddings.
+        # The `query_texts` is auto=transformed using this model. The embedding dimension is only 384, so it really is rather shallow for most purposes.
+        # ====================================================================================
+
+        if not isinstance(query, str):
+            raise ValueError("Query must be a string. If you have a model, use json.dumps() first.")
         if len(self.metadata) > 0:
-            found = self.collection.query(query_texts=query, n_results=top_k, include=["documents", "metadatas"])
+            found = self.collection.query(
+                query_texts=query, n_results=top_k, include=["documents", "metadatas"]
+            )
         else:
-            found = self.collection.query(query_texts=query, n_results=top_k, include=["documents"])
+            found = self.collection.query(
+                query_texts=query, n_results=top_k, include=["documents"]
+            )
         if found is None:
             return []
         coll = []
@@ -56,6 +87,9 @@ class ChromaStorage(VectorStorageBase):
         return coll
 
     async def upsert(self, data: dict[str, dict]):
+        if data is None or len(data) == 0:
+            return data
+
         for key, value in data.items():
             if value is None:
                 continue
@@ -63,16 +97,30 @@ class ChromaStorage(VectorStorageBase):
                 str_value = json.dumps(value)
             else:
                 str_value = value
+            embedding = None
+            if "embedding" in value:
+                embedding = value["embedding"]
+            if "embeddings" in value:
+                embedding = value["embeddings"]
             if len(self.metadata) > 0:
                 metadata = {k: value.get(k, None) for k in self.metadata}
-                self.collection.upsert(ids=key, documents=str_value, metadatas=metadata)
+                self.collection.upsert(
+                    ids=key,
+                    documents=str_value,
+                    metadatas=metadata,
+                    embeddings=embedding,
+                )
             else:
-                self.collection.upsert(ids=key, documents=str_value)
+                self.collection.upsert(
+                    ids=key, documents=str_value, embeddings=embedding
+                )
         return data
 
     async def clear(self):
         self.client.delete_collection(self.collection_name)
-        self.collection = self.client.get_or_create_collection(name=self.collection_name)
+        self.collection = self.client.get_or_create_collection(
+            name=self.collection_name
+        )
 
     async def count(self):
         return self.collection.count()

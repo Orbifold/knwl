@@ -3,6 +3,9 @@ from knwl.models import KnwlNode, KnwlEdge
 from knwl.models.KnwlGraph import KnwlGraph
 from knwl.semantic.graph.semantic_graph_base import SemanticGraphBase
 from knwl.services import Services
+from knwl.storage.graph_base import GraphBase
+from knwl.storage.vector_storage_base import VectorStorageBase
+from knwl.summarization.summarization_base import SummarizationBase
 
 
 class SemanticGraph(SemanticGraphBase):
@@ -15,10 +18,10 @@ class SemanticGraph(SemanticGraphBase):
             log.error("No semantic graph service configured.")
             raise ValueError("No semantic graph service configured.")
         self.validate_config(specs)
-        self.graph_store = self.get_service(specs["graph"]["graph-store"], override=config)
-        self.node_embeddings = self.get_service(specs["graph"]["node-embeddings"], override=config)  # print(type(self.graph_store).__name__)
-        self.edge_embeddings = self.get_service(specs["graph"]["edge-embeddings"], override=config)
-        self.summarization = self.get_service(specs["graph"]["summarization"], override=config)
+        self.graph_store: GraphBase = self.get_service(specs["graph"]["graph-store"], override=config)
+        self.node_embeddings: VectorStorageBase = self.get_service(specs["graph"]["node-embeddings"], override=config)  # print(type(self.graph_store).__name__)
+        self.edge_embeddings: VectorStorageBase = self.get_service(specs["graph"]["edge-embeddings"], override=config)
+        self.summarization: SummarizationBase = self.get_service(specs["graph"]["summarization"], override=config)
         log(f"Semantic graph initialized with {type(self.graph_store).__name__}, {type(self.node_embeddings).__name__}, {type(self.edge_embeddings).__name__}, {type(self.summarization).__name__}")
 
     def validate_config(self, specs):
@@ -50,7 +53,10 @@ class SemanticGraph(SemanticGraphBase):
                 raise ValueError(f"Source node {edge.source_id} does not exist in the graph.")
             if not await self.node_exists(edge.target_id):
                 raise ValueError(f"Target node {edge.target_id} does not exist in the graph.")
-
+        
+            # add to graph store
+            await self.graph_store.upsert_edge(edge.source_id, edge.target_id, edge)
+            # add to embedding store
             await self.edge_embeddings.upsert({edge.id: edge.model_dump(mode="json")})
         except Exception as e:
             log(e)
@@ -81,6 +87,10 @@ class SemanticGraph(SemanticGraphBase):
                 log.error("Node must have an ID to be embedded.")
                 raise ValueError("Node must have an Id to be embedded.")
             data[node.id] = node.model_dump(mode="json")
+            # add to the graph store
+            await self.graph_store.upsert_node(node.id, node)
+
+        # embedding of the nodes
         await self.node_embeddings.upsert(data)
 
     async def get_node_by_id(self, id: str) -> KnwlNode | None:
@@ -111,3 +121,24 @@ class SemanticGraph(SemanticGraphBase):
 
     async def merge_graph(self, graph: KnwlGraph):
         pass
+
+    async def get_similar_nodes(self, node: KnwlNode, top_k: int = 5) -> list[KnwlNode]:
+        if node is None or node.id is None:
+            return []
+        results = await self.node_embeddings.similarity_search(node.model_dump(mode="json"), top_k=top_k, exclude_ids=[node.id])
+        nodes = []
+        for r in results:
+            nodes.append(KnwlNode(**r))
+        return nodes
+
+    async def get_similar_edges(self, edge: KnwlEdge, top_k: int = 5) -> list[KnwlEdge]:
+        if edge is None or edge.id is None:
+            return []
+        results = await self.edge_embeddings.query(edge.model_dump_json(), top_k=top_k)
+        # at this point you have to decide whether the graph or the vector db is considered for the actual data
+        # if the vector db only contains embeddings, then you have to get the actual data from the graph store
+        # for now we assume the vector db contains the actual data as well,
+        edges = []
+        for r in results:
+            edges.append(KnwlEdge(**r))
+        return edges

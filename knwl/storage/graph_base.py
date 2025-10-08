@@ -2,51 +2,130 @@ from abc import abstractmethod
 from typing import Union
 
 from knwl.framework_base import FrameworkBase
-from knwl.models import KnwlEdge
-from knwl.models import KnwlNode
 
 
 class GraphBase(FrameworkBase):
+    """
+    Base class for graph storage implementations.
+    Strictly speaking, the graph is a directed multigraph, meaning multiple edges can exist between the same pair of nodes.
+    This abastract base class does not use the KnwlNode or KnwlEdge models directly, but the data is expected to be in the form of dictionaries
+    that can be converted to/from those models. That is, you can use a GraphBase independently of the higher level mechanisms in knwl.
+
+    - The 'id' (string) should be unique for nodes and edges and present in the data (payload dictionary). If not provided, a uuid4 will be generated.
+    - The 'name' (optional string) is not unique and can be the same for different nodes (e.g. "Apple" as fruit and as company).
+    - The 'type' (string) is a semantic type (e.g. Person, Company, Location, Product, Event, etc.) and is optional. If not provided, it will be set to "Unknown".
+
+    """
 
     @abstractmethod
-    def node_exists(self, node_id):
-        pass
-
-    @abstractmethod
-    def edge_exists(self, source_or_key, target_node_id):
-        pass
-
-    @abstractmethod
-    def get_node_by_id(self, node_id) -> Union[KnwlNode, None]:
-        pass
-
-    @abstractmethod
-    def get_node_by_name(self, node_name) -> Union[list[KnwlNode], None]:
+    async def node_exists(self, node_id: str) -> bool:
         """
-        Retrieves a node(s) by its name.
+        Check if a node with the given Id exists in the graph.
+
         Args:
-            node_name: The name of the node to retrieve.
+            node_id (str): The unique identifier of the node to check for existence.
 
         Returns:
-            List[KnwlNode] | None: Since the name is not unique and can appear with different semantic types (e.g. Apple as fruit and as company), a list of KnwlNode objects is returned if found, None otherwise.
+            bool: True if the node exists in the graph, False otherwise.
+        """
+        pass
+
+    @abstractmethod
+    async def edge_exists(self, source_or_key: str, target_node_id: str = None) -> bool:
+        """
+        Check if an edge exists between the given source and target nodes.
+
+        Args:
+            source_or_key (str): The unique identifier of the source node or edge.
+            target_node_id (str): The unique identifier of the target node. If not provided, source_or_key is treated as the edge Id.
+
+        Returns:
+            bool: True if the edge exists, False otherwise.
+        """
+        pass
+
+    @abstractmethod
+    async def get_node_by_id(self, node_id: str) -> Union[dict, None]:
+        """
+        Retrieve a node from the graph by its unique identifier.
+
+        Args:
+            node_id (str): The unique identifier of the node to retrieve.
+
+        Returns:
+            Union[dict, None]: A dictionary containing the node data if found,
+                              None if the node does not exist.
+        """
+        pass
+
+    @abstractmethod
+    async def get_node_by_name(self, node_name) -> Union[list[dict], None]:
+        """
+        Retrieves node(s) by its name.
+
+        Args:
+            node_name (str): The name of the node to retrieve.
+
+        Returns:
+            List[dict] | None: Since the name is not unique and can appear with different semantic types (e.g. Apple as fruit and as company), a list of dictionaries is returned if found, None otherwise.
 
         """
         pass
 
     @abstractmethod
-    def node_degree(self, node_id):
+    async def node_degree(self, node_id: str) -> int:
+        """
+        Retrieve the degree of a node in the graph.
+
+        Args:
+            node_id (str): The unique identifier of the node.
+
+        Returns:
+            int: The degree of the node, or 0 if the node does not exist.
+        """
         pass
 
     @abstractmethod
-    def edge_degree(self, source_id, target_id):
+    async def edge_degree(self, source_id: str, target_id: str) -> int:
+        """
+        Retrieve the degree of an edge in the graph. The degree of an edge is defined as the number of connections it has to other edges (via its endpoints).
+
+        Args:
+            source_id (str): The unique identifier of the source node.
+            target_id (str): The unique identifier of the target node.
+
+        Returns:
+            int: The degree of the edge, or 0 if the edge does not exist.
+        """
         pass
 
     @abstractmethod
-    async def get_edge(self, source_node_id, target_node_id, label:str) -> Union[list[KnwlEdge], None]:
+    async def get_edge(
+        self, source_node_id_or_key: str, target_node_id: str = None, label: str = None
+    ) -> Union[list[dict], None]:
+        """
+        Retrieve an edge or edges from the graph.
+
+        Args:
+            source_node_id_or_key (str): The unique id of the edge or the Id of the source node for the edge.
+            target_node_id (str, optional): The ID of the target node for the edge.
+                If None, returns all edges from the source node. Defaults to None.
+            label (str, optional): The label/type of the edge to filter by.
+                If None, returns edges regardless of label. Defaults to None.
+
+        Returns:
+            Union[list[dict], None]: A list of dictionaries representing the edge(s)
+                if found, where each dictionary contains edge properties and metadata.
+                Returns None if no edges are found matching the criteria.
+
+        Raises:
+            NotImplementedError: This is an abstract method that must be implemented
+                by subclasses.
+        """
         pass
 
     @abstractmethod
-    def get_node_edges(self, source_node_id):
+    async def get_node_edges(self, source_node_id):
         """
         Retrieves all edges connected to the given node.
 
@@ -59,7 +138,7 @@ class GraphBase(FrameworkBase):
         pass
 
     @abstractmethod
-    def get_attached_edges(self, nodes):
+    async def get_attached_edges(self, nodes):
         """
         Asynchronously retrieves the edges attached to the given nodes.
 
@@ -72,7 +151,7 @@ class GraphBase(FrameworkBase):
         pass
 
     @abstractmethod
-    def get_edge_degrees(self, edges):
+    async def get_edge_degrees(self, edges):
         """
         Asynchronously retrieves the degrees of the given edges.
 
@@ -85,59 +164,77 @@ class GraphBase(FrameworkBase):
         pass
 
     @abstractmethod
-    def get_semantic_endpoints(self, edge_ids):
+    async def get_semantic_endpoints(
+        self, edge_ids: list[str]
+    ) -> dict[str, tuple[str, str]]:
         """
-        Asynchronously retrieves the names of the nodes with the given IDs.
+        Given a list of edge Id's, the name of the source and target nodes is returned as tuple (source_name, target_name).
+        The keys of the returned dictionary are the edge Id's.
+
+        example return value:
+        `
+        {
+            "edge_id_1": ("source_node_name_1", "target_node_name_1"),
+            "edge_id_2": ("source_node_name_2", "target_node_name_2"),
+            ...
+        }
+        `
 
         Args:
             edge_ids (List[str]): A list of node IDs for which to retrieve names.
-
-        Returns:
-            List[str]: A list of node names.
         """
         pass
 
     @abstractmethod
-    def get_edge_by_id(self, edge_id):
+    async def get_edge_by_id(self, edge_id: str) -> Union[dict, None]:
+        """
+        Retrieve an edge from the graph by its unique identifier.
+
+        Args:
+            edge_id (str): The unique identifier of the edge to retrieve.
+
+        Returns:
+            Union[dict, None]: A dictionary containing the edge data if found,
+                              None if the edge does not exist.
+        """
         pass
 
     @abstractmethod
-    def upsert_node(self, node_id, node_data):
+    async def upsert_node(self, node_id, node_data):
         pass
 
     @abstractmethod
-    def upsert_edge(self, source_node_id, target_node_id, edge_data):
+    async def upsert_edge(self, source_node_id, target_node_id, edge_data):
         pass
 
     @abstractmethod
-    def clear(self):
+    async def clear(self):
         pass
 
     @abstractmethod
-    def node_count(self):
+    async def node_count(self):
         pass
 
     @abstractmethod
-    def edge_count(self):
+    async def edge_count(self):
         pass
 
     @abstractmethod
-    def remove_node(self, node_id):
+    async def remove_node(self, node_id):
         pass
 
     @abstractmethod
-    def remove_edge(self, source_node_id, target_node_id):
+    async def remove_edge(self, source_node_id, target_node_id):
         pass
 
     @abstractmethod
-    def get_nodes(self):
+    async def get_nodes(self):
         pass
 
     @abstractmethod
-    def get_edges(self):
+    async def get_edges(self):
         pass
 
     @abstractmethod
-    def get_edge_weight(self, source_node_id, target_node_id):
+    async def get_edge_weight(self, source_node_id, target_node_id):
         pass
-

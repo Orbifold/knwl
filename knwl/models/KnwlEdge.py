@@ -22,8 +22,8 @@ class KnwlEdge(BaseModel):
 
     model_config = {"frozen": True}
 
-    source_id: str = Field( description="The Id of the source node.")
-    target_id: str = Field( description="The Id of the target node.")
+    source_id: str = Field(description="The Id of the source node.")
+    target_id: str = Field(description="The Id of the target node.")
     type_name: str = Field(
         default="KnwlEdge",
         frozen=True,
@@ -34,6 +34,10 @@ class KnwlEdge(BaseModel):
     keywords: Optional[list[str]] = Field(
         default_factory=list,
         description="Keywords associated with the edge. These can be used as types or labels in a property graph. Note that the names of the keywords should ideally be from an ontology.",
+    )
+    type: str = Field(
+        default="Unknown",
+        description="The type of the knowledge edge. In a property modeled graph this should be an ontology class. If none is given but there are keywords the first keyword will be used, otherwise 'Unknown' is used.",
     )
     description: Optional[str] = Field(
         default=None, description="A description of the edge."
@@ -73,6 +77,13 @@ class KnwlEdge(BaseModel):
     def update_id(self):
         # Note that using only source and target is not enough to ensure uniqueness
         object.__setattr__(self, "id", KnwlEdge.hash_edge(self))
+        # if no type is given, use the first keyword as type if available
+        if (
+            (self.type is None or self.type == "Unknown")
+            and self.keywords is not None
+            and len(self.keywords) > 0
+        ):
+            object.__setattr__(self, "type", self.keywords[0])
         return self
 
     @staticmethod

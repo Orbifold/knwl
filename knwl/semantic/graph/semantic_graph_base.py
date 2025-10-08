@@ -24,6 +24,26 @@ class SemanticGraphBase(FrameworkBase, ABC):
 
     @abstractmethod
     async def embed_node(self, node: KnwlNode):
+        """
+        Embed a knowledge node into the semantic graph.
+
+        This method processes a KnwlNode and generates its semantic embedding,
+        which can be used for similarity searches, clustering, and other
+        semantic operations within the graph structure.
+
+        Args:
+            node (KnwlNode): The knowledge node to be embedded into the semantic graph.
+                             Contains the content and metadata that will be processed
+                             to generate the embedding representation.
+
+        Returns:
+            None: This method operates asynchronously and modifies the node's
+                  embedding properties in place.
+
+        Raises:
+            NotImplementedError: This is a base method that must be implemented
+                                by concrete subclasses.
+        """
         pass
     @abstractmethod
     async def embed_nodes(self, nodes: list[KnwlNode]):
@@ -39,4 +59,12 @@ class SemanticGraphBase(FrameworkBase, ABC):
 
     @abstractmethod
     async def merge_graph(self, graph: KnwlGraph):
+        pass
+
+    @abstractmethod
+    async def get_similar_nodes(self, node: KnwlNode, top_k: int = 5) -> list[KnwlNode]:
+        pass
+
+    @abstractmethod
+    async def get_similar_edges(self, edge: KnwlEdge, top_k: int = 5) -> list[KnwlEdge]:
         pass

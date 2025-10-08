@@ -14,3 +14,6 @@ async def test_embeddings(random_nodes, random_edges):
     assert node1 is not None
     edge1 = await g.get_edge_by_id(random_edges[0].id)
     assert edge1 is not None
+    similar_edges = await g.get_similar_edges(random_edges[0], top_k=3)
+    assert similar_edges is not None
+    assert len(similar_edges) > 0

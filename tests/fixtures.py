@@ -60,7 +60,7 @@ def random_edges(random_nodes):
             KnwlEdge(
                 source_id=random.choice(random_nodes).id,
                 target_id=random.choice(random_nodes).id,
-                keywords=random_relation_type(),
+                keywords=[random_relation_type()],
                 description=fake.text(),
             )
         )
