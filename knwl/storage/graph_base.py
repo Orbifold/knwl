@@ -200,41 +200,136 @@ class GraphBase(FrameworkBase):
         pass
 
     @abstractmethod
-    async def upsert_node(self, node_id, node_data):
+    async def upsert_node(self, node_id: str, node_data=None):
+        """
+        Insert or update a node in the graph storage.
+
+        This method creates a new node if it doesn't exist, or updates an existing node
+        with the provided data. The operation is performed asynchronously.
+
+        Args:
+            node_id (str): Unique identifier for the node to upsert.
+            node_data (optional): Data to associate with the node. Can be any type
+                depending on the storage implementation. Defaults to None.
+
+        Returns:
+            None: This method performs the upsert operation but doesn't return a value.
+        """
         pass
 
     @abstractmethod
-    async def upsert_edge(self, source_node_id, target_node_id, edge_data):
+    async def upsert_edge(
+        self, source_node_id, target_node_id, edge_id: str = None, edge_data=None
+    ):
+        """
+        Upsert (insert or update) an edge in the graph.
+
+        Args:
+            source_node_id: The identifier of the source node for the edge
+            target_node_id: The identifier of the target node for the edge
+            edge_id (str, optional): Unique identifier for the edge. If None, may be auto-generated
+            edge_data (optional): Additional data/properties to associate with the edge
+
+        Returns:
+            The result of the upsert operation (implementation-specific)
+        """
         pass
 
     @abstractmethod
     async def clear(self):
+        """
+        Clear all data from the graph storage.
+
+        This method removes all nodes, edges, and associated data from the graph storage,
+        effectively resetting it to an empty state.
+
+        Returns:
+            None
+        """
         pass
 
     @abstractmethod
     async def node_count(self):
+        """
+        Get the total number of nodes in the graph.
+
+        Returns:
+            int: The total count of nodes in the graph storage.
+
+        Raises:
+            NotImplementedError: This method must be implemented by subclasses.
+        """
         pass
 
     @abstractmethod
     async def edge_count(self):
+        """
+        Get the total number of edges in the graph.
+
+        Returns:
+            int: The total count of edges in the graph storage.
+
+        Raises:
+            NotImplementedError: This method must be implemented by subclasses.
+        """
         pass
 
     @abstractmethod
-    async def remove_node(self, node_id):
+    async def remove_node(self, node_id: str):
+        """
+        Remove a node from the graph storage.
+
+        Args:
+            node_id (str): The unique identifier of the node to be removed.
+
+        Raises:
+            NotImplementedError: This method must be implemented by subclasses.
+            ValueError: If the node_id is invalid or empty.
+            KeyError: If the node with the given node_id does not exist.
+
+        Note:
+            This method should also handle cleanup of any edges connected to the node
+            being removed to maintain graph integrity.
+        """
         pass
 
     @abstractmethod
-    async def remove_edge(self, source_node_id, target_node_id):
+    async def remove_edge(self, source_node_id_or_key: str, target_node_id: str = None):
+        """Remove an edge from the graph.
+
+        Args:
+            source_node_id_or_key (str): The ID or key of the source node, or an edge key
+                                        if target_node_id is None.
+            target_node_id (str, optional): The ID of the target node. If None,
+                                           source_node_id_or_key is treated as an edge key.
+
+        Raises:
+            KeyError: If the specified edge does not exist in the graph.
+            ValueError: If the provided node IDs are invalid.
+
+        Returns:
+            None
+
+        Note:
+            This method removes the edge from the graph storage. If 'source_node_id_or_key'
+            is provided alone, it should be a unique edge identifier. If both parameters
+            are provided, they represent the source and target nodes of the edge to remove.
+        """
         pass
 
     @abstractmethod
-    async def get_nodes(self):
-        pass
+    async def get_edge_weight(
+        self, source_node_id_or_key: str, target_node_id: str = None
+    ) -> float:
+        """
+        Get the weight of an edge between two nodes in the graph.
 
-    @abstractmethod
-    async def get_edges(self):
-        pass
+        Args:
+            source_node_id_or_key (str): The ID or key of the source node.
+            target_node_id (str, optional): The ID of the target node. If None,
+                the source_node_id_or_key is treated as an edge key. Defaults to None.
 
-    @abstractmethod
-    async def get_edge_weight(self, source_node_id, target_node_id):
+        Returns:
+            float: The weight of the edge between the specified nodes.
+        """
         pass

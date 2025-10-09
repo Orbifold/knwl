@@ -1,17 +1,20 @@
-from knwl.utils import hash_with_prefix
+from typing import List, Optional
 
 from pydantic import BaseModel, Field, field_validator, model_validator
-from typing import List, Optional
-from uuid import uuid4
+
+from knwl.utils import hash_with_prefix
 
 
 class KnwlEdge(BaseModel):
     """
-    Represents a knowledge edge in a graph.
+    Represents a relation between atoms of knowledge.
+
+    Minimum required fields are source_id, target_id and type.
+    This is an immutable class, use the update() method to create a new instance with updated fields.
 
     Attributes:
-        source_id (str): The ID of the source node.
-        target_id (str): The ID of the target node.
+        source_id (str): The Id of the source node.
+        target_id (str): The Id of the target node.
         chunk_ids (List[str]): The IDs of the chunks.
         weight (float): The weight of the edge.
         description (Optional[str]): A description of the edge.
@@ -24,40 +27,18 @@ class KnwlEdge(BaseModel):
 
     source_id: str = Field(description="The Id of the source node.")
     target_id: str = Field(description="The Id of the target node.")
-    type_name: str = Field(
-        default="KnwlEdge",
-        frozen=True,
-        description="The type name of the edge for (de)serialization purposes.",
-    )
-    id: str = Field(default_factory=lambda: str(uuid4()))
-    chunk_ids: Optional[list[str]] = Field(default_factory=list)
-    keywords: Optional[list[str]] = Field(
-        default_factory=list,
-        description="Keywords associated with the edge. These can be used as types or labels in a property graph. Note that the names of the keywords should ideally be from an ontology.",
-    )
-    type: str = Field(
-        default="Unknown",
-        description="The type of the knowledge edge. In a property modeled graph this should be an ontology class. If none is given but there are keywords the first keyword will be used, otherwise 'Unknown' is used.",
-    )
-    description: Optional[str] = Field(
-        default=None, description="A description of the edge."
-    )
-    weight: float = Field(
-        default=1.0,
-        description="The weight of the edge. This can be used to represent the strength or importance of the relationship. This is given by domain experts or derived from data extraction.",
-    )
+    type: str = Field(default="Unknown", description="The type of the relation. In a property modeled graph this should be an ontology class.", )
+    type_name: str = Field(default="KnwlEdge", frozen=True, description="The type name of the edge for (de)serialization purposes.", )
+    id: str = Field(default=None, description="The unique identifier of the node, automatically generated from the required fields.", init=False, )
+    chunk_ids: List[str] = Field(default_factory=list, description="The chunk identifiers associated with this edge.", )
+    keywords: Optional[list[str]] = Field(default_factory=list, description="Keywords associated with the edge. These can be used as types or labels in a property graph. Note that the names of the keywords should ideally be from an ontology.", )
+
+    description: Optional[str] = Field(default="", description="A description of the edge.")
+    weight: float = Field(default=1.0, description="The weight of the edge. This can be used to represent the strength or importance of the relationship. This is given by domain experts or derived from data extraction.", )
 
     @staticmethod
     def hash_edge(e: "KnwlEdge") -> str:
-        return hash_with_prefix(
-            e.source_id
-            + " "
-            + e.target_id
-            + " "
-            + (e.description or "")
-            + str(e.weight),
-            prefix="edge-",
-        )
+        return hash_with_prefix(e.source_id + " " + e.target_id + " " + e.type, prefix="edge|>", )
 
     @field_validator("source_id")
     @classmethod
@@ -73,17 +54,18 @@ class KnwlEdge(BaseModel):
             raise ValueError("Target Id of a KnwlEdge cannot be None or empty.")
         return v
 
+    @field_validator("type")
+    @classmethod
+    def validate_type(cls, v):
+        if v is None or len(str(v).strip()) == 0:
+            raise ValueError("Type of a KnwlEdge cannot be None or empty.")
+        return v
+
     @model_validator(mode="after")
     def update_id(self):
         # Note that using only source and target is not enough to ensure uniqueness
         object.__setattr__(self, "id", KnwlEdge.hash_edge(self))
-        # if no type is given, use the first keyword as type if available
-        if (
-            (self.type is None or self.type == "Unknown")
-            and self.keywords is not None
-            and len(self.keywords) > 0
-        ):
-            object.__setattr__(self, "type", self.keywords[0])
+
         return self
 
     @staticmethod
@@ -94,3 +76,16 @@ class KnwlEdge(BaseModel):
             return edge.source_id
         else:
             raise ValueError(f"Node {node_id} is not an endpoint of edge {edge.id}")
+
+    def update(self, **kwargs) -> "KnwlEdge":
+        """
+        Create a new KnwlNode instance with updated fields. Only 'name', 'type', and 'description' can be updated.
+        """
+        allowed_fields = {"type", "description"}
+        invalid_fields = set(kwargs.keys()) - allowed_fields
+        if invalid_fields:
+            raise ValueError(f"Invalid fields: {invalid_fields}. Only 'type'  and 'description' are allowed.")
+        new_edge = self.model_copy(update=kwargs)
+        # pydantic does not call the model_validator on model_copy, so we need to set the id manually
+        object.__setattr__(new_edge, "id", self.hash_edge(new_edge))
+        return new_edge

@@ -491,7 +491,7 @@ def test_get_full_path_create_dirs_false():
 
 def test_get_full_path_nested_path():
     """Test with nested directory structure"""
-    result = get_full_path("subdir/nested/test.txt")
+    result = get_full_path("$test/subdir/nested/test.txt")
     assert result is not None
     assert result.endswith("subdir/nested/test.txt")
 

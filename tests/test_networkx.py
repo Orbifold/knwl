@@ -368,8 +368,7 @@ async def test_remove_edge_with_invalid_data():
 @pytest.mark.asyncio
 async def test_get_nodes_empty_graph():
     storage = NetworkXGraphStorage(path=None)
-    nodes = await storage.get_nodes()
-    assert nodes == []
+    assert await storage.node_count() ==0
 
 
 @pytest.mark.asyncio
@@ -380,7 +379,4 @@ async def test_get_nodes_with_nodes():
     await storage.upsert_node(node1.id, node1)
     await storage.upsert_node(node2.id, node2)
 
-    nodes = await storage.get_nodes()
-    assert len(nodes) == 2
-    assert any(node.id == node1.id and node.name == "Node1" for node in nodes)
-    assert any(node.id == node2.id and node.name == "Node2" for node in nodes)
+    assert await storage.node_count()==2

@@ -13,7 +13,8 @@ from knwl.logging import log
 
 class NetworkXGraphStorage(GraphBase):
     """
-    A class to handle storage and manipulation of an undirected graph using NetworkX.
+    A class to handle storage and manipulation of a directed multi-graph using NetworkX.
+    
         - the id of nodes and edges is a uuid4 string but one could also use the combination name+type as a primary key.
         - the graph is strongly type with in/out based on KnwlNode and KnwlEdge dataclasses, the underlying storage is however based on a dictionary. In this sense, this is a semantic layer (business data rather than storage data) above the actual graph storage.
         - this is not a semantic API in the sense that consolidation of node/edge content (descriptions) is not done here, this is a pure storage layer.
@@ -47,11 +48,11 @@ class NetworkXGraphStorage(GraphBase):
                     self.graph = preloaded_graph
                 else:
                     # failed to load the graph from file
-                    self.graph = nx.MultiGraph()
+                    self.graph = nx.MultiDiGraph()
             else:
-                self.graph = nx.MultiGraph()
+                self.graph = nx.MultiDiGraph()
         else:
-            self.graph = nx.MultiGraph() # allow multiple edges between two nodes with different labels
+            self.graph = nx.MultiDiGraph() # allow multiple edges between two nodes with different labels
             self.path = None
 
     @staticmethod
