@@ -117,7 +117,7 @@ class SemanticGraph(SemanticGraphBase):
         return await self.graph_store.node_exists(id)
 
     async def get_edge(self, source_id: str, target_id: str, label: str) -> KnwlEdge | None:
-        return await self.graph_store.get_edge(source_id, target_id, label)
+        return await self.graph_store.get_edges(source_id, target_id, label)
 
     async def merge_graph(self, graph: KnwlGraph):
         pass

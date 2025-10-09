@@ -10,25 +10,83 @@ from knwl.storage.networkx_storage import NetworkXGraphStorage
 
 @pytest.fixture
 def test_storage():
-    return NetworkXGraphStorage()
+    return NetworkXGraphStorage("memory")
 
 
 @pytest.mark.asyncio
 async def test_upsert_node(test_storage):
     await test_storage.upsert_node("node1", {"name": "xws"})
     node = await test_storage.get_node_by_id("node1")
-    assert node.name == "xws"
+    assert node["name"] == "xws"
     assert os.path.exists(test_storage.path)
+    # you can add anything you like since it's a dict
+    await test_storage.upsert_node({"id": "node1", "name": "xws2", "x": 44})
+    node = await test_storage.get_node_by_id("node1")
+    assert node["name"] == "xws2"
+    assert node["x"] == 44
+    await test_storage.upsert_node("node1", {"x": 55})
+    node = await test_storage.get_node_by_id("node1")
+    assert node["name"] == "xws2"
+    assert node["x"] == 55
+    # complex nested dicts are not allowed by nx
+    with pytest.raises(ValueError):
+        await test_storage.upsert_node("node1", {"x": {"a": 5}})
+
+    # one or the other
+    with pytest.raises(ValueError):
+        await test_storage.upsert_node({"id": "node1", "x": {"a": 5}}, {"x": 5})
+    with pytest.raises(ValueError):
+        await test_storage.upsert_node("a")
+    with pytest.raises(ValueError):
+        await test_storage.upsert_node(5)
+    with pytest.raises(ValueError):
+        await test_storage.upsert_node(None)
+    with pytest.raises(ValueError):
+        await test_storage.upsert_node({"id": "node1", "x": {"a": 5}})
+    with pytest.raises(ValueError):
+        await test_storage.upsert_node({"x": 5})
+    with pytest.raises(ValueError):
+        await test_storage.upsert_node({})
+    with pytest.raises(ValueError):
+        await test_storage.upsert_node([], {})
+    with pytest.raises(ValueError):
+        await test_storage.upsert_node("node1", [])
+    with pytest.raises(ValueError):
+        await test_storage.upsert_node("node1", 5)
+    with pytest.raises(ValueError):
+        await test_storage.upsert_node("node1", None)
+    with pytest.raises(ValueError):
+        await test_storage.upsert_node("node1", {"id": "node2", "x": 5})
+    with pytest.raises(ValueError):
+        await test_storage.upsert_node("node1", {"id": 5, "x": 5})
+    with pytest.raises(ValueError):
+        await test_storage.upsert_node("node1", {"id": None, "x": 5})
+    with pytest.raises(ValueError):
+        await test_storage.upsert_node("node1", {"id": {}, "x": 5})
+    with pytest.raises(ValueError):
+        await test_storage.upsert_node("node1", {"id": [], "x": 5})
 
 
 @pytest.mark.asyncio
 async def test_upsert_edge(test_storage):
     await test_storage.upsert_node("node1", {"description": "value1"})
     await test_storage.upsert_node("node2", {"description": "value2"})
-    await test_storage.upsert_edge("node1", "node2", {"weight": 2.35})
-    edge_data = await test_storage.get_edge("node1", "node2")
-    assert edge_data.weight == 2.35
-
+    await test_storage.upsert_edge("node1", "node2", {"id": "e1", "weight": 2.35, "type": "A"})
+    await test_storage.upsert_edge("node1", "node2", {"id": "e2", "weight": -0.45, "type": "B"})
+    edges = await test_storage.get_edges("node1", "node2")
+    assert len(edges) == 2
+    assert edges[0]["weight"] == 2.35
+    edges = await test_storage.get_edges("node1", "node2", "B")
+    assert len(edges) == 1
+    assert edges[0]["weight"] == -0.45
+    assert await test_storage.node_count() == 2
+    assert await test_storage.edge_count() == 2
+    await test_storage.upsert_edge("node1", "node2", {"id": "e1", "weight": 17, "type": "A"})
+    assert await test_storage.edge_count() == 2
+    edges = await test_storage.get_edges("node1", "node2")
+    assert len(edges) == 2
+    weights = set(e["weight"] for e in edges)
+    assert weights == {17, -0.45}
 
 @pytest.mark.asyncio
 async def test_has_node(test_storage):
@@ -368,7 +426,7 @@ async def test_remove_edge_with_invalid_data():
 @pytest.mark.asyncio
 async def test_get_nodes_empty_graph():
     storage = NetworkXGraphStorage(path=None)
-    assert await storage.node_count() ==0
+    assert await storage.node_count() == 0
 
 
 @pytest.mark.asyncio
@@ -379,4 +437,4 @@ async def test_get_nodes_with_nodes():
     await storage.upsert_node(node1.id, node1)
     await storage.upsert_node(node2.id, node2)
 
-    assert await storage.node_count()==2
+    assert await storage.node_count() == 2

@@ -25,6 +25,10 @@ def test_knwlnode():
     with pytest.raises(ValidationError):
         KnwlNode(name="Node1", type="")  # type cannot be empty
 
+    # deserialization
+    node3 = KnwlNode(**node1.model_dump(mode="json"))
+    assert node3.id == node1.id
+
 
 def test_knwledge():
     edge1 = KnwlEdge(source_id="a", target_id="b", type="relates_to")
@@ -53,3 +57,7 @@ def test_knwledge():
         KnwlEdge(source_id="a", target_id="", type="relates_to")  # target_id cannot be empty
     with pytest.raises(ValidationError):
         KnwlEdge(source_id="a", target_id="b", type="")  # type cannot be empty
+
+    # deserialization
+    edge4 = KnwlEdge(**edge1.model_dump(mode="json"))
+    assert edge4.id == edge1.id

@@ -1,6 +1,8 @@
 from abc import abstractmethod
 from typing import Union
 
+from pydantic import BaseModel
+
 from knwl.framework_base import FrameworkBase
 
 
@@ -100,11 +102,11 @@ class GraphBase(FrameworkBase):
         pass
 
     @abstractmethod
-    async def get_edge(
+    async def get_edges  (
         self, source_node_id_or_key: str, target_node_id: str = None, label: str = None
     ) -> Union[list[dict], None]:
         """
-        Retrieve an edge or edges from the graph.
+        Retrieve edges from the graph based on the endpoints and optional label.
 
         Args:
             source_node_id_or_key (str): The unique id of the edge or the Id of the source node for the edge.
@@ -200,7 +202,7 @@ class GraphBase(FrameworkBase):
         pass
 
     @abstractmethod
-    async def upsert_node(self, node_id: str, node_data=None):
+    async def upsert_node(self, node_id: BaseModel|str|dict, node_data=None):
         """
         Insert or update a node in the graph storage.
 
@@ -208,7 +210,7 @@ class GraphBase(FrameworkBase):
         with the provided data. The operation is performed asynchronously.
 
         Args:
-            node_id (str): Unique identifier for the node to upsert.
+            node_id (BaseModel|str|dict): Unique identifier for the node to upsert or a dictionary containing node properties.
             node_data (optional): Data to associate with the node. Can be any type
                 depending on the storage implementation. Defaults to None.
 
@@ -219,7 +221,7 @@ class GraphBase(FrameworkBase):
 
     @abstractmethod
     async def upsert_edge(
-        self, source_node_id, target_node_id, edge_id: str = None, edge_data=None
+        self, source_node_id, target_node_id,   edge_data=None
     ):
         """
         Upsert (insert or update) an edge in the graph.
