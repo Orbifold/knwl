@@ -33,13 +33,13 @@ class GraphBase(FrameworkBase):
         pass
 
     @abstractmethod
-    async def edge_exists(self, source_or_key: str, target_node_id: str = None) -> bool:
+    async def edge_exists(self, source_or_key: Union[BaseModel,str,dict], target_node_id:  Union[BaseModel,str,dict] = None) -> bool:
         """
         Check if an edge exists between the given source and target nodes.
 
         Args:
-            source_or_key (str): The unique identifier of the source node or edge.
-            target_node_id (str): The unique identifier of the target node. If not provided, source_or_key is treated as the edge Id.
+            source_or_key ( Union[BaseModel,str,dict]): The unique identifier of the source node or edge.
+            target_node_id ( Union[BaseModel,str,dict]): The unique identifier of the target node. If not provided, source_or_key is treated as the edge Id.
 
         Returns:
             bool: True if the edge exists, False otherwise.
@@ -296,7 +296,7 @@ class GraphBase(FrameworkBase):
         pass
 
     @abstractmethod
-    async def remove_edge(self, source_node_id_or_key: str, target_node_id: str = None):
+    async def remove_edge(self, source_node_id_or_key: str, target_node_id: str = None,type: str = None):
         """Remove an edge from the graph.
 
         Args:
@@ -320,18 +320,19 @@ class GraphBase(FrameworkBase):
         pass
 
     @abstractmethod
-    async def get_edge_weight(
-        self, source_node_id_or_key: str, target_node_id: str = None
-    ) -> float:
+    async def get_edge_weights(
+        self, source_node_id_or_key: str, target_node_id: str = None, type: str = None
+    ) -> dict[str, float]:
         """
-        Get the weight of an edge between two nodes in the graph.
+        Get the weights of edges between two nodes in the graph.
 
         Args:
             source_node_id_or_key (str): The ID or key of the source node.
             target_node_id (str, optional): The ID of the target node. If None,
                 the source_node_id_or_key is treated as an edge key. Defaults to None.
-
+            type (str, optional): The type of the edge weight. Defaults to None.
         Returns:
-            float: The weight of the edge between the specified nodes.
+            dict[str, float]: A dictionary where keys are edge types and values are their corresponding weights.
+                If no edges are found, an empty dictionary is returned.
         """
         pass

@@ -1,4 +1,5 @@
 import shutil
+import warnings
 from dataclasses import field, dataclass
 from typing import cast
 from uuid import uuid4
@@ -63,6 +64,18 @@ class NetworkXGraphStorage(GraphBase):
         else:
             self.graph = nx.MultiDiGraph()  # allow multiple edges between two nodes with different labels
             self.path = None
+
+    @staticmethod
+    def to_edge(obj) -> dict:
+        if isinstance(obj, dict):
+            return cast(dict, obj)
+        if isinstance(obj, BaseModel):
+            return cast(BaseModel, obj).model_dump(mode="json")
+        if isinstance(obj, tuple):
+            if len(obj) >= 3:
+                return {"source_id": obj[0], "target_id": obj[1], **(obj[2] if isinstance(obj[2], dict) else {})}
+            raise TypeError(f"Like not an edge {type(obj)}")
+        raise ValueError("NetworkXStorage: edge must be a dict or a Pydantic model")
 
     @staticmethod
     def get_id(data: str | BaseModel | dict | None) -> str | None:
@@ -151,8 +164,17 @@ class NetworkXGraphStorage(GraphBase):
             if target_id == "":
                 raise ValueError("NetworkXStorage: target node id must not be empty")
 
-        # Handle all 16 combinations systematically
-
+        # Handle all 17 combinations systematically
+        if isinstance(source, tuple):
+            if target is not None:
+                raise ValueError("NetworkXStorage: when source is a tuple, target must be None")
+            if len(source) != 2:
+                raise ValueError("NetworkXStorage: when source is a tuple, it must have exactly two elements (source_id, target_id)")
+            source_id, target_id = source
+            if not isinstance(source_id, str) or not isinstance(target_id, str):
+                raise ValueError("NetworkXStorage: when source is a tuple, both elements must be strings (source_id, target_id)")
+            validate_ids(source_id, target_id)
+            return EdgeSpecs(id=None, source_id=source_id, target_id=target_id, edge_data={})
         # ============================================================================================
         # SOURCE = None (4 combinations)
         # ============================================================================================
@@ -241,11 +263,8 @@ class NetworkXGraphStorage(GraphBase):
                 # (dict, dict) - merge both dictionaries
                 id1, source_id, _, edge_data1 = extract_from_dict(source)
                 id2, _, target_id, edge_data2 = extract_from_dict(target)
-                id = id1 or id2  # Prefer source dict's ID
-                merged_data = {**edge_data1, **edge_data2}
-                if source_id and target_id:
-                    validate_ids(source_id, target_id)
-                return EdgeSpecs(id=id, source_id=source_id, target_id=target_id, edge_data=merged_data)
+
+                return EdgeSpecs(id=None, source_id=id1, target_id=id2, edge_data=None)
 
             elif isinstance(target, BaseModel):
                 # (dict, BaseModel) - merge dict with BaseModel data
@@ -280,21 +299,15 @@ class NetworkXGraphStorage(GraphBase):
                 # (BaseModel, dict) - merge BaseModel with dict data
                 id1, source_id, _, edge_data1 = extract_from_basemodel(source)
                 id2, _, target_id, edge_data2 = extract_from_dict(target)
-                id = id1 or id2  # Prefer source BaseModel's ID
-                merged_data = {**edge_data1, **edge_data2}
-                if source_id and target_id:
-                    validate_ids(source_id, target_id)
-                return EdgeSpecs(id=id, source_id=source_id, target_id=target_id, edge_data=merged_data)
+
+                return EdgeSpecs(id=None, source_id=id1, target_id=id2, edge_data={})
 
             elif isinstance(target, BaseModel):
                 # (BaseModel, BaseModel) - merge both BaseModels
                 id1, source_id, _, edge_data1 = extract_from_basemodel(source)
                 id2, _, target_id, edge_data2 = extract_from_basemodel(target)
-                id = id1 or id2  # Prefer source BaseModel's ID
-                merged_data = {**edge_data1, **edge_data2}
-                if source_id and target_id:
-                    validate_ids(source_id, target_id)
-                return EdgeSpecs(id=id, source_id=source_id, target_id=target_id, edge_data=merged_data)
+
+                return EdgeSpecs(id=None, source_id=id1, target_id=id2, edge_data={})
 
         # Fallback case (should not reach here with proper type checking)
         return EdgeSpecs(id=None, source_id=None, target_id=None, edge_data={})
@@ -347,7 +360,7 @@ class NetworkXGraphStorage(GraphBase):
             return False
         return self.graph.has_node(node_id)
 
-    async def edge_exists(self, source_or_key: str, target_node_id: str = None) -> bool:
+    async def edge_exists(self, source_or_key: Union[BaseModel, str, dict], target_node_id: Union[BaseModel, str, dict] = None) -> bool:
         specs = NetworkXGraphStorage.get_edge_specs(source_or_key, target_node_id)
         if specs.id is not None:
             return self.get_edge_by_id(specs.id) is not None
@@ -393,7 +406,7 @@ class NetworkXGraphStorage(GraphBase):
         else:
             return None
 
-    async def get_node_edges(self, source_node_id: str) -> List[dict] | None:
+    async def get_node_edges(self, source_node_id: str) -> list | None:
         """
         Retrieves all edges connected to the given node.
 
@@ -404,10 +417,8 @@ class NetworkXGraphStorage(GraphBase):
             List[BaseModel] | None: A list of BaseModel objects if the node exists, None otherwise.
         """
         if await self.node_exists(source_node_id):
-            tuples = list(self.graph.edges(source_node_id))
-
-            raw = [{"source_id": t[0], "target_id": t[1], **self.graph.get_edge_data(t[0], t[1], {})} for t in tuples]
-            return raw
+            es = list(self.graph.edges(source_node_id, data=True))
+            return [self.to_edge(e) for e in es]
         return None
 
     async def get_attached_edges(self, nodes: List[str]) -> List[dict]:
@@ -501,49 +512,79 @@ class NetworkXGraphStorage(GraphBase):
         self.graph.add_node(node_id, **node_data)
         await self.save()
 
-    async def upsert_edge(self, source_node_id, target_node_id, edge_data=None):
+    async def upsert_edge(self, source_node_id, target_node_id=None, edge_data=None):
+        # Parse edge specifications
         specs = NetworkXGraphStorage.get_edge_specs(source_node_id, target_node_id)
-        edge_id = None
+
+        # Validate we have the minimum required information
+        if specs.source_id is None or specs.target_id is None:
+            raise ValueError("NetworkXStorage: source_id and target_id are required to upsert edge")
+
         source_id = specs.source_id
         target_id = specs.target_id
-        type = None
-        if specs.id is None:
-            if edge_data is None:
-                raise ValueError("NetworkXStorage: you need an id to upsert edge")
-            else:
-                edge_id = self.get_id(edge_data)
-                if edge_id is None:
-                    raise ValueError("NetworkXStorage: edge id cannot be None, use the edge data to specify the id.")
-        else:
-            edge_id = specs.id
+        edge_type = "Unknown"
+
+        # Determine edge data and validate it
         if edge_data is None:
-            if isinstance(edge_id, str):
-                raise ValueError("NetworkXStorage: you need a type to upsert edge")
+            if specs.edge_data:
+                edge_data = specs.edge_data
             else:
-                type = self.get_type(edge_id)
+                edge_data = {}
         else:
-            type = self.get_type(edge_data)
-        if type is None or str.strip(type) == "":
-            raise ValueError("NetworkXStorage: edge type cannot be None or empty")
-        # upsert
-        found = self.graph.get_edge_data(source_id, target_id)
-        found_edge_id = None
-        if found:
-            for key in found:
-                if found[key].get("type", None) == type:
-                    found_edge_id = found[key].get("id", edge_id)
+            # Merge provided edge_data with specs.edge_data, giving priority to provided data
+            merged_data = {**specs.edge_data, **self.get_payload(edge_data)}
+            edge_data = merged_data
+            edge_type = edge_data.get("type", "Unknown")
+
+        # Validate edge data
+        self.validate_payload(edge_data)
+
+        # Determine edge ID
+        edge_id = specs.id or edge_data.get("id")
+        if edge_id is None:
+            edge_type = edge_data.get("type", "Unknown")
+            edge_id = hash_with_prefix({"source_id": source_id, "target_id": target_id, "type": edge_type}, prefix="edge|>")
+
+        # Ensure edge has required fields
+        edge_data["id"] = edge_id
+        edge_data["source_id"] = source_id
+        edge_data["target_id"] = target_id
+
+        if await self.get_node_by_id(source_id) is None:
+            raise ValueError(f"NetworkXStorage: source node with id '{source_id}' does not exist")
+        if await self.get_node_by_id(target_id) is None:
+            raise ValueError(f"NetworkXStorage: target node with id '{target_id}' does not exist")
+
+        # Get edge type for NetworkX key
+        # edge_type = edge_data.get("type", "Unknown")
+        if not edge_type or str.strip(edge_type) == "":
+            edge_type = "Unknown"
+        edge_data["type"] = edge_type
+
+        # Check if edge already exists with same type
+        existing_edges = self.graph.get_edge_data(source_id, target_id)
+        existing_edge_key = None
+
+        if existing_edges:
+            for key, data in existing_edges.items():
+                if data.get("type") == edge_type:
+                    existing_edge_key = key
+                    existing_edge_id = data.get("id")
+                    # If same edge ID, we can update; if different ID but same type, that's an error
+                    if existing_edge_id and existing_edge_id != edge_id:
+                        raise ValueError(f"NetworkXStorage: edge with different id '{existing_edge_id}' "
+                                         f"but same type '{edge_type}' already exists between nodes {source_id} -> {target_id}")
                     break
 
-        if found_edge_id is None:
-            self.graph.add_edge(source_node_id, target_node_id, key=type, **edge_data)  # the key is the way nx distinguishes multiple edges between two nodes
-        else:
-            if found_edge_id == edge_id:
-                # update the edge
-                self.graph.remove_edge(source_node_id, target_node_id, key=type)
-                self.graph.add_edge(source_id, target_id, key=type, **edge_data)
-            else:
-                raise ValueError("NetworkXStorage: edge with different id and same type already exists between these nodes")
+        # Remove existing edge if found (for update)
+        if existing_edge_key is not None:
+            self.graph.remove_edge(source_id, target_id, key=existing_edge_key)
+
+        # Add the edge with type as key
+        self.graph.add_edge(source_id, target_id, key=edge_type, **edge_data)
+
         await self.save()
+        return {"source_id": source_id, "target_id": target_id, **edge_data}
 
     async def clear(self):
         self.graph.clear()
@@ -562,33 +603,45 @@ class NetworkXGraphStorage(GraphBase):
         self.graph.remove_node(node_id)
         await self.save()
 
-    async def remove_edge(self, source_node_id: object, target_node_id: str = None):
-        source_id = None
-        target_id = None
-        if isinstance(source_node_id, BaseModel):
-            source_id = source_node_id.source_id
-            target_id = source_node_id.target_id
-        if isinstance(source_node_id, tuple):
-            source_id, target_id = source_node_id
-        if isinstance(source_node_id, BaseModel):
-            source_id = source_node_id.id
-        if isinstance(target_node_id, BaseModel):
-            target_id = target_node_id.id
-        if isinstance(source_node_id, str):
-            source_id = source_node_id
-            if target_node_id is None:
-                raise ValueError("Insufficient data to remove edge, missing target node id")
+    async def remove_edge(self, source_node_id_or_key: str, target_node_id: str = None, type: str = None):
+        specs = NetworkXGraphStorage.get_edge_specs(source_node_id_or_key, target_node_id)
+        if specs.id is not None:
+            edge = await self.get_edge_by_id(specs.id)
+            if edge is None:
+                raise ValueError(f"NetworkXStorage: edge with id '{specs.id}' does not exist")
+            source_id = edge["source_id"]
+            target_id = edge["target_id"]
+        elif specs.source_id is not None and specs.target_id is not None:
+            source_id = specs.source_id
+            target_id = specs.target_id
+        else:
+            raise ValueError("NetworkXStorage: source_id and target_id are required to remove edge")
+        if type is not None:
+            self.graph.remove_edge(source_id, target_id, key=type)
+        else:
+            found = await self.get_edges(source_id, target_id)
+            if len(found) == 1:
+                edge_type = found[0].get("type", "Unknown")
+                self.graph.remove_edge(source_id, target_id, key=edge_type)
+            elif len(found) > 1:
+                raise ValueError(f"NetworkXStorage: multiple edges found between {source_id} and {target_id}, please specify the type to remove a specific edge")
             else:
-                target_id = target_node_id
-        self.graph.remove_edge(source_id, target_id)
+                raise ValueError(f"NetworkXStorage: no edge found between {source_id} and {target_id}")
         await self.save()
 
-    async def get_edge_weight(self, source_node_id: object, target_node_id: str = None) -> float:
-        if isinstance(source_node_id, BaseModel):
-            return source_node_id.weight
-        if not self.graph.has_edge(source_node_id, target_node_id):
-            raise ValueError(f"Edge {source_node_id} -> {target_node_id} does not exist")
-        return self.graph.get_edge_data(source_node_id, target_node_id).get("weight", 1.0)
+    async def get_edge_weights(self, source_node_id_or_key: str, target_node_id: str = None, type: str = None) -> dict[str, float]:
+        specs = NetworkXGraphStorage.get_edge_specs(source_node_id_or_key, target_node_id)
+        edges = await self.get_edges(specs.source_id, specs.target_id, type)
+        weights = {}
+        for edge in edges:
+            weight = edge.get("weight", 1.0)
+            if not isinstance(weight, (int, float)):
+                try:
+                    weight = float(weight)
+                except ValueError:
+                    weight = 1.0
+            weights[edge["type"]] = weight
+        return weights
 
     async def unsave(self) -> None:
         if os.path.exists(self.path) and not self.memory:
@@ -598,19 +651,43 @@ class NetworkXGraphStorage(GraphBase):
         if node_id is None:
             raise ValueError("NetworkXStorage: you need an id to upsert node")
         else:
-            id = self.get_id(node_id)
-            if id is None:
-                raise ValueError("NetworkXStorage: you need an id to upsert node")
-            if not isinstance(node_id, str):
-                node_data = self.get_payload(node_id)
+            if isinstance(node_id, str):
+                # Case 1: node_id is a string
+                id = str.strip(node_id)
+                if id == "":
+                    raise ValueError("NetworkXStorage: node id must not be empty")
+                if node_data is None:
+                    node_data = {}
+                else:
+                    node_data = self.get_payload(node_data)
+                    second_id = node_data.get("id")
+                    if "id" in node_data and node_data["id"] is None:
+                        warnings.warn("NetworkXStorage: node id specified in payload is None, this is not necessary and can be removed.")
+                    if second_id is not None and second_id != id:
+                        if isinstance(node_data, BaseModel):
+                            raise ValueError("NetworkXStorage: node id mismatch. Simply add the node without the id in the first slot, upsert_node(KnwlNode(...))")
+                        else:
+                            raise ValueError(f"NetworkXStorage: node id '{second_id}' in payload does not match the provided initial id '{id}'.")
+
+            elif isinstance(node_id, dict):
+                # Case 2: node_id is a dict
+                node_data = cast(dict, node_id)
+                id = node_data.get("id")
+                if id is None:
+                    raise ValueError("NetworkXStorage: dict must contain an 'id' key")
+
+            elif isinstance(node_id, BaseModel):
+                # Case 3: node_id is a BaseModel
+                node_data = cast(BaseModel, node_id).model_dump(mode="json")
+                id = node_data.get("id")
+                if id is None:
+                    raise ValueError("NetworkXStorage: BaseModel must have an 'id' attribute")
+
             else:
-                node_data = self.get_payload(node_data)
+                raise ValueError("NetworkXStorage: node_id must be a string, dict, or BaseModel")
+
+            # Validate the final payload and add the node
             self.validate_payload(node_data)
-            if "id" in node_data and isinstance(node_id, str):
-                if not isinstance(node_data["id"], str):
-                    raise ValueError("NetworkXStorage: node id in data must be a string")
-                if node_data["id"] != id:
-                    raise ValueError("NetworkXStorage: node id in data does not match the provided node id")
             node_data["id"] = id
-            # add_node will update if the node-id already exists
             self.graph.add_node(id, **node_data)
+            return {"id": id, **node_data}

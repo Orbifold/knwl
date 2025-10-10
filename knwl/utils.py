@@ -89,7 +89,7 @@ def hash_args(*args):
     return md5(str(args).encode()).hexdigest()
 
 
-def hash_with_prefix(content, prefix: str = ""):
+def hash_with_prefix(content:Any, prefix: str = ""):
     """
     Computes an MD5 hash of the given content and returns it as a string with an optional prefix.
 
@@ -100,6 +100,12 @@ def hash_with_prefix(content, prefix: str = ""):
     Returns:
         str: The MD5 hash of the content, optionally prefixed.
     """
+    if isinstance(content, dict):
+        content = json.dumps(content, sort_keys=True)
+    elif hasattr(content,"model_dump_json"):
+        content = content.model_dump_json()
+    else:
+        content = str(content)
     return prefix + md5(content.encode()).hexdigest()
 
 
