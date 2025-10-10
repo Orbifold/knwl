@@ -64,13 +64,13 @@ class ChromaStorage(VectorStorageBase):
         )
 
     async def query(self, query: str, top_k: int = 1) -> list[dict]:
-        # ====================================================================================        
+        # ====================================================================================
         # Note that Chroma has auto-embedding based on all-MiniLM-L6-v2, so you don't need to provide embeddings.
         # The `query_texts` is auto=transformed using this model. The embedding dimension is only 384, so it really is rather shallow for most purposes.
         # ====================================================================================
 
         if not isinstance(query, str):
-            raise ValueError("Query must be a string. If you have a model, use json.dumps() first.")
+            raise ValueError("Query must be a string. If you have a model, use model_dump_json() first.")
         if len(self.metadata) > 0:
             found = self.collection.query(
                 query_texts=query, n_results=top_k, include=["documents", "metadatas"]

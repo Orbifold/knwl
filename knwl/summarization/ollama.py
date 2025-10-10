@@ -55,7 +55,7 @@ class OllamaSummarization(SummarizationBase):
         self, content: str | list[str], entity_or_relation_name: str | list[str] = None
     ) -> str:
         if isinstance(content, list):
-            content = "\n".join(content)
+            content = " ".join(content)
         tokens = self.chunker.encode(content)
 
         if len(tokens) <= self.max_tokens:

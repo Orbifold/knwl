@@ -23,7 +23,7 @@ class SemanticGraphBase(FrameworkBase, ABC):
         super().__init__(*args, **kwargs)
 
     @abstractmethod
-    async def embed_node(self, node: KnwlNode):
+    async def embed_node(self, node: KnwlNode)->KnwlNode:
         """
         Embed a knowledge node into the semantic graph.
 
@@ -39,14 +39,10 @@ class SemanticGraphBase(FrameworkBase, ABC):
         Returns:
             None: This method operates asynchronously and modifies the node's
                   embedding properties in place.
-
-        Raises:
-            NotImplementedError: This is a base method that must be implemented
-                                by concrete subclasses.
         """
         pass
     @abstractmethod
-    async def embed_nodes(self, nodes: list[KnwlNode]):
+    async def embed_nodes(self, nodes: list[KnwlNode]) -> list[KnwlNode]:
         pass
 
     @abstractmethod
@@ -67,4 +63,8 @@ class SemanticGraphBase(FrameworkBase, ABC):
 
     @abstractmethod
     async def get_similar_edges(self, edge: KnwlEdge, top_k: int = 5) -> list[KnwlEdge]:
+        pass
+
+    @abstractmethod
+    async def node_count(self) -> int:
         pass

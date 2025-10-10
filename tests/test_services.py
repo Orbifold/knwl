@@ -40,7 +40,7 @@ def test_get_spec():
     #     services.get_service_specs("a/b", "c", override=override_config)
 
     config = {"semantic": {"default": "local", "local": {"graph": {"graph-store": "graph/graph-store",  # the topology
-        "node-embeddings": "vector/nodes",  # the node embeddings
+        "node_embeddings": "vector/nodes",  # the node embeddings
         "edge-embeddings": "vector/edges",  # the edge embeddings
         "summarization": "summarization/ollama",  # how to summarize long texts
     }}}}

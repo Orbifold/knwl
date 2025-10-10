@@ -57,7 +57,7 @@ default_config = {
         "default": "local",
         "graph-rag": {
             "class": "knwl.semantic.graph_rag.GraphRAG",
-            "node-embeddings": "vector/nodes",  # embeddings of the nodes
+            "node_embeddings": "vector/nodes",  # embeddings of the nodes
             "edge-embeddings": "vector/edges",  # embeddings of the edges
             "document-store": "json/document-store",  # for document data
             "chunk-store": "json/chunk-store",  # for chunks data
@@ -66,7 +66,7 @@ default_config = {
         "local": {
             "graph": {
                 "graph-store": "graph/graph-store",  # the topology
-                "node-embeddings": "vector/nodes",  # the node embeddings
+                "node_embeddings": "vector/nodes",  # the node embeddings
                 "edge-embeddings": "vector/edges",  # the edge embeddings
                 "summarization": "summarization/ollama",  # how to summarize long texts
              }

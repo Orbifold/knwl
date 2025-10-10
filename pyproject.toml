@@ -1,6 +1,6 @@
 [project]
 name = "knwl"
-version = "0.5.2"
+version = "0.5.3"
 description = "Graph RAG"
 authors = [
     {name = "Swa", email = "swa@orbifold.net"}
@@ -29,6 +29,7 @@ dev = [
     "pytest-asyncio>=0.24.0",
     "pytest>=8.3.3",
 ]
+
 
 [build-system]
 requires = ["hatchling"]

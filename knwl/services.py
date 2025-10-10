@@ -1,3 +1,5 @@
+from typing import Any
+
 from knwl.config import get_config
 from knwl.logging import log
 from knwl.utils import hash_args
@@ -102,13 +104,17 @@ class Services:
     def clear_singletons(self) -> None:
         self.singletons = {}
 
-    def get_service(self, service_name: str, variant_name: str = None, override=None) -> object:
+    def get_service(self, service_name: Any, variant_name: str = None, override=None) -> object:
         """
         Get a singleton instance of a service. If the service has already been instantiated, return the existing instance.
         Otherwise, create a new instance and store it for future use.
 
         If you want to always create a new instance, use `create_service` instead.
         """
+        if service_name is None:
+            raise ValueError("Service name must be provided.")
+        if hasattr(service_name, '__dict__'):
+            return service_name  # already an instance
         specs = self.get_service_specs(service_name, variant_name, override=override)
 
         service_name = specs["service_name"]
