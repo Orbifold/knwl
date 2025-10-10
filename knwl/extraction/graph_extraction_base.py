@@ -90,7 +90,7 @@ class GraphExtractionBase(FrameworkBase, ABC):
                 name=item["name"],
                 type=item["type"],
                 description=item["description"],
-                chunkIds=[chunk_id] if chunk_id else [],
+                chunk_ids=[chunk_id] if chunk_id else [],
             )
             if node.name not in nodes:
                 nodes[node.name] = [node]
@@ -107,15 +107,15 @@ class GraphExtractionBase(FrameworkBase, ABC):
         for item in dic["relationships"]:
             edge = KnwlEdge(
                 source_id=item["source"],
-                targetId=item["target"],
+                target_id=item["target"],
                 description=item["description"],
                 keywords=item["types"],
                 weight=item["weight"],
                 chunkIds=[chunk_id] if chunk_id else [],
             )
             # the edge key is the tuple of the source and target names, NOT the ids. Is corrected below
-            edge_key = f"({edge.source_id},{edge.targetId})"
-            if (edge.source_id, edge.targetId) not in edges:
+            edge_key = f"({edge.source_id},{edge.target_id})"
+            if (edge.source_id, edge.target_id) not in edges:
                 edges[edge_key] = [edge]
             else:
                 coll = edges[edge_key]
@@ -132,20 +132,20 @@ class GraphExtractionBase(FrameworkBase, ABC):
         for key in edges:
             for e in edges[key]:
 
-                if e.source_id not in node_map or e.targetId not in node_map:
+                if e.source_id not in node_map or e.target_id not in node_map:
                     #  happens if the LLM creates edges to entities that are not in the graph
                     continue
                 if key not in corrected_edges:
                     corrected_edges[key] = []
                 source_id = node_map[e.source_id]
-                target_id = node_map[e.targetId]
+                target_id = node_map[e.target_id]
                 corrected_edge = KnwlEdge(
                     source_id=source_id,
-                    targetId=target_id,
+                    target_id=target_id,
                     description=e.description,
                     keywords=e.keywords,
                     weight=e.weight,
-                    chunkIds=e.chunkIds,
+                    chunkIds=e.chunk_ids,
                 )
                 corrected_edges[key].append(corrected_edge)
         return KnwlExtraction(

@@ -10,7 +10,8 @@ class Services:
     A class to manage and instantiate services based on configuration.
     """
 
-    singletons = {}
+    def __init__(self):
+        self.singletons = {}
 
     @staticmethod
     def parse_name(name: str) -> tuple[str, str | None]:

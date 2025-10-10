@@ -6,44 +6,45 @@ from knwl.config import get_config
 from knwl.llm.ollama import OllamaClient
 from knwl.services import Services
 from knwl.utils import get_full_path
-pytestmark=pytest.mark.llm
+
+pytestmark = pytest.mark.llm
 
 
 def test_get_spec():
     services = Services()
 
-    # override_config = {"food": {"default": "pizza", "pizza": {"size": "large", "delivery": "transport/car"}, "burger": {"size": "medium"}, }, "transport": {"car": {"wheels": 4}, "bike": {"wheels": 2}}, }
-    # specs = services.get_service_specs("food", override=override_config)
-    # assert specs["service_name"] == "food"
-    # assert specs["variant_name"] == "pizza"
-    # assert specs["size"] == "large"
-    # with pytest.raises(ValueError):
-    #     services.get_service_specs("unknown_service", override=override_config)
-    # with pytest.raises(ValueError):
-    #     services.get_service_specs("food", "unknown_variant", override=override_config)
-    #
-    # specs = services.get_service_specs("food/burger", override=override_config)
-    # assert specs["service_name"] == "food"
-    # assert specs["variant_name"] == "burger"
-    # assert specs["size"] == "medium"
-    #
-    # specs = services.get_service_specs("food", "default", override=override_config)
-    # assert specs["service_name"] == "food"
-    # assert specs["variant_name"] == "pizza"
-    # specs = services.get_service_specs("food/default", None, override=override_config)
-    # assert specs["service_name"] == "food"
-    # assert specs["variant_name"] == "pizza"
-    # with pytest.raises(ValueError):
-    #     services.get_service_specs(None, override=override_config)
-    # with pytest.raises(ValueError):
-    #     # can't have both "/" and variant in one call
-    #     services.get_service_specs("a/b", "c", override=override_config)
+    override_config = {"food": {"default": "pizza", "pizza": {"size": "large", "delivery": "transport/car"}, "burger": {"size": "medium"}, }, "transport": {"car": {"wheels": 4}, "bike": {"wheels": 2}}, }
+    specs = services.get_service_specs("food", override=override_config)
+    assert specs["service_name"] == "food"
+    assert specs["variant_name"] == "pizza"
+    assert specs["size"] == "large"
+    with pytest.raises(ValueError):
+        services.get_service_specs("unknown_service", override=override_config)
+    with pytest.raises(ValueError):
+        services.get_service_specs("food", "unknown_variant", override=override_config)
+
+    specs = services.get_service_specs("food/burger", override=override_config)
+    assert specs["service_name"] == "food"
+    assert specs["variant_name"] == "burger"
+    assert specs["size"] == "medium"
+
+    specs = services.get_service_specs("food", "default", override=override_config)
+    assert specs["service_name"] == "food"
+    assert specs["variant_name"] == "pizza"
+    specs = services.get_service_specs("food/default", None, override=override_config)
+    assert specs["service_name"] == "food"
+    assert specs["variant_name"] == "pizza"
+    with pytest.raises(ValueError):
+        services.get_service_specs(None, override=override_config)
+    with pytest.raises(ValueError):
+        # can't have both "/" and variant in one call
+        services.get_service_specs("a/b", "c", override=override_config)
 
     config = {"semantic": {"default": "local", "local": {"graph": {"graph-store": "graph/graph-store",  # the topology
-        "node_embeddings": "vector/nodes",  # the node embeddings
-        "edge-embeddings": "vector/edges",  # the edge embeddings
-        "summarization": "summarization/ollama",  # how to summarize long texts
-    }}}}
+                                                                   "node_embeddings": "vector/nodes",  # the node embeddings
+                                                                   "edge-embeddings": "vector/edges",  # the edge embeddings
+                                                                   "summarization": "summarization/ollama",  # how to summarize long texts
+                                                                   }}}}
     specs = services.get_service_specs("semantic", override=config)
 
 
@@ -100,25 +101,26 @@ def test_service_params():
     assert llm.model == get_config("llm", "ollama", "model")
 
     # override
-    override_config = {"llm": {"ollama": {"model": "override_model:1b", "temperature": 0.3, "context_window": 8192, }}}
+    override_config = {"llm": {"ollama": {"model": "zero", "temperature": 0.3, "context_window": 8192, }}}
     llm = OllamaClient(override=override_config)
-    assert llm.model == "override_model:1b"
+    assert llm.model == "zero"
     assert llm.temperature == 0.3
 
 
 def test_service_singleton():
-    from knwl.services import Services
-
     services = Services()
+    assert len(services.singletons) == 0
+
     llm1 = services.get_service("llm")
     llm2 = services.get_service("llm")
     assert llm1.id == llm2.id
 
     llm3 = services.get_service("llm", variant_name="ollama")
     assert llm1.id == llm3.id
-
     override_config = {"llm": {"ollama": {"model": "override_model:1b", "temperature": 0.3, "context_window": 8192, }}}
     llm4 = services.get_service("llm", override=override_config)
     llm5 = services.get_service("llm", override=override_config)
+    # for k in services.singletons:
+
     assert llm4.id == llm5.id
     assert llm4.id != llm1.id

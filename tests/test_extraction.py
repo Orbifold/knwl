@@ -4,7 +4,8 @@ from knwl.extraction.basic_entity_extraction import BasicEntityExtraction
 from knwl.extraction.basic_graph_extraction import BasicGraphExtraction
 from knwl.extraction.glean_graph_extraction import GleanGraphExtraction
 
-pytestmark=pytest.mark.llm
+pytestmark = pytest.mark.llm
+
 
 @pytest.mark.asyncio
 async def test_extraction():
@@ -65,11 +66,12 @@ async def test_extraction_multiple():
     """
 
     extractor = BasicGraphExtraction()
-    g = await extractor.extract(text, entities=["person"],chunk_id="abc")
+    g = await extractor.extract(text, entities=["person"], chunk_id="abc")
     assert len(g.nodes) == 1  # only one person despite appearing multiple times
-    assert g.nodes["John Field"][0].chunkIds == ["abc"]
+    assert g.nodes["John Field"][0].chunk_ids == ["abc"]
     print("")
     print(g.model_dump_json(indent=2))
+
 
 @pytest.mark.asyncio
 async def test_extraction_no_entities():
@@ -84,6 +86,7 @@ async def test_extraction_no_entities():
     print("")
     print(g.model_dump_json(indent=2))
 
+
 @pytest.mark.asyncio
 async def test_gleaning():
     text = """Alice went to the park. There she met Bob. They decided to go for ice cream.
@@ -96,6 +99,7 @@ async def test_gleaning():
     assert len(g.edges) > 0
     print("")
     print(g.model_dump_json(indent=2))
+
 
 @pytest.mark.asyncio
 async def test_fast_entity_extraction():
@@ -117,4 +121,4 @@ async def test_fast_entity_extraction():
     extractor = BasicEntityExtraction()
     text = "This text has no recognizable entities and none should be found."
     result = await extractor.extract(text)
-    assert len(result) ==0
+    assert len(result) == 0

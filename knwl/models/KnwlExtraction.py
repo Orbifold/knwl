@@ -67,7 +67,7 @@ class KnwlExtraction(BaseModel):
         "(Barack Obama,2008)": [
           {
             "sourceId": "node-3fcbf8e8e1c4f474f9d215fbd4f24a03",
-            "targetId": "node-36b33d2175de7f6b924fcbd5b11c930b",
+            "target_id": "node-36b33d2175de7f6b924fcbd5b11c930b",
             "typeName": "KnwlEdge",
             "id": "edge-058b135b093daa9960f346109bd0c151",
             "chunkIds": [],
@@ -82,7 +82,7 @@ class KnwlExtraction(BaseModel):
         "(Barack Obama,Hawaii)": [
           {
             "sourceId": "node-3fcbf8e8e1c4f474f9d215fbd4f24a03",
-            "targetId": "node-54c7d58158ebdb15e6f73c7cec50656f",
+            "target_id": "node-54c7d58158ebdb15e6f73c7cec50656f",
             "typeName": "KnwlEdge",
             "id": "edge-47ec3d753a51682ceeb9dc7057cf7be5",
             "chunkIds": [],

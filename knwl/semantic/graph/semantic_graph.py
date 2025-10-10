@@ -3,8 +3,10 @@ from knwl.models import KnwlNode, KnwlEdge
 from knwl.models.KnwlGraph import KnwlGraph
 from knwl.semantic.graph.semantic_graph_base import SemanticGraphBase
 from knwl.services import Services
+from knwl.storage import NetworkXGraphStorage, ChromaStorage
 from knwl.storage.graph_base import GraphBase
 from knwl.storage.vector_storage_base import VectorStorageBase
+from knwl.summarization.ollama import OllamaSummarization
 from knwl.summarization.summarization_base import SummarizationBase
 
 
@@ -13,26 +15,25 @@ class SemanticGraph(SemanticGraphBase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         config = kwargs.get("override", None)
-        specs = Services.get_service_specs("semantic", override=config)
-        if specs is None:
-            log.error("No semantic graph service configured.")
-            raise ValueError("No semantic graph service configured.")
-        self.validate_config(specs)
-        self.graph_store: GraphBase = self.get_service(
-            specs["graph"]["graph-store"], override=config
-        )
-        self.node_embeddings: VectorStorageBase = self.get_service(
-            specs["graph"]["node_embeddings"], override=config
-        )  # print(type(self.graph_store).__name__)
-        self.edge_embeddings: VectorStorageBase = self.get_service(
-            specs["graph"]["edge-embeddings"], override=config
-        )
-        self.summarization: SummarizationBase = self.get_service(
-            specs["graph"]["summarization"], override=config
-        )
-        log(
-            f"Semantic graph initialized with {type(self.graph_store).__name__}, {type(self.node_embeddings).__name__}, {type(self.edge_embeddings).__name__}, {type(self.summarization).__name__}"
-        )
+
+        if len(args) == 1 and isinstance(args[0], str) and args[0].strip().lower() in ["memory", "test"]:
+            self.graph_store = NetworkXGraphStorage("memory")
+            self.node_embeddings = ChromaStorage("memory")
+            self.edge_embeddings = ChromaStorage("memory")
+            self.summarization = OllamaSummarization( )
+            log(f"Semantic graph initialized all memory.")
+        else:
+
+            specs = Services.get_service_specs("semantic", override=config)
+            if specs is None:
+                log.error("No semantic graph service configured.")
+                raise ValueError("No semantic graph service configured.")
+            self.validate_config(specs)
+            self.graph_store: GraphBase = self.get_service(specs["graph"]["graph-store"], override=config)
+            self.node_embeddings: VectorStorageBase = self.get_service(specs["graph"]["node_embeddings"], override=config)  # print(type(self.graph_store).__name__)
+            self.edge_embeddings: VectorStorageBase = self.get_service(specs["graph"]["edge-embeddings"], override=config)
+            self.summarization: SummarizationBase = self.get_service(specs["graph"]["summarization"], override=config)
+            log(f"Semantic graph initialized with {type(self.graph_store).__name__}, {type(self.node_embeddings).__name__}, {type(self.edge_embeddings).__name__}, {type(self.summarization).__name__}")
 
     def validate_config(self, specs):
         if "graph" not in specs:
@@ -58,17 +59,11 @@ class SemanticGraph(SemanticGraphBase):
                 raise ValueError("Edge must have an Id to be embedded.")
             if edge.source_id is None or edge.target_id is None:
                 log.error("Edge must have both source and target IDs to be embedded.")
-                raise ValueError(
-                    "Edge must have both source and target IDs to be embedded."
-                )  # check endpoints exist
+                raise ValueError("Edge must have both source and target IDs to be embedded.")  # check endpoints exist
             if not await self.node_exists(edge.source_id):
-                raise ValueError(
-                    f"Source node {edge.source_id} does not exist in the graph."
-                )
+                raise ValueError(f"Source node {edge.source_id} does not exist in the graph.")
             if not await self.node_exists(edge.target_id):
-                raise ValueError(
-                    f"Target node {edge.target_id} does not exist in the graph."
-                )
+                raise ValueError(f"Target node {edge.target_id} does not exist in the graph.")
 
             # add to graph store
             await self.graph_store.upsert_edge(edge.source_id, edge.target_id, edge)
@@ -98,15 +93,9 @@ class SemanticGraph(SemanticGraphBase):
         # if the node exists, we summarize the existing description with the new one
         if await self.node_exists(node):
             existing_node = await self.get_node_by_id(node.id)
-            if (
-                existing_node is not None
-                and existing_node.description is not None
-                and node.description is not None
-            ):
+            if (existing_node is not None and existing_node.description is not None and node.description is not None):
                 # summarize the two descriptions
-                summary = await self.summarization.summarize(
-                    [existing_node.description, node.description]
-                )
+                summary = await self.summarization.summarize([existing_node.description, node.description])
                 if summary is not None and len(summary.strip()) > 0:
                     node = node.update(description=summary.strip())
         return node
@@ -151,9 +140,7 @@ class SemanticGraph(SemanticGraphBase):
             return False
         return await self.graph_store.node_exists(id)
 
-    async def get_edge(
-        self, source_id: str, target_id: str, label: str
-    ) -> KnwlEdge | None:
+    async def get_edge(self, source_id: str, target_id: str, label: str) -> KnwlEdge | None:
         return await self.graph_store.get_edges(source_id, target_id, label)
 
     async def merge_graph(self, graph: KnwlGraph):

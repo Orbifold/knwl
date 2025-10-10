@@ -71,8 +71,8 @@ class KnwlEdge(BaseModel):
     @staticmethod
     def other_endpoint(edge: "KnwlEdge", node_id: str) -> str:
         if edge.source_id == node_id:
-            return edge.targetId
-        elif edge.targetId == node_id:
+            return edge.target_id
+        elif edge.target_id == node_id:
             return edge.source_id
         else:
             raise ValueError(f"Node {node_id} is not an endpoint of edge {edge.id}")

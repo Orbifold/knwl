@@ -318,7 +318,7 @@ def test_node_class():
 
     c = KnwlNode(name="Hello")
     # id is assigned based on the content
-    assert "node-" in c.id
+    assert "node|>" in c.id
     assert c.id == KnwlNode.hash_node(c)
 
 
@@ -328,7 +328,7 @@ def test_edge_class():
 
     c = KnwlEdge(source_id="a", target_id="b")
     # id is assigned based on the content
-    assert "edge-" in c.id
+    assert "edge|>" in c.id
     assert c.id == KnwlEdge.hash_edge(c)
 
 
