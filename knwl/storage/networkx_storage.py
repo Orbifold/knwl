@@ -481,36 +481,7 @@ class NetworkXGraphStorage(GraphBase):
                 return found
         raise ValueError(f"Edge with id {edge_id} not found")
 
-    async def BaseModel(self, node_id: BaseModel | str | dict, node_data: object = None):
-        if node_id is None:
-            raise ValueError("NetworkXStorage: you need an id to upsert node")
 
-        if node_data is None:
-            if isinstance(node_id, BaseModel):
-                node_data = node_id.model_dump(mode="json")
-                node_id = node_data.get("id", node_id)
-            elif isinstance(node_id, dict):
-                node_data = cast(dict, node_id)
-                node_id = node_data.get("id", str(uuid4()))
-            elif isinstance(node_id, str):
-                node_data = {}
-                node_id = str.strip(node_id)
-        else:
-            if not isinstance(node_id, str):
-                raise ValueError("NetworkXStorage: if node data is provided the node Id must be a string")
-            if str.strip(node_id) == "":
-                raise ValueError("NetworkXStorage: node Id must not be empty")
-            if isinstance(node_data, BaseModel):
-                node_data = node_data.model_dump(mode="json")
-            elif isinstance(node_data, dict):
-                node_data = cast(dict, node_data)
-            else:
-                raise ValueError("NetworkXStorage: node data must be a dict or a Pydantic model")
-
-        node_data["id"] = node_id
-        self.validate_payload(node_data)
-        self.graph.add_node(node_id, **node_data)
-        await self.save()
 
     async def upsert_edge(self, source_node_id, target_node_id=None, edge_data=None):
         # Parse edge specifications

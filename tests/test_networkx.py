@@ -257,3 +257,4 @@ async def test_remove_edge_with_tuple(test_storage):
     await test_storage.remove_edge(n1,n2)
 
     assert not await test_storage.edge_exists(n1,n2)
+
