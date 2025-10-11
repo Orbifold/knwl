@@ -13,3 +13,5 @@ Graph RAG consists really of just two key ingredients, graph extraction and grap
 
 In theory one could have a single storage or service for graph RAG. Something like Kuzu can indeed do vector, chunks and all. In the case of Kuzu there is a limitation in that it does not support embeddings of edges. This limits the types of graph RAG queries but that would still allow for a lot of graph RAG use cases.
 Same for Falkor and Neo4j, maybe in the future an all-in-one solution can be implemented in a separate package.
+
+The naming of the CRUD methods in the `SemanticGraph` are deliberately different from the underlying [[GraphStorage]]. For example, tThe store uses `upsert_node` while the semantica graph uses `embed_node`. This is to emphasize the difference in functionality. The `SemanticGraph` does not just store the node, it also creates/updates the embedding and consolidates the description using LLMs.

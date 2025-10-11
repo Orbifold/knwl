@@ -1,6 +1,6 @@
 import pytest
 
-from knwl.models import KnwlNode
+from knwl.models import KnwlEdge, KnwlNode
 from knwl.semantic.graph.semantic_graph import SemanticGraph
 from knwl.storage import NetworkXGraphStorage
 
@@ -8,7 +8,7 @@ pytestmark = pytest.mark.llm
 
 
 @pytest.mark.asyncio
-async def test_merge_descriptions():
+async def test_merge_node_descriptions():
     g = SemanticGraph("memory")
     n1 = KnwlNode(
         name="n1",
@@ -94,3 +94,43 @@ async def test_custom_embedding():
     assert sims is not None
     assert len(sims) > 0
     assert sims[0].name == "special"
+
+
+@pytest.mark.asyncio
+async def test_merge_edge_descriptions():
+    g = SemanticGraph("memory")
+    n1 = KnwlNode(
+        name="n1",
+        description="Tata is an elephant, he is a very social and likes to play with other animals.",
+        type="Animal",
+    )
+    n2 = KnwlNode(
+        name="n2",
+        description="When Tata is hungry, he likes to eat bananas.",
+        type="Animal",
+    )
+    await g.embed_nodes([n1, n2])
+    edge1 = KnwlEdge(
+        source_id=n1.id,
+        target_id=n2.id,
+        description="Tata eats bananas when he is hungry.",
+        type="Eats",
+    )
+    e1 = await g.embed_edge(edge1)
+    assert await g.edge_count() == 1
+    # now embed another edge with the same source and target
+    edge2 = KnwlEdge(
+        source_id=n1.id,
+        target_id=n2.id,
+        description="Tata loves bananas.",
+        type="Eats",
+    )
+    e2 = await g.embed_edge(edge2)
+    assert await g.edge_count() == 1
+    e_merged = await g.get_edge_by_id(e1.id)
+    # token count is small, so it's just concatenated
+    assert (
+        e_merged.description
+        == "Tata eats bananas when he is hungry. Tata loves bananas."
+    )
+    print(e_merged)
