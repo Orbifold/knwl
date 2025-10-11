@@ -13,36 +13,34 @@ class KnwlGraph(BaseModel):
     This class is almost identical to KnwlExtraction, but the KnwlExtraction can have an entity name mapping to multiple nodes (eg. "Apple" can be a company or a fruit).
     In contrast, KnwlGraph has a flat list of nodes and edges.
 
-    Attributes
-    ----------
-    nodes : List[KnwlNode]
-        A list of KnwlNode objects.
-    edges : List[KnwlEdge]
-        A list of KnwlEdge objects.
-    typeName : str
-        A string representing the type name of the graph, default is "KnwlGraph".
-    id : str
-        A unique identifier for the graph, default is a new UUID4 string.
     """
+
     nodes: List[KnwlNode]
     edges: List[KnwlEdge]
     keywords: List[str] = Field(default_factory=list)
-    typeName: str = "KnwlGraph"
-    id: str = Field(default_factory=lambda: str(uuid4()))
+    type_name: str = Field(
+        default="KnwlGraph",
+        frozen=True,
+        description="The type name of the graph for (de)serialization purposes.",
+    )
+    id: str = Field(default=None, description="The unique identifier of the graph.")
 
     model_config = {"frozen": True}
 
-    def is_consistent(self) -> bool:
+    def is_consistent(self) -> str | None:
         """
         Check if the graph is consistent: all the edge endpoints are in the node list.
         """
         node_ids = self.get_node_ids()
-        edge_ids = self.get_edge_ids()
 
         for edge in self.edges:
-            if edge.source_id not in node_ids or edge.targetId not in node_ids:
-                return False
-        return True
+            if edge.source_id not in node_ids:
+                return f"Inconsistent graph: source endpoint '{edge.source_id}' does not exist in the graph."
+
+            if edge.target_id not in node_ids:
+                return f"Inconsistent graph: target endpoint '{edge.target_id}' does not exist in the graph."
+
+        return None
 
     def get_node_ids(self) -> List[str]:
         return [node.id for node in self.nodes]
@@ -50,9 +48,21 @@ class KnwlGraph(BaseModel):
     def get_edge_ids(self) -> List[str]:
         return [edge.id for edge in self.edges]
 
-    @model_validator(mode='after')
+    def get_node_names(self) -> List[str]:
+        return [node.name for node in self.nodes]
+
+    def get_node_types(self) -> List[str]:
+        return [node.type for node in self.nodes]
+    
+    def get_node_descriptions(self) -> List[str]:
+        return [node.description for node in self.nodes]
+
+    @model_validator(mode="after")
     def validate_consistency(self):
         """Validate that the graph is consistent after initialization."""
-        if not self.is_consistent():
-            raise ValueError("The graph is not consistent.")
+        msg = self.is_consistent()
+        if msg is not None:
+            raise ValueError(msg)
+        if self.id is None:
+            object.__setattr__(self, "id", str(uuid4()))
         return self

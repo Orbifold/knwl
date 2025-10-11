@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Union
 
 from knwl.framework_base import FrameworkBase
 from knwl.models import KnwlNode, KnwlEdge
@@ -23,7 +24,25 @@ class SemanticGraphBase(FrameworkBase, ABC):
         super().__init__(*args, **kwargs)
 
     @abstractmethod
-    async def embed_node(self, node: KnwlNode)->KnwlNode:
+    def validate_config(self, specs):
+        """
+        Validates the semantic graph configuration specifications.
+
+        Args:
+            specs (dict): Configuration specifications dictionary containing
+                         semantic service settings.
+
+        Raises:
+            ValueError: If any required configuration section is missing.
+
+        Returns:
+            None: Method only validates configuration and raises exceptions
+                  if validation fails.
+        """
+        pass
+
+    @abstractmethod
+    async def embed_node(self, node: KnwlNode) -> KnwlNode | None:
         """
         Embed a knowledge node into the semantic graph.
 
@@ -37,34 +56,216 @@ class SemanticGraphBase(FrameworkBase, ABC):
                              to generate the embedding representation.
 
         Returns:
-            None: This method operates asynchronously and modifies the node's
-                  embedding properties in place.
+            KnwlNode | None: The embedded node or None if the input is None.
         """
         pass
+
     @abstractmethod
     async def embed_nodes(self, nodes: list[KnwlNode]) -> list[KnwlNode]:
+        """
+        Embed multiple knowledge nodes into the semantic graph.
+
+        Args:
+            nodes (list[KnwlNode]): List of knowledge nodes to be embedded.
+
+        Returns:
+            list[KnwlNode]: List of embedded nodes.
+        """
         pass
 
     @abstractmethod
-    async def embed_edge(self, edge: KnwlEdge):
+    async def embed_edge(self, edge: KnwlEdge) -> KnwlEdge | None:
+        """
+        Embed a knowledge edge into the semantic graph.
+
+        Args:
+            edge (KnwlEdge): The knowledge edge to be embedded.
+
+        Returns:
+            KnwlEdge | None: The embedded edge or None if the input is None.
+        """
         pass
 
     @abstractmethod
-    async def embed_edges(self, edge: list[KnwlEdge]):
+    async def embed_edges(self, edges: list[KnwlEdge]):
+        """
+        Embed multiple knowledge edges into the semantic graph.
+
+        Args:
+            edges (list[KnwlEdge]): List of knowledge edges to be embedded.
+
+        Returns:
+            List of embedded edges.
+        """
+        pass
+
+    @abstractmethod
+    async def merge_node_descriptions(self, node: KnwlNode) -> KnwlNode:
+        """
+        Merges the description of a given node with the existing description in the graph store, if
+        the node already exists. The merging is done by summarizing both descriptions using the
+        configured summarization service.
+
+        This method does not upsert the node, only merges the descriptions if necessary.
+
+        Args:
+            node (KnwlNode): The node whose description should be merged.
+
+        Returns:
+            KnwlNode: The node with merged description.
+        """
+        pass
+
+    @abstractmethod
+    async def merge_edge_descriptions(self, edge: KnwlEdge) -> KnwlEdge:
+        """
+        Merges the description of a given edge with existing edges in the graph store that have the
+        same source, target, and type. The merging is done by summarizing all descriptions using the
+        configured summarization service.
+
+        This method does not upsert the edge, only merges the descriptions if necessary.
+
+        Args:
+            edge (KnwlEdge): The edge whose description should be merged.
+
+        Returns:
+            KnwlEdge: The edge with merged description.
+        """
+        pass
+
+    @abstractmethod
+    async def get_node_by_id(self, id: str) -> KnwlNode | None:
+        """
+        Retrieve a node by its ID.
+
+        Args:
+            id (str): The ID of the node to retrieve.
+
+        Returns:
+            KnwlNode | None: The node if found, None otherwise.
+        """
+        pass
+
+    @abstractmethod
+    async def get_edge_by_id(self, id: str) -> KnwlEdge | None:
+        """
+        Retrieve an edge by its ID.
+
+        Args:
+            id (str): The ID of the edge to retrieve.
+
+        Returns:
+            KnwlEdge | None: The edge if found, None otherwise.
+        """
+        pass
+
+    @abstractmethod
+    async def node_exists(self, id: KnwlNode | str) -> bool:
+        """
+        Check if a node exists in the graph.
+
+        Args:
+            id (KnwlNode | str): The node or node ID to check.
+
+        Returns:
+            bool: True if the node exists, False otherwise.
+        """
+        pass
+
+    @abstractmethod
+    async def edge_exists(self, id: KnwlEdge | str) -> bool:
+        """
+        Check if an edge exists in the graph.
+
+        Args:
+            id (KnwlEdge | str): The edge or edge ID to check.
+
+        Returns:
+            bool: True if the edge exists, False otherwise.
+        """
+        pass
+
+    @abstractmethod
+    async def get_edges(
+        self, source_node_id_or_key: str, target_node_id: str = None, type: str = None
+    ) -> Union[list[KnwlEdge], None]:
+        """
+        Retrieve edges based on source node, optionally filtered by target node and type.
+
+        Args:
+            source_node_id_or_key (str): The source node ID or key.
+            target_node_id (str, optional): The target node ID. Defaults to None.
+            type (str, optional): The edge type. Defaults to None.
+
+        Returns:
+            Union[list[KnwlEdge], None]: List of edges if found, None otherwise.
+        """
         pass
 
     @abstractmethod
     async def merge_graph(self, graph: KnwlGraph):
+        """
+        Merge a graph into the semantic graph.
+
+        Args:
+            graph (KnwlGraph): The graph to merge.
+
+        Returns:
+            The merged graph.
+        """
         pass
 
     @abstractmethod
     async def get_similar_nodes(self, node: KnwlNode, top_k: int = 5) -> list[KnwlNode]:
+        """
+        Retrieve nodes that are semantically similar to the given node.
+
+        This method uses the node embeddings to find nodes that are most similar
+        to the provided node based on their semantic content.
+
+        Args:
+            node (KnwlNode): The reference node to find similar nodes for.
+            top_k (int, optional): The maximum number of similar nodes to return.
+                Defaults to 5.
+
+        Returns:
+            list[KnwlNode]: A list of nodes that are most similar to the input node,
+                ordered by similarity score (most similar first).
+        """
         pass
 
     @abstractmethod
     async def get_similar_edges(self, edge: KnwlEdge, top_k: int = 5) -> list[KnwlEdge]:
+        """
+        Retrieve edges that are semantically similar to the given edge.
+
+        Args:
+            edge (KnwlEdge): The reference edge to find similar edges for.
+            top_k (int, optional): The maximum number of similar edges to return.
+                Defaults to 5.
+
+        Returns:
+            list[KnwlEdge]: A list of edges that are most similar to the input edge,
+                ordered by similarity score (most similar first).
+        """
         pass
 
     @abstractmethod
     async def node_count(self) -> int:
+        """
+        Get the total number of nodes in the graph.
+
+        Returns:
+            int: The number of nodes.
+        """
+        pass
+
+    @abstractmethod
+    async def edge_count(self) -> int:
+        """
+        Get the total number of edges in the graph.
+
+        Returns:
+            int: The number of edges.
+        """
         pass

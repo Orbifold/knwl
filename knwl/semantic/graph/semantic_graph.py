@@ -125,8 +125,12 @@ class SemanticGraph(SemanticGraphBase):
     async def embed_edges(self, edges: list[KnwlEdge]):
         if edges is None or len(edges) == 0:
             return
+        coll = []
         for e in edges:
-            await self.embed_edge(e)
+            ne = await self.embed_edge(e)
+            if ne is not None:
+                coll.append(ne)
+        return coll
 
     async def embed_node(self, node: KnwlNode) -> KnwlNode | None:
         if node is None:
@@ -223,6 +227,13 @@ class SemanticGraph(SemanticGraphBase):
             return False
         return await self.graph_store.node_exists(id)
 
+    async def edge_exists(self, id: KnwlEdge | str) -> bool:
+        if isinstance(id, KnwlEdge):
+            id = id.id
+        if id is None or len(id.strip()) == 0:
+            return False
+        return await self.graph_store.edge_exists(id)
+
     async def get_edges(
         self, source_node_id_or_key: str, target_node_id: str = None, type: str = None
     ) -> Union[list[KnwlEdge], None]:
@@ -237,7 +248,12 @@ class SemanticGraph(SemanticGraphBase):
         return edges
 
     async def merge_graph(self, graph: KnwlGraph):
-        pass
+        if graph is None:
+            return
+        ns = await self.embed_nodes(graph.nodes)
+        es = await self.embed_edges(graph.edges)
+        g = KnwlGraph(nodes=ns, edges=es, keywords=graph.keywords, id=graph.id)
+        return g
 
     async def get_similar_nodes(self, node: KnwlNode, top_k: int = 5) -> list[KnwlNode]:
         """
