@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from knwl.models import KnwlEdge, KnwlNode
+from knwl.models import KnwlEdge, KnwlGraph, KnwlNode, KnwlInput, KnwlDocument
 
 
 def test_knwlnode():
@@ -52,12 +52,64 @@ def test_knwledge():
     assert edge3.id != edge1.id  # different target_id
     assert edge3.id == KnwlEdge.hash_edge(edge3)
     with pytest.raises(ValidationError):
-        KnwlEdge(source_id="", target_id="b", type="relates_to")  # source_id cannot be empty
+        KnwlEdge(
+            source_id="", target_id="b", type="relates_to"
+        )  # source_id cannot be empty
     with pytest.raises(ValidationError):
-        KnwlEdge(source_id="a", target_id="", type="relates_to")  # target_id cannot be empty
+        KnwlEdge(
+            source_id="a", target_id="", type="relates_to"
+        )  # target_id cannot be empty
     with pytest.raises(ValidationError):
         KnwlEdge(source_id="a", target_id="b", type="")  # type cannot be empty
 
     # deserialization
     edge4 = KnwlEdge(**edge1.model_dump(mode="json"))
     assert edge4.id == edge1.id
+
+
+def test_knwlgraph():
+
+    g = KnwlGraph(nodes=[], edges=[])
+    assert g.is_empty()
+    assert g.get_node_ids() == []
+    assert g.get_edge_ids() == []
+    assert g.id is not None
+
+    node1 = KnwlNode(name="a1", type="A")
+    node2 = KnwlNode(name="a2", type="A")
+    edge1 = KnwlEdge(source_id=node1.id, target_id=node2.id, type="connects")
+    # edges must reference existing nodes
+    with pytest.raises(ValueError):
+        g = KnwlGraph(nodes=[], edges=[edge1])
+    g = KnwlGraph(nodes=[node1, node2], edges=[edge1])
+    assert g.node_exists(node1)
+    assert g.node_exists(node1.id)
+
+    print(g.model_dump(mode="json"))
+
+
+def test_knwlinput():
+    inp = KnwlInput(
+        text="DNA sequencing is a complex process.",
+        name="Test Input",
+        description="A test input",
+    )
+    assert inp.text == "DNA sequencing is a complex process."
+    assert inp.name == "Test Input"
+    assert inp.description == "A test input"
+    assert inp.id is not None
+
+    with pytest.raises(ValueError):
+        KnwlInput(text="", name="TestInput")  # text cannot be empty
+    with pytest.raises(ValueError):
+        KnwlInput(text=None, name="TestInput")  # text cannot be None
+
+    # deserialization
+    inp2 = KnwlInput(**inp.model_dump(mode="json"))
+    assert inp2.id == inp.id
+
+    input = KnwlInput("Some text")
+    assert input.text == "Some text"
+    assert input.name.startswith("Input ")
+    assert input.description == ""
+    assert input.id is not None

@@ -14,12 +14,12 @@ class KnwlChunk(BaseModel):
         default=None, description="Number of tokens in the chunk"
     )
     content: str = Field(..., description="The actual content of the chunk")
-    originId: Optional[str] = Field(None, description="The ID of the origin document")
+    origin_id: Optional[str] = Field(None, description="The ID of the origin document")
     index: int = Field(
         default=0, description="The index of the chunk within the source document"
     )
-    typeName: str = Field(
-        default="KnwlChunk", frozen=True, description="The type name of this class."
+    type_name: str = Field(
+        default="KnwlChunk", frozen=True, description="The type name of this class.", frozen=True
     )
     id: Optional[str] = Field(default=None, description="The unique ID of the chunk")
 

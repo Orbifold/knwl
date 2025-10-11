@@ -4,3 +4,4 @@
 # from knwl.models.QueryParam import QueryParam, QueryModes
 # from knwl.config import config
 # from .chunking import TiktokenChunking
+from knwl.models import *

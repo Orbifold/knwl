@@ -82,7 +82,7 @@ class TiktokenChunking(ChunkBase):
                         content=chunk_content.strip(),
                         tokens=min(self.chunk_size, len(tokens) - start),
                         index=index,
-                        originId=source_key,
+                        origin_id=source_key,
                     )
                 )
         return results

@@ -294,9 +294,9 @@ def test_source():
 
 def test_chunk_class():
     with pytest.raises(ValueError):
-        KnwlChunk(content="", tokens=2, index=0, originId="doc1")
+        KnwlChunk(content="", tokens=2, index=0, origin_id="doc1")
 
-    c = KnwlChunk(content="Hello", tokens=0, index=0, originId="doc1")
+    c = KnwlChunk(content="Hello", tokens=0, index=0, origin_id="doc1")
     # id is assigned based on the content
     assert "chunk|>" in c.id
     assert c.id == hash_with_prefix(c.content, prefix="chunk|>")

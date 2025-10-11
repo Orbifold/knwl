@@ -172,7 +172,7 @@ class TestChunks:
         mocker.patch.object(s.chunks_storage, 'filter_new_ids', return_value=[])
         mocker.patch.object(s.chunks_storage, 'upsert')
         mocker.patch.object(s.chunk_vectors, 'upsert')
-        mocker.patch('knwl.simple.chunk', side_effect=lambda content, key: [KnwlChunk(content=content, originId=key, tokens=len(content.split()))])
+        mocker.patch('knwl.simple.chunk', side_effect=lambda content, key: [KnwlChunk(content=content, origin_id=key, tokens=len(content.split()))])
         result = await s.create_chunks(sources)
         assert result == {}
         s.chunks_storage.upsert.assert_not_called()
@@ -183,7 +183,7 @@ class TestChunks:
         s = Knwl()
         sources = create_dummy_documents(2)
         # chunks are the same as sources since the content is small
-        new_chunks = [KnwlChunk(content=s.content, originId=k, tokens=count_tokens(s.content)) for k, s in sources.items()]
+        new_chunks = [KnwlChunk(content=s.content, origin_id=k, tokens=count_tokens(s.content)) for k, s in sources.items()]
         new_chunk_keys = [c.id for c in new_chunks]
         mocker.patch.object(s.chunks_storage, 'filter_new_ids', return_value=new_chunk_keys)
         mocker.patch.object(s.chunks_storage, 'upsert')

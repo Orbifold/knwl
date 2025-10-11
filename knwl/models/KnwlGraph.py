@@ -53,9 +53,32 @@ class KnwlGraph(BaseModel):
 
     def get_node_types(self) -> List[str]:
         return [node.type for node in self.nodes]
-    
+
     def get_node_descriptions(self) -> List[str]:
         return [node.description for node in self.nodes]
+
+    def get_node_by_id(self, id: str) -> KnwlNode | None:
+        for node in self.nodes:
+            if node.id == id:
+                return node
+        return None
+
+    def get_edge_by_id(self, id: str) -> KnwlEdge | None:
+        for edge in self.edges:
+            if edge.id == id:
+                return edge
+        return None
+
+    def is_empty(self) -> bool:
+        return len(self.nodes) == 0 and len(self.edges) == 0
+
+    def node_exists(self, id: KnwlNode | str) -> bool:
+        node_id = id.id if isinstance(id, KnwlNode) else id
+        return node_id in self.get_node_ids()
+
+    def edge_exists(self, id: KnwlEdge | str) -> bool:
+        edge_id = id.id if isinstance(id, KnwlEdge) else id
+        return edge_id in self.get_edge_ids()
 
     @model_validator(mode="after")
     def validate_consistency(self):

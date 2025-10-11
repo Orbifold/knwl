@@ -24,24 +24,6 @@ class SemanticGraphBase(FrameworkBase, ABC):
         super().__init__(*args, **kwargs)
 
     @abstractmethod
-    def validate_config(self, specs):
-        """
-        Validates the semantic graph configuration specifications.
-
-        Args:
-            specs (dict): Configuration specifications dictionary containing
-                         semantic service settings.
-
-        Raises:
-            ValueError: If any required configuration section is missing.
-
-        Returns:
-            None: Method only validates configuration and raises exceptions
-                  if validation fails.
-        """
-        pass
-
-    @abstractmethod
     async def embed_node(self, node: KnwlNode) -> KnwlNode | None:
         """
         Embed a knowledge node into the semantic graph.

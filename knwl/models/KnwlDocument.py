@@ -23,7 +23,7 @@ class KnwlDocument(BaseModel):
     timestamp: str = Field(default_factory=lambda: datetime.now().isoformat(), description="Creation timestamp")
     description: str = Field(default="", description="Document description")
     name: str = Field(default="", description="Document name")
-    typeName: str = Field(default="KnwlDocument", frozen=True, description="The type name of this class")
+    type_name: str = Field(default="KnwlDocument", frozen=True, description="The type name of this class, for serialization purposes.")
 
     model_config = {"frozen": True}
 
