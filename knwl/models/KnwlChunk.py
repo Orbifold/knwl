@@ -19,7 +19,7 @@ class KnwlChunk(BaseModel):
         default=0, description="The index of the chunk within the source document"
     )
     type_name: str = Field(
-        default="KnwlChunk", frozen=True, description="The type name of this class.", frozen=True
+        default="KnwlChunk", frozen=True, description="The type name of this class."
     )
     id: Optional[str] = Field(default=None, description="The unique ID of the chunk")
 

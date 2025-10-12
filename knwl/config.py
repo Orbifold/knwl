@@ -5,6 +5,7 @@
 import copy
 
 default_config = {
+     
     "api": {
         "development": True,
         "host": "0.0.0.0",

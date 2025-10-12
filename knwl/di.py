@@ -1,0 +1,425 @@
+"""
+Dependency Injection Framework for knwl
+
+This module provides decorators and utilities for dependency injection based on the config.py
+configuration system. It allows methods to be decorated to automatically inject services
+as dependencies.
+
+Example usage:
+
+    @service('llm')
+    @service('vector_store', variant='chroma', param_name='storage')
+    def process_documents(text: str, llm=None, storage=None):
+        # llm and storage are automatically injected
+        pass
+
+    @singleton_service('graph', variant='nx')  
+    def get_graph_instance(graph=None):
+        # graph is injected as a singleton
+        pass
+
+    @inject_config('api.host', 'api.port')
+    def start_server(host=None, port=None):
+        # host and port are injected from config
+        pass
+"""
+
+import functools
+import inspect
+from typing import Any, Dict, List, Optional, Callable, Union
+from knwl.services import services
+from knwl.config import get_config
+from knwl.logging import log
+
+
+def _get_override_value(override_dict: Dict, config_key: str, default=None):
+    """
+    Get a value from a nested override dictionary using dot notation.
+    
+    Args:
+        override_dict: Nested dictionary with override values
+        config_key: Dot-separated key like 'api.host'
+        default: Default value if key not found
+        
+    Returns:
+        The value if found, otherwise default
+    """
+    if not override_dict:
+        return default
+        
+    keys = config_key.split('.')
+    current = override_dict
+    
+    for key in keys:
+        if isinstance(current, dict) and key in current:
+            current = current[key]
+        else:
+            return default
+            
+    return current
+
+
+class DIContainer:
+    """
+    Dependency Injection Container that manages service instantiation and injection.
+    """
+    
+    def __init__(self):
+        self._service_registry: Dict[str, Dict] = {}
+        self._config_registry: Dict[str, Dict] = {}
+        
+    def register_service_injection(self, func_name: str, service_name: str, 
+                                 variant_name: Optional[str] = None, 
+                                 param_name: Optional[str] = None,
+                                 singleton: bool = False,
+                                 override: Optional[Dict] = None):
+        """Register a service injection for a function."""
+        if func_name not in self._service_registry:
+            self._service_registry[func_name] = {}
+            
+        injection_key = param_name or service_name
+        self._service_registry[func_name][injection_key] = {
+            'service_name': service_name,
+            'variant_name': variant_name,
+            'singleton': singleton,
+            'override': override
+        }
+    
+    def register_config_injection(self, func_name: str, config_keys: List[str], 
+                                 override: Optional[Dict] = None):
+        """Register config value injections for a function."""
+        self._config_registry[func_name] = {
+            'config_keys': config_keys,
+            'override': override
+        }
+        
+    def inject_dependencies(self, func: Callable, *args, **kwargs) -> Any:
+        """Inject dependencies into a function call."""
+        func_name = f"{func.__module__}.{func.__qualname__}"
+        sig = inspect.signature(func)
+        bound_args = sig.bind_partial(*args, **kwargs)
+        bound_args.apply_defaults()
+        
+        # Inject services
+        if func_name in self._service_registry:
+            for param_name, service_info in self._service_registry[func_name].items():
+                if param_name not in bound_args.arguments or bound_args.arguments[param_name] is None:
+                    try:
+                        if service_info['singleton']:
+                            service_instance = services.get_service(
+                                service_info['service_name'],
+                                variant_name=service_info['variant_name'],
+                                override=service_info['override']
+                            )
+                        else:
+                            service_instance = services.create_service(
+                                service_info['service_name'],
+                                variant_name=service_info['variant_name'],
+                                override=service_info['override']
+                            )
+                        bound_args.arguments[param_name] = service_instance
+                        log(f"Injected service '{service_info['service_name']}' as '{param_name}' into {func.__name__}")
+                    except Exception as e:
+                        log(f"Failed to inject service '{service_info['service_name']}': {e}")
+                        raise
+        
+        # Inject config values
+        if func_name in self._config_registry:
+            config_info = self._config_registry[func_name]
+            config_keys = config_info['config_keys']
+            override = config_info.get('override', {})
+            
+            for config_key in config_keys:
+                param_name = config_key.split('.')[-1]  # Use last part as param name
+                if param_name not in bound_args.arguments or bound_args.arguments[param_name] is None:
+                    try:
+                        # Check if there's an override for this config key
+                        override_value = _get_override_value(override, config_key, None)
+                        if override_value is not None:
+                            config_value = override_value
+                            log(f"Using override value for config '{config_key}' as '{param_name}' into {func.__name__}")
+                        else:
+                            config_value = get_config(*config_key.split('.'))
+                            log(f"Injected config '{config_key}' as '{param_name}' into {func.__name__}")
+                        
+                        bound_args.arguments[param_name] = config_value
+                    except Exception as e:
+                        log(f"Failed to inject config '{config_key}': {e}")
+                        raise
+        
+        return bound_args.arguments
+
+
+# Global DI container instance
+container = DIContainer()
+
+
+def service(service_name: str, variant: Optional[str] = None, 
+           param_name: Optional[str] = None, override: Optional[Dict] = None):
+    """
+    Decorator to inject a service instance into a function parameter.
+    
+    Args:
+        service_name: Name of the service to inject (e.g., 'llm', 'vector', 'graph')
+        variant: Optional variant of the service (e.g., 'ollama', 'openai')
+        param_name: Optional parameter name to inject into (defaults to service_name)
+        override: Optional configuration override
+        
+    Example:
+        @service('llm', variant='ollama', param_name='language_model')
+        def process_text(text: str, language_model=None):
+            return language_model.generate(text)
+    """
+    def decorator(func: Callable) -> Callable:
+        func_name = f"{func.__module__}.{func.__qualname__}"
+        container.register_service_injection(
+            func_name, service_name, variant, param_name, singleton=False, override=override
+        )
+        
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            injected_args = container.inject_dependencies(func, *args, **kwargs)
+            
+            # Handle **kwargs properly - extract it if it exists as a separate key
+            if 'kwargs' in injected_args:
+                extra_kwargs = injected_args.pop('kwargs')
+                if isinstance(extra_kwargs, dict):
+                    injected_args.update(extra_kwargs)
+            
+            return func(**injected_args)
+        
+        return wrapper
+    return decorator
+
+
+def singleton_service(service_name: str, variant: Optional[str] = None,
+                     param_name: Optional[str] = None, override: Optional[Dict] = None):
+    """
+    Decorator to inject a singleton service instance into a function parameter.
+    
+    Same as @service but ensures the same instance is reused across calls.
+    
+    Args:
+        service_name: Name of the service to inject
+        variant: Optional variant of the service
+        param_name: Optional parameter name to inject into
+        override: Optional configuration override
+        
+    Example:
+        @singleton_service('graph', variant='nx')
+        def add_node(node_data: dict, graph=None):
+            graph.add_node(node_data)
+    """
+    def decorator(func: Callable) -> Callable:
+        func_name = f"{func.__module__}.{func.__qualname__}"
+        container.register_service_injection(
+            func_name, service_name, variant, param_name, singleton=True, override=override
+        )
+        
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            injected_args = container.inject_dependencies(func, *args, **kwargs)
+            
+            # Handle **kwargs properly - extract it if it exists as a separate key
+            if 'kwargs' in injected_args:
+                extra_kwargs = injected_args.pop('kwargs')
+                if isinstance(extra_kwargs, dict):
+                    injected_args.update(extra_kwargs)
+            
+            return func(**injected_args)
+        
+        return wrapper
+    return decorator
+
+
+def inject_config(*config_keys: str, override: Optional[Dict] = None):
+    """
+    Decorator to inject configuration values into function parameters.
+    
+    Args:
+        *config_keys: Configuration keys to inject (e.g., 'api.host', 'llm.temperature')
+        override: Optional nested dictionary of config overrides matching config structure
+        
+    Example:
+        @inject_config('api.host', 'api.port')
+        def start_server(host=None, port=None):
+            print(f"Starting server on {host}:{port}")
+            
+        @inject_config('api.host', 'api.port', override={'api': {'host': 'localhost'}})
+        def start_dev_server(host=None, port=None):
+            print(f"Starting dev server on {host}:{port}")
+            
+        @inject_config('llm.model', 'llm.temperature', override={'llm': {'model': 'gpt-4', 'temperature': 0.7}})
+        def process_with_llm(model=None, temperature=None):
+            print(f"Using model {model} with temperature {temperature}")
+    """
+    def decorator(func: Callable) -> Callable:
+        func_name = f"{func.__module__}.{func.__qualname__}"
+        container.register_config_injection(func_name, list(config_keys), override)
+        
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            injected_args = container.inject_dependencies(func, *args, **kwargs)
+            
+            # Handle **kwargs properly - extract it if it exists as a separate key
+            if 'kwargs' in injected_args:
+                extra_kwargs = injected_args.pop('kwargs')
+                if isinstance(extra_kwargs, dict):
+                    injected_args.update(extra_kwargs)
+            
+            return func(**injected_args)
+        
+        return wrapper
+    return decorator
+
+
+def inject_services(**service_specs):
+    """
+    Decorator to inject multiple services with custom specifications.
+    
+    Args:
+        **service_specs: Keyword arguments where key is param name and value is service spec
+                        Service spec can be:
+                        - str: service name (e.g., 'llm')
+                        - tuple: (service_name, variant) (e.g., ('llm', 'ollama'))
+                        - dict: full specification with 'service', 'variant', 'singleton', 'override'
+    
+    Example:
+        @inject_services(
+            llm='llm',
+            storage=('vector', 'chroma'),
+            graph={'service': 'graph', 'variant': 'nx', 'singleton': True}
+        )
+        def complex_processing(data, llm=None, storage=None, graph=None):
+            # All services are automatically injected
+            pass
+    """
+    def decorator(func: Callable) -> Callable:
+        func_name = f"{func.__module__}.{func.__qualname__}"
+        
+        for param_name, spec in service_specs.items():
+            if isinstance(spec, str):
+                # Simple service name
+                service_name = spec
+                variant = None
+                singleton = False
+                override = None
+            elif isinstance(spec, tuple) and len(spec) == 2:
+                # (service_name, variant)
+                service_name, variant = spec
+                singleton = False
+                override = None
+            elif isinstance(spec, dict):
+                # Full specification
+                service_name = spec.get('service')
+                variant = spec.get('variant')
+                singleton = spec.get('singleton', False)
+                override = spec.get('override')
+            else:
+                raise ValueError(f"Invalid service specification for {param_name}: {spec}")
+            
+            container.register_service_injection(
+                func_name, service_name, variant, param_name, singleton, override
+            )
+        
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            injected_args = container.inject_dependencies(func, *args, **kwargs)
+            
+            # Handle **kwargs properly - extract it if it exists as a separate key
+            if 'kwargs' in injected_args:
+                extra_kwargs = injected_args.pop('kwargs')
+                if isinstance(extra_kwargs, dict):
+                    injected_args.update(extra_kwargs)
+            
+            return func(**injected_args)
+        
+        return wrapper
+    return decorator
+
+
+class ServiceProvider:
+    """
+    Context manager and utility class for managing service overrides and scoped injections.
+    """
+    
+    def __init__(self, **overrides):
+        """
+        Initialize service provider with configuration overrides.
+        
+        Args:
+            **overrides: Configuration overrides to apply during the context
+        """
+        self.overrides = overrides
+        self._original_config = None
+    
+    def __enter__(self):
+        # Store original config would go here if needed
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        # Restore original config would go here if needed
+        pass
+    
+    @staticmethod
+    def create_service(service_name: str, variant: Optional[str] = None, 
+                      override: Optional[Dict] = None):
+        """Create a new service instance (not singleton)."""
+        return services.create_service(service_name, variant_name=variant, override=override)
+    
+    @staticmethod  
+    def get_service(service_name: str, variant: Optional[str] = None,
+                   override: Optional[Dict] = None):
+        """Get a singleton service instance."""
+        return services.get_service(service_name, variant_name=variant, override=override)
+    
+    @staticmethod
+    def clear_singletons():
+        """Clear all singleton instances."""
+        services.clear_singletons()
+
+
+def auto_inject(func: Callable) -> Callable:
+    """
+    Decorator that automatically injects services based on parameter names and type hints.
+    
+    This decorator inspects the function signature and tries to inject services
+    based on parameter names that match service names in the configuration.
+    
+    Example:
+        @auto_inject
+        def process_data(text: str, llm=None, vector=None, graph=None):
+            # llm, vector, and graph are automatically injected if available
+            pass
+    """
+    sig = inspect.signature(func)
+    func_name = f"{func.__module__}.{func.__qualname__}"
+    
+    # Auto-detect services based on parameter names
+    for param_name, param in sig.parameters.items():
+        if param.default is None and param_name in ['llm', 'vector', 'graph', 'json', 'summarization', 
+                                                    'chunking', 'entity_extraction', 'graph_extraction']:
+            container.register_service_injection(
+                func_name, param_name, None, param_name, singleton=True, override=None
+            )
+    
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        injected_args = container.inject_dependencies(func, *args, **kwargs)
+        
+        # Handle **kwargs properly - extract it if it exists as a separate key
+        if 'kwargs' in injected_args:
+            extra_kwargs = injected_args.pop('kwargs')
+            if isinstance(extra_kwargs, dict):
+                injected_args.update(extra_kwargs)
+        
+        return func(**injected_args)
+    
+    return wrapper
+
+
+# Export the DI container for advanced usage
+__all__ = [
+    'service', 'singleton_service', 'inject_config', 'inject_services', 
+    'auto_inject', 'ServiceProvider', 'DIContainer', 'container'
+]
