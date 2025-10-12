@@ -1,13 +1,14 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
 
+from knwl.framework_base import FrameworkBase
 from knwl.models import KnwlContext, KnwlEdge, KnwlGraph, KnwlInput, KnwlRagInput
 from knwl.models.KnwlDocument import KnwlDocument
 from knwl.models.KnwlEdge import KnwlEdge
 from knwl.models.KnwlNode import KnwlNode
 
 
-class GraphRAGBase(ABC):
+class GraphRAGBase(FrameworkBase, ABC):
     @abstractmethod
     async def embed_node(self, node: KnwlNode) -> KnwlNode | None:
         pass
@@ -38,6 +39,7 @@ class GraphRAGBase(ABC):
     async def extract(self,input: str | KnwlInput | KnwlDocument) -> KnwlGraph | None:
         """
         Extract a knowledge graph from raw text or KnwlInput/KnwlDocument.
+        This is the same as `ingest` but without embedding (consolidation).
         """
         pass
     
@@ -45,6 +47,7 @@ class GraphRAGBase(ABC):
     async def augment(self, input: str | KnwlInput | KnwlRagInput) -> KnwlContext | None:
         """
         Retrieve context from the knowledge graph and augment the input text.
+        All you need to answer questions or generate text with context.
         """
         pass
     
