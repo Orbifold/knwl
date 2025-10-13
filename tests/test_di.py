@@ -513,7 +513,7 @@ class TestDependencyInjection:
         """Test that config injection with override is properly registered."""
         override_dict = {"api": {"host": "test.override.com", "port": 9999}}
         container.register_config_injection(
-            "test_func", ["api.host", "api.port"], override_dict
+            "test_func", ["api.host", "api.port"], override=override_dict
         )
 
         assert "test_func" in container._config_registry

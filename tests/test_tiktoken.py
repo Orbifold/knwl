@@ -1,6 +1,6 @@
 import pytest
 
-from knwl.chunking import TiktokenChunking
+from knwl.chunking.tiktoken_chunking import TiktokenChunking
 from knwl.models.KnwlChunk import KnwlChunk
 
 from knwl.services import services
@@ -25,8 +25,8 @@ def test_decode_tokens():
 
 @pytest.mark.asyncio
 async def test_chunking():
-    chunker = TiktokenChunking(size=10, overlap=2)
-    content = "This is a test content to be chunked into smaller pieces based on token size. You can adjust the chunk size and overlap as needed."
+    chunker = TiktokenChunking(chunk_size=10, chunk_overlap=2)
+    content = "This is a test content to be chunked into smaller pieces based on token chunk_size. You can adjust the chunk chunk_size and chunk_overlap as needed."
     chunks = await chunker.chunk(content)
     assert isinstance(chunks, list)
     assert all(isinstance(c, KnwlChunk) for c in chunks)
@@ -58,9 +58,9 @@ def test_decode_tokens_by_tiktoken():
 
 @pytest.mark.asyncio
 async def test_chunking_by_token_size():
-    chunker = TiktokenChunking(size=10, overlap=0)
+    chunker = TiktokenChunking(chunk_size=10, chunk_overlap=0)
     content = (
-        "This is a test content to be chunked into smaller pieces based on token size."
+        "This is a test content to be chunked into smaller pieces based on token chunk_size."
     )
     chunks = await chunker.chunk(content)
     assert len(chunks) > 1
@@ -70,7 +70,10 @@ async def test_chunking_by_token_size():
 
 @pytest.mark.asyncio
 async def test_via_services():
+    from knwl.config import get_config
+    from knwl.chunking.tiktoken_chunking import TiktokenChunking
     chunker = services.create_service("chunking")
+    assert chunker.model == get_config("chunking", "tiktoken", "model")
     assert isinstance(chunker, TiktokenChunking)
     assert chunker.chunk_size == 1024
     assert chunker.chunk_overlap == 128

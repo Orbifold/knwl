@@ -4,38 +4,40 @@ from chromadb import get_settings
 from knwl.chunking.chunk_base import ChunkBase
 from knwl.models.KnwlChunk import KnwlChunk
 import tiktoken
+from knwl.di import inject_config
 
 
+@inject_config(
+    {
+        "chunking.tiktoken.model": "model",
+        "chunking.tiktoken.size": "chunk_size",
+        "chunking.tiktoken.overlap": "chunk_overlap",
+    }
+)
 class TiktokenChunking(ChunkBase):
     """
     Chunking implementation using tiktoken for token-based chunking.
     """
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        config = kwargs.get("override", None)
-        self.model = self.get_param(
-            ["chunking", "tiktoken", "model"],
-            args,
-            kwargs,
-            default="gpt-4o-mini",
-            override=config,
-        )
-        self.chunk_size = self.get_param(
-            ["chunking", "tiktoken", "size"],
-            args,
-            kwargs,
-            default=1024,
-            override=config,
-        )
-        self.chunk_overlap = self.get_param(
-            ["chunking", "tiktoken", "overlap"],
-            args,
-            kwargs,
-            default=128,
-            override=config,
-        )
-        self.ENCODER = None
+    def __init__(self, model=None, chunk_size=None, chunk_overlap=None):
+        super().__init__()
+        # config = kwargs.get("override", None)
+        self._model = model
+        self._chunk_size = chunk_size
+        self._chunk_overlap = chunk_overlap
+        self._encoder = None
+
+    @property
+    def model(self):
+        return self._model
+
+    @property
+    def chunk_size(self):
+        return self._chunk_size
+
+    @property
+    def chunk_overlap(self):
+        return self._chunk_overlap
 
     def encode(self, content: str) -> list[int]:
         """
@@ -47,7 +49,7 @@ class TiktokenChunking(ChunkBase):
             List[int]: A list of token IDs representing the encoded string.
         """
         self.ensure_encoder()
-        tokens = self.ENCODER.encode(content)
+        tokens = self._encoder.encode(content)
         return tokens
 
     def decode(self, tokens: list[int]) -> str:
@@ -62,25 +64,25 @@ class TiktokenChunking(ChunkBase):
             str: The decoded string content.
         """
         self.ensure_encoder()
-        content = self.ENCODER.decode(tokens)
+        content = self._encoder.decode(tokens)
         return content
 
     def ensure_encoder(self):
-        if self.ENCODER is None:
-            self.ENCODER = tiktoken.encoding_for_model(self.model)
+        if self._encoder is None:
+            self._encoder = tiktoken.encoding_for_model(self._model)
 
     async def chunk(self, content: str, source_key: str = None) -> List[KnwlChunk]:
         tokens = self.encode(content)
         results = []
         for index, start in enumerate(
-            range(0, len(tokens), self.chunk_size - self.chunk_overlap)
+            range(0, len(tokens), self._chunk_size - self._chunk_overlap)
         ):
-            chunk_content = self.decode(tokens[start : start + self.chunk_size])
+            chunk_content = self.decode(tokens[start : start + self._chunk_size])
             if len(chunk_content.strip()) > 0:
                 results.append(
                     KnwlChunk(
                         content=chunk_content.strip(),
-                        tokens=min(self.chunk_size, len(tokens) - start),
+                        tokens=min(self._chunk_size, len(tokens) - start),
                         index=index,
                         origin_id=source_key,
                     )
