@@ -17,8 +17,8 @@ default_config = {
         "tiktoken": {
             "class": "knwl.chunking.TiktokenChunking",
             "model": "gpt-4o-mini",
-            "size": 1024,
-            "overlap": 128,
+            "chunk_size": 1024,
+            "chunk_overlap": 128,
         },
     },
     "summarization": {

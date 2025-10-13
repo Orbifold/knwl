@@ -7,7 +7,7 @@ from knwl.framework_base import FrameworkBase
 from knwl.models.KnwlChunk import KnwlChunk
 
 
-class ChunkBase(FrameworkBase):
+class ChunkingBase(FrameworkBase):
     """
     Base class for diverse chunking implementations.
     This class defines the interface and common properties for chunking systems.

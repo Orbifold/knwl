@@ -1,7 +1,7 @@
 from typing import List
 
 from chromadb import get_settings
-from knwl.chunking.chunk_base import ChunkBase
+from knwl.chunking.chunking_base import ChunkingBase
 from knwl.models.KnwlChunk import KnwlChunk
 import tiktoken
 from knwl.di import inject_config
@@ -14,7 +14,7 @@ from knwl.di import inject_config
         "chunking.tiktoken.overlap": "chunk_overlap",
     }
 )
-class TiktokenChunking(ChunkBase):
+class TiktokenChunking(ChunkingBase):
     """
     Chunking implementation using tiktoken for token-based chunking.
     """

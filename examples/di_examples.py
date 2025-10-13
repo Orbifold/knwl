@@ -46,7 +46,7 @@ async def quantum_topology() -> str:
     llm = OllamaClient(model="gemma3:4b", temperature=0.8)
 
     a = await llm.ask("What is quantum topology?")
-    print("Model used:", llm.model)
+    print("Model used:", llm._model)
     print(a.answer)
 
 

@@ -272,3 +272,44 @@ print(ask())  # Output: I'm a.b
 ```
 
 You can also completely replace the `default_config` dictionary if needed.
+
+## Direct Access to Services
+
+The DI container makes use of dynamic instantiation which you can also use directly if needed:
+
+```python
+import asyncio
+from knwl import services
+
+async def main():
+	s = services.get_service("llm")
+	result = await s.ask("What is the Baxter equation?")
+	print(result.answer)
+
+asyncio.run(main())
+```
+
+The `get_service` looks up the `llm` service configuration and if not variation is found, the default one will be used. In this case it will use the `OllamaClient`.
+
+A variation is simply a named configuration under the service. For example, if you had a configuration like this:
+
+```python
+sett = {
+    "llm": {
+        "default": "gemma",
+        "gemma": {
+            "class": "knwl.services.llm.ollama.OllamaClient",
+            "model": "gemma3:7b"
+        },
+        "qwen": {
+            "class": "knwl.services.llm.ollama.OllamaClient",
+            "model": "Qwen2.5-7B"
+        }
+    }
+}
+```
+
+you could use `services.get_service("llm", variation="qwen")` to get an instance of the `OllamaClient` configured to use the `Qwen2.5-7B` model instead of the default `gemma3:7b`.
+This allows you to easily switch between different implementations or configurations of a service at runtime without changing the code that uses the service.
+
+Much like the injection decorators, you can also pass an `override` parameter to `get_service` to provide ad-hoc configuration for that specific instance. You can also use `get_singleton_service` to get a singleton instance of a service. Whether you use a service via injection or directly via `get_service`, the same instance will be returned if it's a singleton service. The DI container relies on the `services` for singletons and instantiation.

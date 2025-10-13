@@ -1,3 +1,11 @@
+Chunking is a simple process of breaking down large texts into smaller, more manageable pieces called chunks. The underlying problem is to figure out what a character, a word, or a sentence is. It's more subtle than just splitting arrays.
+LLMs come to the rescue here and tokenizers like tiktoken are crucial for neural networks internally and for consumers to understand the size of their inputs.
+
+So, while the chunking inside Knwl is straightforward, underneath it is a deterministic tokenization library (Byte Pair Encoding or BPE) that is used by OpenAI models.
+
+To see chunking in action you need to override the defaults a bit since the default chunk size is 1024 tokens with an overlap of 128 tokens. This is too large for demonstration purposes so we will set it to 20 tokens with no overlap:
+
+```python
 import asyncio
 from knwl import services, ChunkingBase
 
@@ -28,3 +36,6 @@ At the same time, there’s a curious property that has long cast a shadow over 
 
 
 asyncio.run(main())
+```
+
+This will print out the chunks of text, each containing up to 20 tokens. You can adjust the `chunk_size` and `chunk_overlap` parameters to see how they affect the chunking process.

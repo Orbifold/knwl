@@ -89,21 +89,21 @@ def test_service_params():
     model_name = "abc"
     # arg is a dict
     llm = OllamaClient({"model": model_name})
-    assert llm.model == model_name
+    assert llm._model == model_name
     assert llm.temperature == get_config("llm", "ollama", "temperature")
     # kwargs specified
     model_name = "bcr"
     llm = OllamaClient(model=model_name)
-    assert llm.model == model_name
+    assert llm._model == model_name
 
     # using config defaults
     llm = OllamaClient()
-    assert llm.model == get_config("llm", "ollama", "model")
+    assert llm._model == get_config("llm", "ollama", "model")
 
     # override
     override_config = {"llm": {"ollama": {"model": "zero", "temperature": 0.3, "context_window": 8192, }}}
     llm = OllamaClient(override=override_config)
-    assert llm.model == "zero"
+    assert llm._model == "zero"
     assert llm.temperature == 0.3
 
 

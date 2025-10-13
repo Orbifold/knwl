@@ -1,4 +1,4 @@
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from typing import List
 
 from knwl.framework_base import FrameworkBase
@@ -7,22 +7,41 @@ from knwl.models.KnwlLLMAnswer import KnwlLLMAnswer
 from knwl.services import services
 
 
-class LLMBase(FrameworkBase):
+class LLMBase(FrameworkBase, ABC):
 
     @abstractmethod
-    async def ask(
+    async def ask(        
         self,
         question: str,
         system_message: str = None,
         extra_messages: list[dict] = None,
         key: str = None,
-        category: str = None,
+        category: str = None
     ) -> KnwlLLMAnswer:
-        pass
+        """
+        Asynchronously sends a question to the LLM and returns the response.
+
+        Args:
+            question (str): The question or prompt to send to the LLM.
+            system_message (str, optional): A system message that provides context or instructions for the LLM. 
+                Defaults to None.
+            extra_messages (list[dict], optional): Additional messages to include in the conversation history. 
+                Each message should be a dictionary with appropriate format for the LLM provider. 
+                Defaults to None.
+            key (str, optional): An API key or authentication token to use for this specific request. 
+                If None, uses the default key configured for the LLM. Defaults to None.
+            category (str, optional): A category label for the question, used for tracking or filtering purposes. 
+                Defaults to None.
+
+        Returns:
+            KnwlLLMAnswer: An object containing the LLM's response and associated metadata.
+
+        """
+        ...
 
     @abstractmethod
     async def is_cached(self, messages: str | List[str] | List[dict]) -> bool:
-        pass
+        ...
 
     def get_caching_service(
         self, caching_service_name, override=None
