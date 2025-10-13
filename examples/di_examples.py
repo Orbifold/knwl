@@ -16,7 +16,8 @@ from knwl.models.KnwlDocument import KnwlDocument
 from typing import List
 
 
-# %% 
+# ============================================================================================
+# %%
 # Example: Simple service injection
 @service("llm")
 async def generate_summary(text: str, llm=None) -> str:
@@ -28,47 +29,50 @@ async def generate_summary(text: str, llm=None) -> str:
     a = await llm.ask(prompt)
     print("Model used:", llm.model)
     print(a.answer)
-await generate_summary("Quantum computing is a fascinating field that explores the use of quantum-mechanical phenomena to perform computation. It has the potential to solve certain problems much faster than classical computers.")
 
-# %% 
+
+await generate_summary(
+    "Quantum computing is a fascinating field that explores the use of quantum-mechanical phenomena to perform computation. It has the potential to solve certain problems much faster than classical computers."
+)
+
+
+# ============================================================================================
+# %%
 # Example: You don't need to use DI if you don't want to
 async def quantum_topology() -> str:
     """Generate a summary without using DI."""
     from knwl.llm.ollama import OllamaClient
+
     llm = OllamaClient(model="gemma3:4b", temperature=0.8)
-    
+
     a = await llm.ask("What is quantum topology?")
     print("Model used:", llm.model)
     print(a.answer)
+
+
 await quantum_topology()
+
+# ============================================================================================
 # %%
-# Example: Multiple service injections with custom parameter names and override
+# Example:  config injection with override
 
-config1 = {"number": {
-    "large":{
-        "value": 1000
-    },
-    "small":{
-        "value": 10
-    }
-}}
-
-@inject_config("number.large", variant="chroma", param_name="vector_store")
-@service("llm", param_name="language_model")
-def semantic_search(query: str, vector_store=None, language_model=None) -> List[dict]:
-    """Perform semantic search using injected services."""
-    if not vector_store or not language_model:
-        raise ValueError("Required services not injected")
-
-    # Use language_model to create embedding for query
-    query_embedding = language_model.embed(query)
-
-    # Use vector_store to find similar documents
-    results = vector_store.search(query_embedding, limit=10)
-    return results
+config1 = {"number": {"large": {"value": 1000}, "small": {"value": 10}}}
 
 
-# Example 3: Singleton service injection (same instance reused)
+@inject_config("number.large.value", override=config1)
+def get_number_from_config(value: int, name: str) -> List[dict]:
+    print(f"{name}: {value}")
+
+
+# Using the function with injected config values
+get_number_from_config(name="large")
+get_number_from_config(name="small")
+# given values override injection
+get_number_from_config(name="small", value=42)
+
+# ============================================================================================
+# %%
+# Example: Singleton service injection (same instance reused)
 @singleton_service("graph", variant="nx")
 def add_knowledge_node(entity: str, properties: dict, graph=None):
     """Add a node to the knowledge graph."""

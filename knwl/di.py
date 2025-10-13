@@ -1,7 +1,7 @@
 """
-Dependency Injection Framework for knwl
+Dependency Injection Framework of Knwl
 
-This module provides decorators and utilities for dependency injection based on the config.py
+This module provides decorators and utilities for dependency injection (DI) based on the config.py
 configuration system. It allows methods to be decorated to automatically inject services
 as dependencies.
 
@@ -86,19 +86,58 @@ class DIContainer:
         }
     
     def register_config_injection(self, func_name: str, config_keys: List[str], 
+                                 param_name: Optional[str] = None,
                                  override: Optional[Dict] = None):
         """Register config value injections for a function."""
         self._config_registry[func_name] = {
             'config_keys': config_keys,
+            'param_name': param_name,
             'override': override
         }
+    
+    
+    def safe_bind_partial(self, func: Callable, *args, **kwargs):
+        """
+        Safely bind arguments to a function, ignoring kwargs that don't match parameters.
         
+        Args:
+            func: The function to bind arguments to
+            *args: Positional arguments
+            **kwargs: Keyword arguments (extra ones will be filtered out)
+            
+        Returns:
+            BoundArguments object with only valid parameters bound
+        """
+        sig = inspect.signature(func)
+        valid_params = set(sig.parameters.keys())
+        
+        # Filter kwargs to only include valid parameters
+        filtered_kwargs = {k: v for k, v in kwargs.items() if k in valid_params}
+        
+        # Check if function accepts **kwargs (VAR_KEYWORD)
+        has_var_keyword = any(
+            param.kind == inspect.Parameter.VAR_KEYWORD 
+            for param in sig.parameters.values()
+        )
+        
+        if has_var_keyword:
+            # If function accepts **kwargs, include all kwargs
+            bound_args = sig.bind_partial(*args, **kwargs)
+        else:
+            # Otherwise, only use filtered kwargs
+            bound_args = sig.bind_partial(*args, **filtered_kwargs)
+            
+        bound_args.apply_defaults()
+        return bound_args
+
     def inject_dependencies(self, func: Callable, *args, **kwargs) -> Any:
         """Inject dependencies into a function call."""
         func_name = f"{func.__module__}.{func.__qualname__}"
         sig = inspect.signature(func)
-        bound_args = sig.bind_partial(*args, **kwargs)
-        bound_args.apply_defaults()
+        
+        
+        # Use safe binding to ignore invalid kwargs
+        bound_args = self.safe_bind_partial(func, *args, **kwargs)
         
         # Inject services
         if func_name in self._service_registry:
@@ -127,10 +166,20 @@ class DIContainer:
         if func_name in self._config_registry:
             config_info = self._config_registry[func_name]
             config_keys = config_info['config_keys']
+            custom_param_name = config_info.get('param_name')
             override = config_info.get('override', {})
             
-            for config_key in config_keys:
-                param_name = config_key.split('.')[-1]  # Use last part as param name
+            # Validate param_name usage
+            if custom_param_name and len(config_keys) > 1:
+                raise ValueError("param_name can only be used with a single config key")
+            
+            for i, config_key in enumerate(config_keys):
+                # Use custom param_name for single config key, otherwise use last part of config key
+                if custom_param_name and len(config_keys) == 1:
+                    param_name = custom_param_name
+                else:
+                    param_name = config_key.split('.')[-1]  # Use last part as param name
+                    
                 if param_name not in bound_args.arguments or bound_args.arguments[param_name] is None:
                     try:
                         # Check if there's an override for this config key
@@ -150,8 +199,6 @@ class DIContainer:
         return bound_args.arguments
 
 
-# Global DI container instance
-container = DIContainer()
 
 
 def service(service_name: str, variant: Optional[str] = None, 
@@ -232,18 +279,23 @@ def singleton_service(service_name: str, variant: Optional[str] = None,
     return decorator
 
 
-def inject_config(*config_keys: str, override: Optional[Dict] = None):
+def inject_config(*config_keys: str, param_name: Optional[str] = None, override: Optional[Dict] = None):
     """
     Decorator to inject configuration values into function parameters.
     
     Args:
         *config_keys: Configuration keys to inject (e.g., 'api.host', 'llm.temperature')
+        param_name: Optional parameter name to inject into (only works with single config key)
         override: Optional nested dictionary of config overrides matching config structure
         
     Example:
         @inject_config('api.host', 'api.port')
         def start_server(host=None, port=None):
             print(f"Starting server on {host}:{port}")
+            
+        @inject_config('api.host', param_name='server_host')
+        def start_server(server_host=None):
+            print(f"Starting server on {server_host}")
             
         @inject_config('api.host', 'api.port', override={'api': {'host': 'localhost'}})
         def start_dev_server(host=None, port=None):
@@ -255,7 +307,7 @@ def inject_config(*config_keys: str, override: Optional[Dict] = None):
     """
     def decorator(func: Callable) -> Callable:
         func_name = f"{func.__module__}.{func.__qualname__}"
-        container.register_config_injection(func_name, list(config_keys), override)
+        container.register_config_injection(func_name, list(config_keys), param_name, override)
         
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -423,3 +475,7 @@ __all__ = [
     'service', 'singleton_service', 'inject_config', 'inject_services', 
     'auto_inject', 'ServiceProvider', 'DIContainer', 'container'
 ]
+
+
+# Global DI container instance
+container = DIContainer()

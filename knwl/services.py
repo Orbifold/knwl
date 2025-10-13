@@ -3,6 +3,7 @@ from typing import Any
 from knwl.config import get_config
 from knwl.logging import log
 from knwl.utils import hash_args
+import inspect
 
 
 class Services:
@@ -159,24 +160,33 @@ class Services:
         class_path = specs.get("class", None)
         if class_path is None:
             raise ValueError(f"Service variant '{variant_name}' for {service_name} does not specify a class to instantiate.")
+        
+        if isinstance(class_path, type):
+            del specs["class"]
+            del specs["service_name"]
+            del specs["variant_name"]
+            return class_path(**specs)
+        if callable(class_path):
+            return class_path(**specs)
         if not isinstance(class_path, str):
             # this allows to use the override with an ad-hoc class instance rather via a namespace path
             return class_path  # Already an instance of the class
-
+        
         module_name, class_name = class_path.rsplit(".", 1)
         module = __import__(module_name, fromlist=[class_name])
         cls = getattr(module, class_name)
         if cls is None:
             raise ValueError(f"Class '{class_name}' not found in module '{module_name}'.")
-        instance = cls(**specs)
-        # If the instance has an 'ensure_path_exists' method, call it for any 'path' attribute
-        # if hasattr(instance, "ensure_path_exists"):
-        #     for attr in dir(instance):
-        #         if "path" in attr.lower():
-        #             path_value = getattr(instance, attr)
-        #             if isinstance(path_value, str):
-        #                 ensured_path = instance.ensure_path_exists(path_value)
-        #                 setattr(instance, attr, ensured_path)
+        # Get the constructor signature
+        sig = inspect.signature(cls.__init__)
+        
+        # Filter specs to only include parameters that exist in the constructor
+        valid_kwargs = {}
+        for param_name in sig.parameters:
+            if param_name != 'self' and param_name in specs:
+                valid_kwargs[param_name] = specs[param_name]
+        
+        instance = cls(**valid_kwargs)
         return instance
 
 
