@@ -21,7 +21,6 @@ class TiktokenChunking(ChunkBase):
 
     def __init__(self, model=None, chunk_size=None, chunk_overlap=None):
         super().__init__()
-        # config = kwargs.get("override", None)
         self._model = model
         self._chunk_size = chunk_size
         self._chunk_overlap = chunk_overlap
@@ -39,7 +38,7 @@ class TiktokenChunking(ChunkBase):
     def chunk_overlap(self):
         return self._chunk_overlap
 
-    def encode(self, content: str) -> list[int]:
+    async def encode(self, content: str) -> list[int]:
         """
         Encodes a given string using the tiktoken library based on the specified model.
         Args:
@@ -52,7 +51,7 @@ class TiktokenChunking(ChunkBase):
         tokens = self._encoder.encode(content)
         return tokens
 
-    def decode(self, tokens: list[int]) -> str:
+    async def decode(self, tokens: list[int]) -> str:
         """
         Decodes a list of tokens into a string using the specified model's encoding.
 
@@ -68,16 +67,23 @@ class TiktokenChunking(ChunkBase):
         return content
 
     def ensure_encoder(self):
+        """
+        Ensures that the tokenizer encoder is initialized.
+
+        This method checks if the tokenizer encoder has been initialized (is None). If not,
+        it creates a new encoder using tiktoken's encoding_for_model function with the
+        current model name.
+        """
         if self._encoder is None:
             self._encoder = tiktoken.encoding_for_model(self._model)
 
     async def chunk(self, content: str, source_key: str = None) -> List[KnwlChunk]:
-        tokens = self.encode(content)
+        tokens = await self.encode(content)
         results = []
         for index, start in enumerate(
             range(0, len(tokens), self._chunk_size - self._chunk_overlap)
         ):
-            chunk_content = self.decode(tokens[start : start + self._chunk_size])
+            chunk_content = await self.decode(tokens[start : start + self._chunk_size])
             if len(chunk_content.strip()) > 0:
                 results.append(
                     KnwlChunk(
@@ -89,7 +95,7 @@ class TiktokenChunking(ChunkBase):
                 )
         return results
 
-    def count_tokens(self, content: str) -> int:
+    async def count_tokens(self, content: str) -> int:
         """
         Counts the number of tokens in the given content.
         Args:
@@ -99,9 +105,9 @@ class TiktokenChunking(ChunkBase):
         """
         if content is None or len(content.strip()) == 0:
             return 0
-        return len(self.encode(str.strip(content)))
+        return len(await self.encode(str.strip(content)))
 
-    def truncate_content(self, content: str, max_token_size: int) -> str:
+    async def truncate_content(self, content: str, max_token_size: int) -> str:
         """
         Truncate a list of data based on the token size limit.
         This function iterates over the given list and accumulates the token size
@@ -118,7 +124,7 @@ class TiktokenChunking(ChunkBase):
 
         if max_token_size <= 0:
             return ""
-        tokens = self.encode(content)
+        tokens = await self.encode(content)
         if len(tokens) <= max_token_size:
             return content
         else:

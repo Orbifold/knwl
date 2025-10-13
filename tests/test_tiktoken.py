@@ -7,19 +7,21 @@ from knwl.services import services
 pytestmark=pytest.mark.llm
 
 
-def test_encode_string():
+@pytest.mark.asyncio
+async def test_encode_string():
     chunker = TiktokenChunking()
     content = "Hello, world!"
-    tokens = chunker.encode(content)
+    tokens = await chunker.encode(content)
     assert isinstance(tokens, list)
     assert all(isinstance(token, int) for token in tokens)
 
 
-def test_decode_tokens():
+@pytest.mark.asyncio
+async def test_decode_tokens():
     chunker = TiktokenChunking()
     content = "Hello, world!"
-    tokens = chunker.encode(content)
-    decoded_content = chunker.decode(tokens)
+    tokens = await chunker.encode(content)
+    decoded_content = await chunker.decode(tokens)
     assert decoded_content == content
 
 
@@ -38,21 +40,21 @@ async def test_chunking():
     for chunk in chunks:
         print(f"Chunk (tokens: {chunk.tokens}): {chunk.content}")
 
-
-def test_count_tokens():
+@pytest.mark.asyncio
+async def test_count_tokens():
     chunker = TiktokenChunking()
     content = "Hello, world!"
-    token_count = chunker.count_tokens(content)
+    token_count = await chunker.count_tokens(content)
     assert isinstance(token_count, int)
     assert token_count > 0
-    assert token_count == len(chunker.encode(content))
+    assert token_count == len(await chunker.encode(content))
 
-
-def test_decode_tokens_by_tiktoken():
+@pytest.mark.asyncio
+async def test_decode_tokens_by_tiktoken():
     chunker = TiktokenChunking()
     content = "Hello, world!"
-    tokens = chunker.encode(content)
-    decoded_content = chunker.decode(tokens)
+    tokens = await chunker.encode(content)
+    decoded_content = await  chunker.decode(tokens)
     assert decoded_content == content
 
 
