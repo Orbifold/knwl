@@ -38,7 +38,7 @@ default_config = {
         "default": "basic",
         "basic": {
             "class": "knwl.extraction.basic_entity_extraction.BasicEntityExtraction",
-            "llm": "gemma-small",
+            "llm": "@/llm/openai",
         },
     },
     "graph_extraction": {
@@ -46,7 +46,7 @@ default_config = {
         "basic": {
             "class": "knwl.extraction.basic_graph_extraction.BasicGraphExtraction",
             "mode": "full",  # fast or full
-            "llm": "gemma-small",
+            "llm": "@/llm/gemma-small",
         },
         "glean": {
             "class": "knwl.extraction.glean_graph_extraction.GleanGraphExtraction",
@@ -194,7 +194,12 @@ def get_config(*keys, default=None, config=None, override=None):
     if override is not None:
         cloned_config = merge_configs(override, cloned_config)
     if len(keys) == 1:
-        return cloned_config.get(keys[0], default)
+        # if starts with @/, it's a reference to another config value
+        if isinstance(keys[0], str) and keys[0].startswith("@/"):
+            ref_keys = [u for u in keys[0][2:].split("/") if u]
+            return get_config(*ref_keys, default=default, config=cloned_config)
+        else:
+            return cloned_config.get(keys[0], default)
     else:
         current = cloned_config
         # drill down into the nested dictionary

@@ -35,21 +35,33 @@ class Services:
         return name, None
 
     @staticmethod
-    def get_service_specs(service_name: str, variant_name: str | None = None, override=None) -> dict:
+    def get_service_specs(
+        service_name: str, variant_name: str | None = None, override=None
+    ) -> dict:
         if service_name is None:
             raise ValueError("Service name must be provided.")
         if "/" in service_name:
             if variant_name is not None:
-                raise ValueError("Can't have '/' in service name and specify a variant name at the same time.")
+                raise ValueError(
+                    "Can't have '/' in service name and specify a variant name at the same time."
+                )
             else:
                 service_name, variant_name = Services.parse_name(service_name)
-        if variant_name is None or variant_name.strip() == "" or variant_name.strip() == "default":
-            variant_name = Services.get_default_variant_name(service_name, override=override)
+        if (
+            variant_name is None
+            or variant_name.strip() == ""
+            or variant_name.strip() == "default"
+        ):
+            variant_name = Services.get_default_variant_name(
+                service_name, override=override
+            )
             if variant_name is None:
                 raise ValueError(f"No default service configured for {service_name}")
         spec = get_config(service_name, variant_name, default=None, override=override)
         if spec is None:
-            raise ValueError(f"Service variant '{variant_name}' for {service_name} not found in configuration.")
+            raise ValueError(
+                f"Service variant '{variant_name}' for {service_name} not found in configuration."
+            )
         spec["service_name"] = service_name
         spec["variant_name"] = variant_name
         return spec
@@ -82,31 +94,47 @@ class Services:
         """
         return get_config(service_name, "default", default=None, override=override)
 
-    def get_singleton_key(self, service_name: str, variant_name: str = None, override=None) -> str:
+    def get_singleton_key(
+        self, service_name: str, variant_name: str = None, override=None
+    ) -> str:
         if service_name is None:
             raise ValueError("Service name must be provided to get singleton key.")
         if variant_name is None or variant_name == "default":
-            variant_name = self.get_default_variant_name(service_name, override=override)
+            variant_name = self.get_default_variant_name(
+                service_name, override=override
+            )
             if variant_name is None:
                 raise ValueError(f"No default service configured for {service_name}")
         spec = get_config(service_name, variant_name, default=None, override=override)
         if spec is None:
-            raise ValueError(f"Service variant '{variant_name}' for {service_name} not found in configuration.")
+            raise ValueError(
+                f"Service variant '{variant_name}' for {service_name} not found in configuration."
+            )
         return hash_args(service_name, variant_name, spec)
 
-    def get_singleton(self, service_name: str, variant_name: str = None, override=None) -> object | None:
-        key = self.get_singleton_key(service_name, variant_name=variant_name, override=override)
+    def get_singleton(
+        self, service_name: str, variant_name: str = None, override=None
+    ) -> object | None:
+        key = self.get_singleton_key(
+            service_name, variant_name=variant_name, override=override
+        )
         return self.singletons.get(key, None)
 
-    def set_singleton(self, instance, service_name: str, variant_name: str = None, override=None) -> object:
-        key = self.get_singleton_key(service_name, variant_name=variant_name, override=override)
+    def set_singleton(
+        self, instance, service_name: str, variant_name: str = None, override=None
+    ) -> object:
+        key = self.get_singleton_key(
+            service_name, variant_name=variant_name, override=override
+        )
         self.singletons[key] = instance
         return instance
 
     def clear_singletons(self) -> None:
         self.singletons = {}
 
-    def get_service(self, service_name: Any, variant_name: str = None, override=None) -> object:
+    def get_service(
+        self, service_name: Any, variant_name: str = None, override=None
+    ) -> object:
         """
         Get a singleton instance of a service. If the service has already been instantiated, return the existing instance.
         Otherwise, create a new instance and store it for future use.
@@ -115,21 +143,29 @@ class Services:
         """
         if service_name is None:
             raise ValueError("Service name must be provided.")
-        if hasattr(service_name, '__dict__'):
+        if hasattr(service_name, "__dict__"):
             return service_name  # already an instance
         specs = self.get_service_specs(service_name, variant_name, override=override)
 
         service_name = specs["service_name"]
         variant_name = specs["variant_name"]
         # check the singletons cache
-        found = self.get_singleton(service_name, variant_name=variant_name, override=override)
+        found = self.get_singleton(
+            service_name, variant_name=variant_name, override=override
+        )
         if found:
             return found
-        instance = self.create_service(service_name, variant_name=variant_name, override=override)
-        self.set_singleton(instance, service_name, variant_name=variant_name, override=override)
+        instance = self.create_service(
+            service_name, variant_name=variant_name, override=override
+        )
+        self.set_singleton(
+            instance, service_name, variant_name=variant_name, override=override
+        )
         return instance
 
-    def create_service(self, service_name: str, variant_name: str = None, override=None) -> object:
+    def create_service(
+        self, service_name: str, variant_name: str = None, override=None
+    ) -> object:
         """
         Create a service instance with optional variant specification.
 
@@ -148,19 +184,17 @@ class Services:
 
         service_name = specs["service_name"]
         variant_name = specs["variant_name"]
-        return self.instantiate_service(service_name, variant_name=variant_name, override=override)
+        return self.instantiate_service(
+            service_name, variant_name=variant_name, override=override
+        )
 
-    def instantiate_service(self, service_name: str, variant_name: str = None, override=None) -> object:
-        specs = self.get_service_specs(service_name, variant_name, override=override)
-        log(f"Instantiating service '{service_name}/{variant_name}'.")
-        service_name = specs["service_name"]
-        variant_name = specs["variant_name"]
-        if specs is None:
-            raise ValueError(f"Service variant '{variant_name}' for {service_name} not found in configuration.")
+    def instantiate_service_specs(self, specs: dict) -> object:
         class_path = specs.get("class", None)
         if class_path is None:
-            raise ValueError(f"Service variant '{variant_name}' for {service_name} does not specify a class to instantiate.")
-        
+            raise ValueError(
+                f"Service variant '{variant_name}' for {service_name} does not specify a class to instantiate."
+            )
+
         if isinstance(class_path, type):
             del specs["class"]
             del specs["service_name"]
@@ -171,23 +205,68 @@ class Services:
         if not isinstance(class_path, str):
             # this allows to use the override with an ad-hoc class instance rather via a namespace path
             return class_path  # Already an instance of the class
-        
+
         module_name, class_name = class_path.rsplit(".", 1)
         module = __import__(module_name, fromlist=[class_name])
         cls = getattr(module, class_name)
         if cls is None:
-            raise ValueError(f"Class '{class_name}' not found in module '{module_name}'.")
+            raise ValueError(
+                f"Class '{class_name}' not found in module '{module_name}'."
+            )
         # Get the constructor signature
         sig = inspect.signature(cls.__init__)
-        
-        # Filter specs to only include parameters that exist in the constructor
+
+        # Filter specs to only include parameters that exist in the constructor (sig are the defined params and specs are the config params)
         valid_kwargs = {}
         for param_name in sig.parameters:
-            if param_name != 'self' and param_name in specs:
-                valid_kwargs[param_name] = specs[param_name]
-        
+            if param_name != "self" and param_name in specs:
+                param_value = specs[param_name]
+                # reference to another service or value
+                if isinstance(param_value, str) and param_value.startswith("@/"):
+                    value_ref = get_config(param_value)
+                    if isinstance(value_ref, dict) and "class" in value_ref:                        
+                        # it's a service specification
+                        param = self.instantiate_service_specs(value_ref)
+                    else:
+                        # whatever value 
+                        param = value_ref      
+                else:
+                    param = param_value          
+                valid_kwargs[param_name] = param
+
         instance = cls(**valid_kwargs)
         return instance
+
+    def instantiate_service(
+        self, service_name: str, variant_name: str = None, override=None
+    ) -> object:
+        """
+        Instantiate a service based on its configuration specifications.
+        This method retrieves service specifications and creates an instance of the specified
+        service class. It supports multiple instantiation methods including direct class types,
+        callable objects, string-based module paths, and pre-instantiated objects.
+        Args:
+            service_name (str): The name of the service to instantiate.
+            variant_name (str, optional): The specific variant of the service. Defaults to None.
+            override (optional): Override configuration for the service. Defaults to None.
+        Returns:
+            object: An instance of the requested service class.
+        Note:
+            - If class_path is already a type, it instantiates directly with filtered specs.
+            - If class_path is callable, it calls it with all specs.
+            - If class_path is not a string, it returns the object as-is (pre-instantiated).
+            - For string paths, it dynamically imports the module and filters constructor
+              parameters to only include valid ones from the service specifications.
+        """
+        specs = self.get_service_specs(service_name, variant_name, override=override)
+        log(f"Instantiating service '{service_name}/{variant_name}'.")
+        service_name = specs["service_name"]
+        variant_name = specs["variant_name"]
+        if specs is None:
+            raise ValueError(
+                f"Service variant '{variant_name}' for {service_name} not found in configuration."
+            )
+        return self.instantiate_service_specs(specs)
 
 
 services = Services()

@@ -24,5 +24,8 @@ def test_config_get():
     assert get_config("nonexistent", default=None) is None
     assert get_config("llm", "ollama", "model", override={"llm":{"ollama":{"model": "custom_model:1b"}}}) == "custom_model:1b"
     assert get_config("llm", "ollama", "temperature", override={"llm":{"ollama":{"temperature": 0.56}}}) == 0.56
+    assert get_config("@/llm/ollama/model") == "qwen2.5:14b"
+    assert get_config("@/a/b", override=config) == {"c": 1}
+    assert get_config("@/a/b/", override=config) == {"c": 1}
 
 

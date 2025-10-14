@@ -313,3 +313,8 @@ you could use `services.get_service("llm", variation="qwen")` to get an instance
 This allows you to easily switch between different implementations or configurations of a service at runtime without changing the code that uses the service.
 
 Much like the injection decorators, you can also pass an `override` parameter to `get_service` to provide ad-hoc configuration for that specific instance. You can also use `get_singleton_service` to get a singleton instance of a service. Whether you use a service via injection or directly via `get_service`, the same instance will be returned if it's a singleton service. The DI container relies on the `services` for singletons and instantiation.
+
+## Config Redirecting
+
+
+
