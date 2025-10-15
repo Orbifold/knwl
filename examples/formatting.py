@@ -195,7 +195,3 @@ custom_obj = CustomModel(title="My Custom Object", value=42, enabled=True)
 print_knwl(custom_obj)
 custom_obj = CustomModel(title="Disable it is", value=47, enabled=False)
 print_knwl(custom_obj)
-
-
-
-# %%

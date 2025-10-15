@@ -1,14 +1,10 @@
 import os
-from datetime import datetime
 from typing import cast
-
 from knwl.logging import log
-from knwl.models.KnwlChunk import KnwlChunk
-from knwl.models.KnwlDocument import KnwlDocument
 from knwl.storage.kv_storage_base import KeyValueStorageBase
 from knwl.utils import load_json, write_json, get_full_path
 from knwl.di import defaults
-
+from pydantic import BaseModel
 
 @defaults("json")
 class JsonStorage(KeyValueStorageBase):
@@ -138,14 +134,26 @@ class JsonStorage(KeyValueStorageBase):
         return set([s for s in data if s not in self.data])
 
     async def upsert(self, data: dict[str, object]):
+        """
+        Upsert data into the JSON storage.
+
+        This method updates existing data or inserts new data into the storage.
+
+        Args:
+            data (dict[str, object]): Dictionary containing key-value pairs to upsert.
+                                     Values can be KnwlChunk, KnwlDocument, Pydantic models,
+                                     or regular dictionaries.
+
+        Returns:
+            dict: Dictionary containing only the newly added data items that were
+                  not previously present in storage.
+        """
         left_data = {k: v for k, v in data.items() if k not in self.data}
         for k in left_data:
-            if isinstance(left_data[k], KnwlChunk):
+            if isinstance(left_data[k], BaseModel):
                 left_data[k] = left_data[k].model_dump(mode="json")
 
-            elif isinstance(left_data[k], KnwlDocument):
-                left_data[k] = left_data[k].model_dump(mode="json")
-            elif hasattr(left_data[k], "model_dump"):  # Pydantic v2
+            elif isinstance(left_data[k], BaseModel):
                 left_data[k] = left_data[k].model_dump(mode="json")
             else:
                 left_data[k] = cast(dict, left_data[k])

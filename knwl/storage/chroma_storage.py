@@ -20,34 +20,12 @@ class ChromaStorage(VectorStorageBase):
 
     metadata: list[str]
 
-    def __init__(self, *args, **kwargs):
-        # def __init__(self, namespace: str = "default", metadata=None, caching: bool = False):
-        super().__init__(*args, **kwargs)
-        config = kwargs.get("override", None)
-        self.metadata = self.get_param(
-            ["vector", "chroma", "metadata"],
-            args,
-            kwargs,
-            default=[],
-            override=config,
-        )
-        self.memory = self.get_param(
-            ["vector", "chroma", "memory"], args, kwargs, default=False, override=config
-        )
-        self.collection_name = self.get_param(
-            ["vector", "chroma", "collection"],
-            args,
-            kwargs,
-            default="default",
-            override=config,
-        )
-        self.path = self.get_param(
-            ["vector", "chroma", "path"],
-            args,
-            kwargs,
-            default="$test/vector",
-            override=config,
-        )
+    def __init__(self, collection_name: str = "default", metadata=None, memory: bool = False, path: str = "$test/vector"):
+        super().__init__()         
+        self.memory = memory
+        self.metadata = metadata or []
+        self.collection_name = collection_name
+        self.path = path
         if self.path is not None and "." in self.path.split("/")[-1]:
             log.warn(
                 f"The Chroma path '{self.path}' contains a '.' but should be a directory, not a file."

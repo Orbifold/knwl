@@ -8,13 +8,13 @@ from knwl.utils import random_name, get_full_path
 
 @pytest.fixture
 def dummy_store():
-    storage = ChromaStorage(namespace="dummy")
+    storage = ChromaStorage(collection_name="dummy")
     return storage
 
 
 @pytest.fixture
 def dummy_store_with_metadata():
-    storage = ChromaStorage(namespace="dummy", metadata=["a", "b"])
+    storage = ChromaStorage(collection_name="dummy", metadata=["a", "b"])
     return storage
 
 
@@ -72,7 +72,9 @@ async def test_auto_embedding():
     data = {"key1": "This is a test document."}
     collection.upsert(ids=list(data.keys()), documents=list(data.values()))
     all = collection.get(include=["embeddings"])
-    assert (len(all["embeddings"][0]) == 384)  # all-MiniLM-L6-v2 produces 384-dimensional embeddings
+    assert (
+        len(all["embeddings"][0]) == 384
+    )  # all-MiniLM-L6-v2 produces 384-dimensional embeddings
 
 
 @pytest.mark.asyncio
@@ -82,7 +84,16 @@ async def test_chroma_via_service():
     await chroma.upsert({"a1": {"content": "a1"}})
     names = await chroma.get_collection_names()
     assert chroma.collection_name in names
-    config = {"vector": {"special": {"class": "knwl.storage.chroma_storage.ChromaStorage", "memory": False, "collection": "special", "path": "$test/v2"}, }}
+    config = {
+        "vector": {
+            "special": {
+                "class": "knwl.storage.chroma_storage.ChromaStorage",
+                "memory": False,
+                "collection_name": "special",
+                "path": "$test/v2",
+            },
+        }
+    }
     chroma = services.create_service("vector", "special", override=config)
     assert chroma.collection_name == "special"
     await chroma.upsert({"b1": {"content": "b1"}})

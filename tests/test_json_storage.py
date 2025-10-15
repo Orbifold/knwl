@@ -14,7 +14,12 @@ fake = Faker()
 @pytest.fixture
 def test_store():
     return JsonStorage("memory")
-
+@pytest.mark.asyncio
+async def test_delete(test_store):
+    await test_store.upsert({"key1": {"value": "data1"}})
+    await test_store.delete_by_id("key1")
+    data = await test_store.get_by_id("key1")
+    assert data is None
 
 @pytest.mark.asyncio
 async def test_all_keys(test_store):

@@ -101,20 +101,20 @@ default_config = {
             "class": "knwl.storage.chroma_storage.ChromaStorage",
             "memory": False,
             "path": "$test/vector",
-            "collection": "default",
+            "collection_name": "default",
             "metadata": [],
         },
         "nodes": {
             "class": "knwl.storage.chroma_storage.ChromaStorage",
             "memory": False,
             "path": "$test/graphrag",
-            "collection": "nodes",
+            "collection_name": "nodes",
         },
         "edges": {
             "class": "knwl.storage.chroma_storage.ChromaStorage",
             "memory": False,
             "path": "$test/graphrag",
-            "collection": "edges",
+            "collection_name": "edges",
         },
     },
     "graph": {
