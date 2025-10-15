@@ -188,7 +188,7 @@ class Services:
             service_name, variant_name=variant_name, override=override
         )
 
-    def instantiate_service_specs(self, specs: dict) -> object:
+    def instantiate_service_specs(self, specs: dict, override=None) -> object:
         class_path = specs.get("class", None)
         if class_path is None:
             raise ValueError(
@@ -223,10 +223,10 @@ class Services:
                 param_value = specs[param_name]
                 # reference to another service or value
                 if isinstance(param_value, str) and param_value.startswith("@/"):
-                    value_ref = get_config(param_value)
+                    value_ref = get_config(param_value, override=override)
                     if isinstance(value_ref, dict) and "class" in value_ref:                        
                         # it's a service specification
-                        param = self.instantiate_service_specs(value_ref)
+                        param = self.instantiate_service_specs(value_ref, override=override)
                     else:
                         # whatever value 
                         param = value_ref      
@@ -266,7 +266,7 @@ class Services:
             raise ValueError(
                 f"Service variant '{variant_name}' for {service_name} not found in configuration."
             )
-        return self.instantiate_service_specs(specs)
+        return self.instantiate_service_specs(specs, override=override)
 
 
 services = Services()

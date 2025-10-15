@@ -8,6 +8,7 @@ from .KnwlChunk import KnwlChunk
 from .KnwlInput import KnwlInput
 from .KnwlRagInput import KnwlRagInput
 from .KnwlContext import KnwlContext
+from .KnwlEntity import KnwlEntity
 
 __all__ = [
     "KnwlNode",
@@ -19,4 +20,6 @@ __all__ = [
     "KnwlInput",
     "KnwlRagInput",
     "KnwlContext",
+    "KnwlLLMAnswer",
+    "KnwlEntity",
 ]

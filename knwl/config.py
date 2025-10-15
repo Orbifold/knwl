@@ -5,7 +5,6 @@
 import copy
 
 default_config = {
-     
     "api": {
         "development": True,
         "host": "0.0.0.0",
@@ -46,17 +45,16 @@ default_config = {
         "basic": {
             "class": "knwl.extraction.basic_graph_extraction.BasicGraphExtraction",
             "mode": "full",  # fast or full
-            "llm": "@/llm/gemma-small",
-        },
-        "glean": {
-            "class": "knwl.extraction.glean_graph_extraction.GleanGraphExtraction",
-            "llm": "ollama",
-            "mode": "full",  # fast or full
-            "max_glean": 3,
+            "llm": "@/llm/ollama",
         },
     },
+    "glean_graph_extraction": {
+        "class": "knwl.extraction.glean_graph_extraction.GleanGraphExtraction",
+        "llm": "@/llm/ollama",
+        "max_glean": 3,
+    },
     "semantic": {
-        "default": "local",      
+        "default": "local",
         "local": {
             "graph": {
                 "graph-store": "graph/graph-store",  # the topology

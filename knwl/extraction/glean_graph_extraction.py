@@ -2,8 +2,9 @@ from knwl.prompts import prompts
 from knwl.extraction.basic_graph_extraction import BasicGraphExtraction
 from knwl.utils import split_string_by_multi_markers, parse_llm_record
 from knwl.logging import log
-
-
+from knwl.llm.llm_base import LLMBase
+@service("llm", param_name="llm")
+@inject_config("graph_extraction", param_name="config")
 class GleanGraphExtraction(BasicGraphExtraction):
     """
     An advanced extraction class that iteratively refines entity extraction through multiple gleaning passes.
@@ -32,26 +33,10 @@ class GleanGraphExtraction(BasicGraphExtraction):
     4. Parses and returns the final collection of entity records
     """
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        config = kwargs.get("override", None)
-        # IMPORTANT: gleaning only works with larger models, something like gemma3:7b will not work, it does not understand the gleaning iteration question.
-        llm_variant = self.get_param(
-            ["graph_extraction", "glean", "llm"],
-            args,
-            kwargs,
-            default="ollama",
-            override=config,
-        )
-
-        self.llm = self.get_llm(llm_variant, override=config)
-        self.max_glean = self.get_param(
-            ["graph_extraction", "glean", "max_glean"],
-            args,
-            kwargs,
-            default=3,
-            override=config,
-        )
+    def __init__(self, llm: LLMBase = None, max_glean: int = 3):
+        super().__init__(llm)
+       
+        self._max_glean = max_glean
 
     def to_messages(self, question, answer) -> list[dict]:
         return [
@@ -63,7 +48,7 @@ class GleanGraphExtraction(BasicGraphExtraction):
         self, text: str, entities: list[str] = None
     ) -> list[list] | None:
         # fall back to basic extraction if max_glean is 1 or less
-        if self.max_glean <= 1:
+        if self._max_glean <= 1:
             return await super().extract_records(text, entities=entities)
 
         if not text or text.strip() == "":
@@ -80,7 +65,7 @@ class GleanGraphExtraction(BasicGraphExtraction):
         accumulated_entities = found.answer.strip()
         # at this point we have the same as the basic extraction
         iteration_prompt = prompts.extraction.iterate_entity_extraction()
-        for glean_index in range(self.max_glean):
+        for glean_index in range(self._max_glean):
             glean = await self.llm.ask(
                 question=iteration_prompt,
                 extra_messages=extra_messages,
@@ -91,7 +76,7 @@ class GleanGraphExtraction(BasicGraphExtraction):
             log(f"Glean iteration {glean_index} answer: {glean_answer}")
             if glean_answer == "" or glean_answer.endswith("No new entities found."):
                 break
-            if glean_index == self.max_glean - 1:
+            if glean_index == self._max_glean - 1:
                 break
             # add the glean answer to the extra messages for the next iteration
             extra_messages += self.to_messages(iteration_prompt, glean_answer)

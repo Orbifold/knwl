@@ -469,6 +469,7 @@ def parse_llm_record(rec: str, delimiter: str = "|") -> list[str] | None:
         raise ValueError(f"Given text is likely not an LLM record. It should be wrapped in parentheses.")
     record = record.group(1)
     parts = split_string_by_multi_markers(record, [delimiter])
+    
     return parts
 
 

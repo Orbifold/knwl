@@ -191,7 +191,6 @@ get_vehicle() # Output: Car(make=Toyota, model=Corolla)
 Services can depend on other services. The DI framework will resolve these dependencies automatically:
 
 ```python
-
 from knwl.di import service, singleton_service
 
 sett = {
@@ -316,5 +315,74 @@ Much like the injection decorators, you can also pass an `override` parameter to
 
 ## Config Redirecting
 
+Service injection happens if the parameter is not provided. If you instantiate a class in the normal Python way:
+
+```python
+engine = Engine(horsepower=110)
+car = Car(engine=engine)
+print(car)  # Car(engine=110)
+```
+the DI is still active beyond the screen but nothing will be injected since the parameter is already provided. It supplies defaults only.
+
+There are situations where the constructor parameter is another services and you want to use a specific variation of that service. You can do this by using a special syntax in the configuration: `@/service_name/variant_name`. For example, if you have a `Car` class that depends on an `Engine` service, and you want to use a specific variant of the `Engine` service when creating a `Car`, you can do it like this:
+
+```python
+import asyncio
+from knwl import  services, service
 
 
+config = {
+    "engine":{
+        "default":"e240",
+       "e240":{
+            "class": "__main__.Engine",
+            "horsepower": 240
+       },
+       "e690":{
+            "class": "__main__.Engine",
+            "horsepower": 690
+       }
+    },
+    "car":{
+        "default":"car1",
+        "car1":{
+            "class": "__main__.Car",
+            "engine": "@/engine/e690"
+        },
+        "car2":{
+            "class": "__main__.Car",
+            "engine": "@/engine/e240"   
+        }
+    }
+}
+
+class Engine:
+
+    def __init__(self, horsepower=150):
+        self.horsepower = horsepower
+
+    def __repr__(self):
+        return str(self.horsepower)
+
+
+@service("engine", override=config)
+class Car:
+    def __init__(self, engine=None):
+        self._engine = engine
+
+    def __repr__(self):
+        return f"Car(engine={self._engine})"
+
+
+async def main():
+   car = services.get_service("car", override=config)
+   print(car)  # Car(engine=690)
+
+
+asyncio.run(main())
+```
+
+The important bit to note here is that the output is `Car(engine=690)` even though the default engine is `e240`. This is because the `car1` configuration specifies that the `engine` parameter should be injected with the `e690` variant of the `Engine` service using the special syntax `@/engine/e690`. This allows you to control which variant of a dependent service is used when instantiating a service, providing fine-grained control over service dependencies via configuration.
+If you leave out the `engine` parameter in the `car1` configuration, the default `e240` engine would be used instead.
+
+Specifically in the context of Knwl, this allows you to define LLM instances for different actions: you can define a different LLM for summarization, another for question answering, and so on, all configurable via the configuration dictionary without changing the code. This is not just theoretical, a small LLM (say, 4b parameters) is convenient for summarization but you might want to use a larger model for more complex tasks like entity extraction. If you try gemma3:4b for entity extraction you will find that it times out while a larger model like Qwen2.5-7b works fine. Of course, if would be great to use one model to do everything but exxperience shows that every model has its strengths and weaknesses and using the right one for the job is often the best approach.

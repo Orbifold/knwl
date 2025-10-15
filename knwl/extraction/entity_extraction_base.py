@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
 
 from knwl.framework_base import FrameworkBase
-
+from knwl.models import KnwlEntity
+from knwl.utils import hash_with_prefix
 
 class EntityExtractionBase(FrameworkBase, ABC):
     """
@@ -28,7 +29,7 @@ class EntityExtractionBase(FrameworkBase, ABC):
     @abstractmethod
     async def extract(
         self, text: str, entities: list[str] = None, chunk_id: str = None
-    ) -> dict | None:
+    ) -> list[KnwlEntity] | None:
         pass
 
     @abstractmethod
