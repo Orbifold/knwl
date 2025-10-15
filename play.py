@@ -1,17 +1,23 @@
 import asyncio
-from knwl import  services, service
-from knwl.llm.ollama import OllamaClient
-from knwl.extraction.basic_entity_extraction import BasicEntityExtraction
-from knwl.llm.openai import OpenAIClient
+from knwl import services, service, KnwlLLMAnswer
+from knwl import OllamaClient
+from knwl.format import print_knwl
+from faker import Faker
+
+fake = Faker()
 
 async def main():
-    extractor = BasicEntityExtraction(llm=OpenAIClient())
-    text = """
-   OpenAI, based in San Francisco, is a leading AI research lab. It was founded in 2015 by Elon Musk and Sam Altman. The company has developed several groundbreaking AI models, including GPT-3 and DALL-E. Microsoft has invested heavily in OpenAI, integrating its technology into products like Azure and Office 365. Other notable AI companies include Google DeepMind, known for AlphaGo, and Anthropic, which focuses on AI safety.
-   """
-    entities = ["ORG", "PERSON", "GPE", "PRODUCT"]
-    results = await extractor.extract(text, entities)
-    for record in results:
-        print(record.model_dump_json(indent=2))
 
+    # llm = OllamaClient()
+    # print(f"{llm}")
+    # a = await llm.ask("What is classical music?")
+    # print_knwl(a)
+    coll = []
+    for i in range(30):
+        coll.append(KnwlLLMAnswer(question=fake.sentence(nb_words=50), answer=fake.sentence(nb_words=200)))
+
+    # print_knwl(coll)
+    from knwl.format import render_knwl
+
+    render_knwl(coll, format_type="markdown",           output_file="output.md", add_frontmatter=True)
 asyncio.run(main())

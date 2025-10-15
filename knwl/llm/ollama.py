@@ -5,17 +5,10 @@ import ollama
 
 from knwl.llm.llm_base import LLMBase
 from knwl.models import KnwlLLMAnswer
-from knwl.di import service, inject_config
+from knwl.di import service, inject_config, defaults
+from knwl.logging import log
 
-
-@inject_config(
-    {
-        "llm.ollama.model": "model",
-        "llm.ollama.temperature": "temperature",
-        "llm.ollama.context_window": "context_window",
-    }
-)
-@service("llm_caching", "json", param_name="caching_service")
+@defaults("llm", "ollama")
 class OllamaClient(LLMBase):
     def __init__(
         self,
@@ -32,6 +25,8 @@ class OllamaClient(LLMBase):
         self._model = model
         self._temperature = temperature
         self._context_window = context_window
+        if not caching_service:
+            log.warn("OllamaClient: No caching service provided, caching disabled.")
         self._caching_service = caching_service
 
     async def ask(
@@ -59,6 +54,7 @@ class OllamaClient(LLMBase):
         end_time = time.time()
         content = response["message"]["content"]
         answer = KnwlLLMAnswer(
+            question=question,
             answer=content,
             messages=messages,
             timing=round(end_time - start_time, 2),
@@ -75,3 +71,9 @@ class OllamaClient(LLMBase):
         if self.caching_service is None:
             return False
         return await self._caching_service.is_in_cache(messages, "ollama", self._model)
+
+    def __repr__(self):
+        return f"<OllamaClient, model={self._model}, temperature={self._temperature},  caching_service={self._caching_service}>"
+
+    def __str__(self):
+        return self.__repr__()

@@ -16,12 +16,20 @@ class KnwlLLMAnswer(BaseModel):
     from_cache: bool = Field(default=False)
     id: Optional[str] = Field(default=None)
 
-    @model_validator(mode='after')
+    @model_validator(mode="after")
     def set_id_if_none(self):
         if self.id is None:
-            self.id = KnwlLLMAnswer.hash_keys(self.messages, self.llm_service, self.llm_model)
+            self.id = KnwlLLMAnswer.hash_keys(
+                self.messages, self.llm_service, self.llm_model
+            )
         return self
 
     @staticmethod
     def hash_keys(messages: List[dict], llm_service: str, llm_model: str) -> str:
-        return hash_with_prefix(str(messages) + llm_service + llm_model, prefix="llm-")
+        return hash_with_prefix(str(messages) + llm_service + llm_model, prefix="answer|>")
+
+    def __repr__(self):
+        return f"<KnwlLLMAnswer, service={self.llm_service}, model={self.llm_model}, timing={self.timing}, from_cache={self.from_cache}>"
+
+    def __str__(self):
+        return self.__repr__()

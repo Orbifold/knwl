@@ -13,19 +13,38 @@ class JsonLLMCache(LLMCacheBase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         config = kwargs.get("override", None)
-        self.path = self.get_param(["llm_caching", "json", "path"], args, kwargs, default="llm_cache.json", override=config)
-        self.enabled = self.get_param(["llm_caching", "json", "enabled"], args, kwargs, default=True, override=config)
+        self.path = self.get_param(
+            ["llm_caching", "json", "path"],
+            args,
+            kwargs,
+            default="llm_cache.json",
+            override=config,
+        )
+        self.enabled = self.get_param(
+            ["llm_caching", "json", "enabled"],
+            args,
+            kwargs,
+            default=True,
+            override=config,
+        )
         self.storage = JsonStorage(path=self.path, enabled=self.enabled)
 
-    async def is_in_cache(self, messages: str | List[str] | List[dict], llm_service: str, llm_model: str) -> bool:
+    async def is_in_cache(
+        self, messages: str | List[str] | List[dict], llm_service: str, llm_model: str
+    ) -> bool:
         found = await self.get(messages, llm_service, llm_model)
         return found is not None
 
-    async def get(self, messages: str | List[str | List[dict]], llm_service: str, llm_model: str) -> KnwlLLMAnswer | None:
+    async def get(
+        self, messages: str | List[str | List[dict]], llm_service: str, llm_model: str
+    ) -> KnwlLLMAnswer | None:
         if isinstance(messages, str):
             messages = [{"role": "user", "content": messages}]
         if isinstance(messages, list):
-            messages = [{"role": "user", "content": m} if isinstance(m, str) else m for m in messages]
+            messages = [
+                {"role": "user", "content": m} if isinstance(m, str) else m
+                for m in messages
+            ]
         if not messages or len(messages) == 0:
             return None
         key = KnwlLLMAnswer.hash_keys(messages, llm_service, llm_model)
@@ -71,3 +90,9 @@ class JsonLLMCache(LLMCacheBase):
     async def delete(self, a: KnwlLLMAnswer):
         await self.storage.delete_by_id(a.id)
         await self.save()
+
+    def __repr__(self):
+        return f"<JsonLLMCache, path={self.path}, enabled={self.enabled}>"
+
+    def __str__(self):
+        return self.__repr__()

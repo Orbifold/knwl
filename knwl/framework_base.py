@@ -7,7 +7,14 @@ from knwl.config import get_config
 
 
 class FrameworkBase(ABC):
+    """
+    Base class for all framework components providing common utilities.
+
+    The `id` attribute is a unique identifier for each instance and is assigned for convenience.
+
+    """
     def __init__(self, *args, **kwargs):
+       
         self.id = str(uuid.uuid4())
 
 

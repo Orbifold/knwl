@@ -2,11 +2,11 @@ from knwl.extraction.entity_extraction_base import EntityExtractionBase
 from knwl.prompts import prompts
 from knwl.utils import parse_llm_record, split_string_by_multi_markers
 from knwl.llm.llm_base import LLMBase
-from knwl.di import service
+from knwl.di import defaults
 from knwl.models import KnwlEntity
 
 
-@service("llm")
+@defaults("entity_extraction")
 class BasicEntityExtraction(EntityExtractionBase):
     """
     A basic entity extraction which in essence asks an LLM to extract named entities from text.
@@ -24,8 +24,9 @@ class BasicEntityExtraction(EntityExtractionBase):
             raise ValueError("BasicEntityExtraction: LLM instance must be provided.")
         if not isinstance(llm, LLMBase):
             raise TypeError(
-                "BasicEntityExtraction: llm must be an instance of LLMBase."
+                "BasicEntityExtraction: llm parameter must be an instance of LLMBase."
             )
+        print(f"Using LLM {llm} for entity extraction.")
         self._llm = llm
 
     @property

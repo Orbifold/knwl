@@ -67,6 +67,7 @@ class DIContainer:
     def __init__(self):
         self._service_registry: Dict[str, Dict] = {}
         self._config_registry: Dict[str, Dict] = {}
+        self._defaults_registry: Dict[str, Dict] = {}
 
     def register_service_injection(
         self,
@@ -110,6 +111,20 @@ class DIContainer:
                 "param_name": param_name,
                 "override": override,
             }
+
+    def register_defaults_injection(
+        self,
+        func_name: str,
+        service_name: str,
+        variant_name: Optional[str] = None,
+        override: Optional[Dict] = None,
+    ):
+        """Register defaults injection from a service configuration."""
+        self._defaults_registry[func_name] = {
+            "service_name": service_name,
+            "variant_name": variant_name,
+            "override": override,
+        }
 
     def safe_bind_partial(self, func: Callable, *args, **kwargs):
         """
@@ -267,6 +282,87 @@ class DIContainer:
                         except Exception as e:
                             log(f"Failed to inject config '{config_key}': {e}")
                             raise
+
+        # Inject defaults from service configuration
+        if func_name in self._defaults_registry:
+            defaults_info = self._defaults_registry[func_name]
+            service_name = defaults_info["service_name"]
+            variant_name = defaults_info.get("variant_name")
+            override = defaults_info.get("override")
+
+            # Get the default variant if not specified
+            if variant_name is None:
+                variant_name = get_config(service_name, "default", override=override)
+                if variant_name is None:
+                    log(
+                        f"No default variant found for service '{service_name}', skipping defaults injection"
+                    )
+                    return bound_args.arguments
+
+            # Get the service configuration
+            service_config = get_config(
+                service_name, variant_name, default=None, override=override
+            )
+            if service_config is None:
+                log(
+                    f"No configuration found for service '{service_name}/{variant_name}', skipping defaults injection"
+                )
+                return bound_args.arguments
+
+            # Get the function's parameter names (excluding 'self')
+            valid_params = set(sig.parameters.keys())
+            if "self" in valid_params:
+                valid_params.remove("self")
+
+            # Inject each config value as a parameter
+            for param_name, param_value in service_config.items():
+                # Skip the 'class' key as it's not a constructor parameter
+                if param_name == "class":
+                    continue
+
+                # Only inject if the parameter exists in the function signature
+                if param_name not in valid_params:
+                    continue
+
+                # Only inject if the parameter is not already provided
+                if (
+                    param_name not in bound_args.arguments
+                    or bound_args.arguments[param_name] is None
+                ):
+                    try:
+                        # Handle service references (e.g., "@/llm/openai")
+                        if isinstance(param_value, str) and param_value.startswith(
+                            "@/"
+                        ):
+                            # Parse the service reference
+                            ref_parts = param_value[2:].split("/")
+                            if len(ref_parts) >= 1:
+                                ref_service_name = ref_parts[0]
+                                ref_variant_name = (
+                                    ref_parts[1] if len(ref_parts) > 1 else None
+                                )
+
+                                # Instantiate the referenced service
+                                service_instance = services.get_service(
+                                    ref_service_name,
+                                    variant_name=ref_variant_name,
+                                    override=override,
+                                )
+                                bound_args.arguments[param_name] = service_instance
+                                log(
+                                    f"Injected service reference '{param_value}' as '{param_name}' into {func.__name__}"
+                                )
+                        else:
+                            # Direct value injection
+                            bound_args.arguments[param_name] = param_value
+                            log(
+                                f"Injected default '{param_name}' = '{param_value}' into {func.__name__}"
+                            )
+                    except Exception as e:
+                        log(
+                            f"Failed to inject default '{param_name}' from service '{service_name}/{variant_name}': {e}"
+                        )
+                        raise
 
         return bound_args.arguments
 
@@ -529,6 +625,111 @@ def inject_config(
     return decorator
 
 
+def defaults(
+    service_name: str,
+    variant: Optional[str] = None,
+    override: Optional[Dict] = None,
+):
+    """
+    Decorator to inject default values from a service configuration into class constructor parameters.
+
+    This decorator reads the configuration for a service variant and injects those values
+    as default parameters to the class constructor. If a parameter value is a service reference
+    (starting with "@/"), it will be instantiated and injected.
+
+    Args:
+        service_name: Name of the service configuration to read defaults from (e.g., 'entity_extraction', 'llm')
+        variant: Optional variant of the service. If None, uses the 'default' variant specified in config.
+        override: Optional configuration override
+
+    Example:
+        # In config.py:
+        # "entity_extraction": {
+        #     "default": "basic",
+        #     "basic": {
+        #         "class": "knwl.extraction.basic_entity_extraction.BasicEntityExtraction",
+        #         "llm": "@/llm/openai"
+        #     }
+        # }
+
+        @defaults('entity_extraction')
+        class BasicEntityExtraction:
+            def __init__(self, llm=None):
+                # llm will be automatically injected from the config
+                self.llm = llm
+
+        # You can also use it with a specific variant
+        @defaults('llm', variant='ollama')
+        class CustomProcessor:
+            def __init__(self, model=None, temperature=None):
+                # model and temperature will be injected from llm/ollama config
+                pass
+    """
+
+    def decorator(func_or_class: Callable) -> Callable:
+        # Check if we're decorating a class
+        if inspect.isclass(func_or_class):
+            # For classes, we need to wrap the __init__ method
+            original_class = func_or_class
+            original_init = original_class.__init__
+
+            # Get the fully qualified name for the __init__ method
+            init_func_name = (
+                f"{original_class.__module__}.{original_class.__qualname__}.__init__"
+            )
+
+            # Register the defaults injection for the __init__ method
+            container.register_defaults_injection(
+                init_func_name, service_name, variant, override
+            )
+
+            @functools.wraps(original_init)
+            def wrapped_init(self, *args, **kwargs):
+                injected_args = container.inject_dependencies(
+                    original_init, self, *args, **kwargs
+                )
+
+                # Handle **kwargs properly
+                if "kwargs" in injected_args:
+                    extra_kwargs = injected_args.pop("kwargs")
+                    if isinstance(extra_kwargs, dict):
+                        injected_args.update(extra_kwargs)
+
+                return original_init(**injected_args)
+
+            # Replace the __init__ method with our wrapped version
+            original_class.__init__ = wrapped_init
+
+            # Return the original class
+            return original_class
+        else:
+            # For functions
+            func_name = f"{func_or_class.__module__}.{func_or_class.__qualname__}"
+
+            # Register the defaults injection
+            container.register_defaults_injection(
+                func_name, service_name, variant, override
+            )
+
+            @functools.wraps(func_or_class)
+            def wrapper(*args, **kwargs):
+                injected_args = container.inject_dependencies(
+                    func_or_class, *args, **kwargs
+                )
+
+                # Handle **kwargs properly
+                if "kwargs" in injected_args:
+                    extra_kwargs = injected_args.pop("kwargs")
+                    if isinstance(extra_kwargs, dict):
+                        injected_args.update(extra_kwargs)
+
+                return func_or_class(**injected_args)
+
+            return wrapper
+
+    return decorator
+
+
 def inject_services(**service_specs):
     """
     Decorator to inject multiple services with custom specifications.
@@ -701,6 +902,7 @@ __all__ = [
     "service",
     "singleton_service",
     "inject_config",
+    "defaults",
     "inject_services",
     "auto_inject",
     "ServiceProvider",

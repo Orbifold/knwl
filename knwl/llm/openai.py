@@ -69,3 +69,9 @@ class OpenAIClient(LLMBase):
         if self.caching_service is None:
             return False
         return await self.caching_service.is_in_cache(messages, "openai", self.model)
+
+    def __repr__(self):
+        return f"openai/{self.model}, temperature={self.temperature},  caching_service={self.caching_service}>"
+
+    def __str__(self):
+        return self.__repr__()

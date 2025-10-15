@@ -8,6 +8,7 @@ from knwl.di import (
     service,
     singleton_service,
     inject_config,
+    defaults,
     inject_services,
     auto_inject,
     ServiceProvider,
@@ -24,6 +25,7 @@ class TestDependencyInjection:
         """Clean up DI container before each test."""
         container._service_registry.clear()
         container._config_registry.clear()
+        container._defaults_registry.clear()
 
     def test_service_decorator_basic(self):
         """Test basic service injection."""
@@ -51,9 +53,9 @@ class TestDependencyInjection:
         with patch("knwl.di.services") as mock_services:
             mock_services.create_service.return_value = mock_service
 
-            @service("llm", variant="ollama", param_name="llm")
-            def test_function(text: str, llm=None):
-                return llm.generate(text)
+            @service("llm", variant="ollama", param_name="abc")
+            def test_function(text: str, abc=None):
+                return abc.generate(text)
 
             result = test_function("test text")
 
@@ -597,6 +599,199 @@ class TestDependencyInjection:
             assert result["key1"] == "deep_value"
             assert result["key2"] == "config_value"
             mock_get_config.assert_called_once_with("deep", "nested", "key2")
+
+    def test_defaults_decorator_basic(self):
+        """Test basic defaults injection from service configuration."""
+        
+        @defaults("something")
+        class TestClass:
+            def __init__(self, llm=None):
+                self.llm = llm
+
+        with patch("knwl.di.get_config") as mock_get_config, patch("knwl.di.services") as mock_services:
+            # Mock the config lookups
+            mock_get_config.side_effect = lambda *args, **kwargs: {
+                ("something", "default"): "basic",
+                ("something", "basic"): {
+                    "class": "test.TestClass",
+                    "llm": "@/llm/openai"
+                }
+            }.get(args)
+            
+            # Mock the service instantiation
+            mock_llm = Mock()
+            mock_services.get_service.return_value = mock_llm
+            
+            instance = TestClass()
+            
+            assert instance.llm is mock_llm
+            mock_services.get_service.assert_called_once_with(
+                "llm", variant_name="openai", override=None
+            )
+
+    def test_defaults_decorator_with_variant(self):
+        """Test defaults injection with explicit variant."""
+        
+        @defaults("llm", variant="ollama")
+        class TestClass:
+            def __init__(self, model=None, temperature=None):
+                self.model = model
+                self.temperature = temperature
+        
+        with patch("knwl.di.get_config") as mock_get_config:
+            mock_get_config.return_value = {
+                "class": "test.LLM",
+                "model": "qwen2.5:14b",
+                "temperature": 0.1,
+                "context_window": 32768
+            }
+            
+            instance = TestClass()
+            
+            assert instance.model == "qwen2.5:14b"
+            assert instance.temperature == 0.1
+
+    def test_defaults_decorator_parameter_filtering(self):
+        """Test that only matching parameters are injected."""
+        
+        @defaults("llm")
+        class TestClass:
+            def __init__(self, model=None, temperature=None):
+                self.model = model
+                self.temperature = temperature
+        
+        with patch("knwl.di.get_config") as mock_get_config:
+            # Config has more parameters than constructor accepts
+            mock_get_config.side_effect = lambda *args, **kwargs: {
+                ("llm", "default"): "ollama",
+                ("llm", "ollama"): {
+                    "class": "test.LLM",
+                    "model": "qwen2.5:14b",
+                    "temperature": 0.1,
+                    "context_window": 32768,  # Not in constructor
+                    "caching": "json"  # Not in constructor
+                }
+            }.get(args)
+            
+            instance = TestClass()
+            
+            # Only model and temperature should be injected
+            assert instance.model == "qwen2.5:14b"
+            assert instance.temperature == 0.1
+
+    def test_defaults_decorator_override(self):
+        """Test that provided arguments override defaults."""
+        
+        @defaults("llm")
+        class TestClass:
+            def __init__(self, model=None, temperature=None):
+                self.model = model
+                self.temperature = temperature
+        
+        with patch("knwl.di.get_config") as mock_get_config:
+            mock_get_config.side_effect = lambda *args, **kwargs: {
+                ("llm", "default"): "ollama",
+                ("llm", "ollama"): {
+                    "class": "test.LLM",
+                    "model": "qwen2.5:14b",
+                    "temperature": 0.1
+                }
+            }.get(args)
+            
+            # Override the model parameter
+            instance = TestClass(model="custom-model")
+            
+            assert instance.model == "custom-model"  # Overridden
+            assert instance.temperature == 0.1  # Injected
+
+    def test_defaults_decorator_service_reference(self):
+        """Test that service references (@/) are properly instantiated."""
+        
+        @defaults("graph_extraction")
+        class TestClass:
+            def __init__(self, llm=None, mode=None):
+                self.llm = llm
+                self.mode = mode
+        
+        with patch("knwl.di.get_config") as mock_get_config, \
+             patch("knwl.di.services") as mock_services:
+            
+            mock_get_config.side_effect = lambda *args, **kwargs: {
+                ("graph_extraction", "default"): "basic",
+                ("graph_extraction", "basic"): {
+                    "class": "test.GraphExtraction",
+                    "llm": "@/llm/ollama",
+                    "mode": "full"
+                }
+            }.get(args)
+            
+            mock_llm = Mock()
+            mock_services.get_service.return_value = mock_llm
+            
+            instance = TestClass()
+            
+            assert instance.llm is mock_llm
+            assert instance.mode == "full"
+            mock_services.get_service.assert_called_once_with(
+                "llm", variant_name="ollama", override=None
+            )
+
+    def test_defaults_decorator_with_inject_config(self):
+        """Test combining @defaults with @inject_config."""
+        
+        @defaults("graph_extraction")
+        @inject_config("api.host", "api.port")
+        class TestClass:
+            def __init__(self, llm=None, mode=None, host=None, port=None):
+                self.llm = llm
+                self.mode = mode
+                self.host = host
+                self.port = port
+        
+        with patch("knwl.di.get_config") as mock_get_config, \
+             patch("knwl.di.services") as mock_services:
+            
+            def config_side_effect(*args, **kwargs):
+                if args == ("graph_extraction", "default"):
+                    return "basic"
+                elif args == ("graph_extraction", "basic"):
+                    return {
+                        "class": "test.GraphExtraction",
+                        "llm": "@/llm/ollama",
+                        "mode": "full"
+                    }
+                elif args == ("api", "host"):
+                    return "localhost"
+                elif args == ("api", "port"):
+                    return 8080
+                return None
+            
+            mock_get_config.side_effect = config_side_effect
+            mock_llm = Mock()
+            mock_services.get_service.return_value = mock_llm
+            
+            instance = TestClass()
+            
+            assert instance.llm is mock_llm
+            assert instance.mode == "full"
+            assert instance.host == "localhost"
+            assert instance.port == 8080
+
+    def test_defaults_decorator_no_default_variant(self):
+        """Test handling when no default variant is specified."""
+        
+        @defaults("custom_service")
+        class TestClass:
+            def __init__(self, param=None):
+                self.param = param
+        
+        with patch("knwl.di.get_config") as mock_get_config:
+            # No default variant
+            mock_get_config.return_value = None
+            
+            # Should not raise an error, just skip injection
+            instance = TestClass()
+            assert instance.param is None
 
 
 if __name__ == "__main__":

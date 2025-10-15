@@ -22,7 +22,6 @@ class EntityExtractionBase(FrameworkBase, ABC):
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        config = kwargs.get("override", None)
 
        
 

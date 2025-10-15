@@ -1618,7 +1618,7 @@ wheels = [
 
 [[package]]
 name = "knwl"
-version = "0.5.3"
+version = "0.6.3"
 source = { editable = "." }
 dependencies = [
     { name = "chromadb" },
@@ -1627,7 +1627,9 @@ dependencies = [
     { name = "networkx", version = "3.5", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "ollama" },
     { name = "openai" },
+    { name = "pydantic" },
     { name = "pyvis" },
+    { name = "rich" },
     { name = "tenacity" },
     { name = "tiktoken" },
     { name = "torch" },
@@ -1663,11 +1665,13 @@ requires-dist = [
     { name = "networkx", specifier = ">=3.4.2" },
     { name = "ollama", specifier = ">=0.4.7" },
     { name = "openai", specifier = ">=1.53.0" },
+    { name = "pydantic", specifier = ">=2.0.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3.3" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.24.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=6.0.0" },
     { name = "pytest-mock", marker = "extra == 'dev'", specifier = ">=3.14.0" },
     { name = "pyvis", specifier = ">=0.3.2" },
+    { name = "rich", specifier = ">=13.0.0" },
     { name = "tenacity", specifier = ">=9.0.0" },
     { name = "tiktoken", specifier = ">=0.8.0" },
     { name = "torch", specifier = ">=2.5.1" },

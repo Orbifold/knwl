@@ -322,6 +322,7 @@ engine = Engine(horsepower=110)
 car = Car(engine=engine)
 print(car)  # Car(engine=110)
 ```
+
 the DI is still active beyond the screen but nothing will be injected since the parameter is already provided. It supplies defaults only.
 
 There are situations where the constructor parameter is another services and you want to use a specific variation of that service. You can do this by using a special syntax in the configuration: `@/service_name/variant_name`. For example, if you have a `Car` class that depends on an `Engine` service, and you want to use a specific variant of the `Engine` service when creating a `Car`, you can do it like this:
@@ -351,7 +352,7 @@ config = {
         },
         "car2":{
             "class": "__main__.Car",
-            "engine": "@/engine/e240"   
+            "engine": "@/engine/e240"
         }
     }
 }
@@ -386,3 +387,253 @@ The important bit to note here is that the output is `Car(engine=690)` even thou
 If you leave out the `engine` parameter in the `car1` configuration, the default `e240` engine would be used instead.
 
 Specifically in the context of Knwl, this allows you to define LLM instances for different actions: you can define a different LLM for summarization, another for question answering, and so on, all configurable via the configuration dictionary without changing the code. This is not just theoretical, a small LLM (say, 4b parameters) is convenient for summarization but you might want to use a larger model for more complex tasks like entity extraction. If you try gemma3:4b for entity extraction you will find that it times out while a larger model like Qwen2.5-7b works fine. Of course, if would be great to use one model to do everything but exxperience shows that every model has its strengths and weaknesses and using the right one for the job is often the best approach.
+
+## Injecting Defaults with @defaults
+
+The `@defaults` decorator provides a convenient way to inject default values from service configurations directly into class constructors or functions. This is particularly useful when you want all the parameters from a service configuration to be automatically injected without manually specifying each one. The `@defaults` decorator reads the configuration for the specified service and injects all matching parameters into the decorated function or class constructor. It replaces the standard way of assigning default values in the constructor with automatic injection from configuration.
+
+While `@service` is great for injecting a single service instance, `@defaults` shines when you have a service configuration with multiple parameters that you want to inject as defaults. It reads the configuration for the specified service and injects all matching parameters into the decorated function or class constructor.
+
+### Basic Usage
+
+The following complete example illustrates how `@defaults` works:
+
+```python
+import asyncio
+from knwl import defaults
+from faker import Faker
+
+config = {
+    "generator": {
+        "default": "small",
+        "small": {"class": "__main__.Generator", "max_length": 50},
+        "large": {"class": "__main__.Generator", "max_length": 200},
+    },
+    "llm": {
+        "default": "my",
+        "my": {"class": "__main__.MyLLM", "generator": "@/generator/large"},
+    },
+}
+
+class Generator:
+    def __init__(self, max_length=50):
+        self.faker = Faker()
+        self.max_length = max_length
+
+    def generate(self, input):
+        return self.faker.text(max_nb_chars=self.max_length)
+
+@defaults("llm", override=config)
+class MyLLM:
+    def __init__(self, generator=None):
+        if generator is None:
+            raise ValueError("MyLLM: Generator instance must be provided.")
+        if not isinstance(generator, Generator):
+            raise TypeError("MyLLM: generator must be an instance of Generator.")
+        self.generator = generator
+
+    def ask(self, question):
+        return f"Answer ({self.generator.max_length}): '{self.generator.generate(question)}'"
+async def main():
+    llm = MyLLM()
+    print(llm.ask("What is a quandl?"))
+
+
+asyncio.run(main())
+```
+
+In this example:
+
+1. The decorator reads the default variant ("basic") from the `llm` configuration
+2. It retrieves all parameters from `llm.my` (the default variant)
+3. For the `generator` parameter, it sees the `@/generator/large` reference
+4. It instantiates the large variant of the generator service and injects it.
+
+By changing `{"class": "__main__.MyLLM", "generator": "@/generator/large"}` to `{"class": "__main__.MyLLM", "generator": "@/generator/small"}` in the config, the `MyLLM` instance would instead receive a small generator with `max_length=50`.
+
+### Specifying a Variant
+
+You can specify a particular variant instead of using the default:
+
+```python
+@defaults("llm", variant="ollama")
+class CustomLLMProcessor:
+    def __init__(self, model=None, temperature=None, context_window=None):
+        # All parameters from llm.ollama config are injected:
+        # model="qwen2.5:14b", temperature=0.1, context_window=32768
+        self.model = model
+        self.temperature = temperature
+        self.context_window = context_window
+```
+
+### Ad-hoc Instances
+
+Channging providers and settings is, hence, a matter of changing the configuration, not the code. It's also easy to define custom implementations and plugging them into the system via configuration.
+
+In the example below, a `StaticGenerator` is defined that always returns the same text. This is useful for testing or specific use cases where you want predictable output. The instance is created directly in the configuration and injected as-is into the `MyLLM` class.
+
+```python
+import asyncio
+from knwl import defaults
+from faker import Faker
+
+
+class Generator:
+    def __init__(self, max_length=50):
+        self.faker = Faker()
+        self.max_length = max_length
+
+    def generate(self, input):
+        return self.faker.text(max_nb_chars=self.max_length)
+
+
+class StaticGenerator(Generator):
+    def __init__(self, text="Hello, World!"):
+        self.text = text
+        self.max_length = len(text)
+
+    def generate(self, input):
+        return self.text
+
+
+config = {
+    "generator": {
+        "default": "small",
+        "small": {"class": "__main__.Generator", "max_length": 50},
+        "large": {"class": "__main__.Generator", "max_length": 200},
+    },
+    "llm": {
+        "default": "my",
+        "my": {
+            "class": "__main__.MyLLM",
+            "generator": StaticGenerator(),  # Direct instance
+        },
+    },
+}
+
+
+@defaults("llm", override=config)
+class MyLLM:
+    def __init__(self, generator=None):
+        if generator is None:
+            raise ValueError("MyLLM: Generator instance must be provided.")
+        if not isinstance(generator, Generator):
+            raise TypeError("MyLLM: generator must be an instance of Generator.")
+        self.generator = generator
+
+    def ask(self, question):
+        return f"Answer ({self.generator.max_length}): '{self.generator.generate(question)}'"
+
+
+async def main():
+    llm = MyLLM()
+    print(llm.ask("What is a quandl?"))
+
+
+asyncio.run(main())
+
+```
+
+### Service Reference Resolution
+
+The `@defaults` decorator automatically handles service redirection (strings starting with `@/`):
+
+```python
+# Config:
+# "graph_extraction": {
+#     "default": "basic",
+#     "basic": {
+#         "class": "knwl.extraction.BasicGraphExtraction",
+#         "mode": "full",
+#         "llm": "@/llm/ollama"  # Service reference
+#     }
+# }
+
+@defaults("graph_extraction")
+class BasicGraphExtraction:
+    def __init__(self, llm=None, mode=None):
+        # llm is instantiated from the llm/ollama service
+        # mode is injected as the string value "full"
+        self.llm = llm
+        self.mode = mode
+```
+
+This allows you to reuse configurations across different services and ensures that the correct instances are injected based on the configuration.
+
+### Parameter Filtering
+
+The decorator _only_ injects parameters that exist in the function/constructor signature. Config values that don't match parameter names are silently ignored:
+
+```python
+# Config has: model, temperature, context_window, caching
+@defaults("llm")
+class SimpleProcessor:
+    def __init__(self, model=None, temperature=None):
+        # Only model and temperature are injected
+        # caching and context_window are ignored (not in signature)
+        self.model = model
+        self.temperature = temperature
+```
+
+This ensures that you can define all sorts of things in the configuration without worrying that the constructor or function will break because of unexpected parameters.
+
+### Overriding Defaults
+
+You can still override the injected defaults when creating instances:
+
+```python
+@defaults("entity_extraction")
+class FlexibleExtraction:
+    def __init__(self, llm=None, custom_param="default"):
+        self.llm = llm
+        self.custom_param = custom_param
+
+# Use injected defaults
+extractor1 = FlexibleExtraction()
+
+# Override the LLM
+from knwl.services import services
+custom_llm = services.get_service("llm", variant_name="ollama")
+extractor2 = FlexibleExtraction(llm=custom_llm)
+
+# Override a custom parameter
+extractor3 = FlexibleExtraction(custom_param="custom_value")
+```
+
+### Combining with Other Decorators
+
+The `@defaults` decorator can be combined with other DI decorators like `@inject_config`:
+
+```python
+@defaults("graph_extraction")
+@inject_config("api.host", "api.port")
+class AdvancedGraphExtraction:
+    def __init__(self, llm=None, mode=None, host=None, port=None):
+        # llm and mode injected from graph_extraction config
+        # host and port injected from api config
+        self.llm = llm
+        self.mode = mode
+        self.host = host
+        self.port = port
+```
+
+When multiple decorators are used, they are applied in order from bottom to top (this is the Python default behavior). Each decorator adds its own injections, and explicitly provided arguments always take precedence.
+
+### Using with Override
+
+Like other DI decorators, `@defaults` supports runtime configuration overrides:
+
+```python
+custom_config = {
+    "entity_extraction": {
+        "basic": {
+            "llm": "@/llm/gemma-small"  # Override to use different LLM
+        }
+    }
+}
+
+@defaults("entity_extraction", override=custom_config)
+class TestExtraction:
+    def __init__(self, llm=None):
+        self.llm = llm
+```

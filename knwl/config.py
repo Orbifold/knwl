@@ -69,14 +69,14 @@ default_config = {
         "ollama": {
             "class": "knwl.llm.ollama.OllamaClient",
             "model": "qwen2.5:14b",
-            "caching": "json",
+            "caching_service": "@/llm_caching/json",
             "temperature": 0.1,
             "context_window": 32768,
         },
         "openai": {
             "class": "knwl.llm.openai.OpenAIClient",
             "model": "gpt-4o-mini",
-            "caching": "json",
+            "caching": "@/llm_caching/json",
             "temperature": 0.1,
             "context_window": 32768,
         },
