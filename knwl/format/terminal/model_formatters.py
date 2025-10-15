@@ -135,10 +135,10 @@ class KnwlGraphTerminalFormatter(ModelFormatter):
         max_items = options.get("max_items", 10)
 
         content = [
-            Text(f"Id: {model.id}", style=formatter.theme.SUBTITLE_STYLE),
+            Text(f"Id: {model.id}", style=formatter.theme.MUTED),
             Text(
                 f"Nodes: {len(model.nodes)}, Edges: {len(model.edges)}",
-                style=formatter.theme.SUBTITLE_STYLE,
+                style=formatter.theme.MUTED,
             ),
         ]
 
