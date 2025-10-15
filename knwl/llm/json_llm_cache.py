@@ -12,6 +12,8 @@ class JsonLLMCache(LLMCacheBase):
 
     def __init__(self,path:str=None, enabled:bool=True):
         super().__init__()
+        self.path = path
+        self.enabled = enabled
         if path is None:
             self.enabled = False
 

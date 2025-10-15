@@ -323,15 +323,30 @@ class DIContainer:
                 # Only inject if the parameter exists in the function signature
                 if param_name not in valid_params:
                     continue
-
+                # Handle explicit "None" string to set parameter to None
+                # This allows disabling a default by setting it to "None" in config
+                if (
+                    bound_args.arguments[param_name] is not None
+                    and str(bound_args.arguments[param_name]).strip().lower() == "none"
+                ):
+                    bound_args.arguments[param_name] = None
+                    continue
                 # Only inject if the parameter is not already provided
                 if (
                     param_name not in bound_args.arguments
                     or bound_args.arguments[param_name] is None
                 ):
                     try:
+                        if param_value is None:
+                            continue
+                        elif isinstance(param_value, str) and (
+                            param_value.strip() == ""
+                            or param_value.strip().lower() == "none"
+                        ):
+                            # Skip empty string values
+                            continue
                         # Handle service references (e.g., "@/llm/openai")
-                        if isinstance(param_value, str) and param_value.startswith(
+                        elif isinstance(param_value, str) and param_value.startswith(
                             "@/"
                         ):
                             # Parse the service reference

@@ -28,7 +28,18 @@ class OllamaClient(LLMBase):
         if not caching_service:
             log.warn("OllamaClient: No caching service provided, caching disabled.")
         self._caching_service = caching_service
-
+    @property
+    def model(self):
+        return self._model
+    @property
+    def temperature(self):
+        return self._temperature
+    @property
+    def context_window(self):
+        return self._context_window
+    @property
+    def caching_service(self):
+        return self._caching_service
     async def ask(
         self,
         question: str,
@@ -42,6 +53,7 @@ class OllamaClient(LLMBase):
             messages = [{"role": "user", "content": messages}]
         # Check cache first
         if self._caching_service is not None:
+            print(self._caching_service)
             cached = await self._caching_service.get(messages, "ollama", self._model)
             if cached is not None:
                 return cached

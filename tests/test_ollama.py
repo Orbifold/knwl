@@ -1,10 +1,12 @@
 import pytest
 from faker import Faker
-
+import os
+from knwl.services import services
 from knwl.llm.ollama import OllamaClient
 from knwl.models.KnwlLLMAnswer import KnwlLLMAnswer
 from knwl.utils import get_full_path
-pytestmark=pytest.mark.llm
+
+pytestmark = pytest.mark.llm
 
 fake = Faker()
 
@@ -25,25 +27,24 @@ async def test_basic_ask():
     returns a valid KnwlLLMAnswer response, and correctly caches the query.
     """
     llm = OllamaClient()
-    assert llm._model == "qwen2.5:14b"
+    assert llm.model == "qwen2.5:14b"
     assert llm.temperature == 0.1
 
     llm = OllamaClient(model="gemma3:4b", temperature=0.5)
-    assert llm._model == "gemma3:4b"
+    assert llm.model == "gemma3:4b"
     assert llm.temperature == 0.5
 
     # let's change the default caching path
     # note that only the overrides are passed, the rest is taken from default_config
     file_name = fake.word()
     config = {"llm_caching": {"json": {"path": f"$test/{file_name}.json"}}}
-    llm = OllamaClient(caching="json", override=config)
+    llm = services.get_service("llm", "ollama", override=config)
     resp = await llm.ask("Hello")
     assert resp is not None
     assert isinstance(resp, KnwlLLMAnswer)
 
     assert await llm.is_cached("Hello") is True
     file_path = get_full_path(f"$test/{file_name}.json")
-    import os
     assert os.path.exists(file_path)
     print("")
     print(resp.answer)
@@ -75,10 +76,15 @@ async def test_override_caching():
         passed_through_cache = True
         return True
 
-    SpecialClass = create_class_from_dict("Special", {"name": "Swa", "is_in_cache": is_in_cache})
+    SpecialClass = create_class_from_dict(
+        "Special", {"name": "Swa", "is_in_cache": is_in_cache}
+    )
 
-    config = {"llm": {"ollama": {"caching": "special"}}, "llm_caching": {"special": {"class": SpecialClass()}}, }
-    llm = OllamaClient(override=config)
+    config = {
+        "llm": {"ollama": {"caching_service": "@/llm_caching/special"}},
+        "llm_caching": {"special": {"class": SpecialClass()}},
+    }
+    llm =services.get_service("llm", "ollama", override=config)
     assert llm.caching_service is not None
     assert llm.caching_service.name == "Swa"
     assert await llm.is_cached("Anything") is True
@@ -87,7 +93,12 @@ async def test_override_caching():
 
 @pytest.mark.asyncio
 async def test_no_cache():
-    llm = OllamaClient(caching=None)
-    assert llm.caching_service is None
+    # the following will not disable caching, since injection assumes none is set
+    # llm = OllamaClient(caching_service=None)
+    # assert llm.caching_service is not None
+    config = {
+        "llm": {"ollama": {"caching_service": "None"}},
+    }
+    llm = services.get_service("llm", "ollama", override=config)
     await llm.ask("Hello")
     assert await llm.is_cached("Hello") is False

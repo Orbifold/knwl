@@ -2,33 +2,29 @@ import time
 from typing import List
 
 import openai
-
-from knwl.llm.llm_base import LLMBase
+from knwl.di import defaults
+from knwl.llm import LLMBase, LLMCacheBase
+from knwl.logging import log
 from knwl.models import KnwlLLMAnswer
 
-
+@defaults("llm", "openai")
 class OpenAIClient(LLMBase):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(
+        self,
+        model: str = None,
+        temperature: float = None,
+        context_window: int = None,
+        caching_service: LLMCacheBase = None,
+    ):
+        super().__init__()
         self.client = openai.AsyncClient()
-        config = kwargs.get("override", None)
 
-        self.model = self.get_param(
-            ["llm", "openai", "model"],
-            args,
-            kwargs,
-            default="gpt-4o-mini",
-            override=config,
-        )
-        self.temperature = self.get_param(
-            ["llm", "openai", "temperature"], args, kwargs, default=1.0, override=config
-        )
-        self.caching_service_name = self.get_param(
-            ["llm", "ollama", "caching"], args, kwargs, False, config
-        )
-        self.caching_service = self.get_caching_service(
-            self.caching_service_name, override=config
-        )
+        self._model = model
+        self._temperature = temperature
+        self._context_window = context_window
+        if not caching_service:
+            log.warn("OpenaiClient: No caching service provided, caching disabled.")
+        self._caching_service = caching_service
 
     async def ask(
         self,
