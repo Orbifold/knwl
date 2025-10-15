@@ -6,15 +6,19 @@ import pytest
 from knwl.models.KnwlDocument import KnwlDocument
 from knwl.storage.json_storage import JsonStorage
 from knwl.utils import random_name, load_json
+from faker import Faker
+
+fake = Faker()
 
 
 @pytest.fixture
 def test_store():
-    return JsonStorage("test")
+    return JsonStorage("memory")
 
 
 @pytest.mark.asyncio
 async def test_all_keys(test_store):
+    assert test_store.save_to_disk is False
     await test_store.clear()
     await test_store.upsert({"key1": {"value": "data1"}, "key2": {"value": "data2"}})
     keys = await test_store.get_all_ids()
@@ -23,7 +27,8 @@ async def test_all_keys(test_store):
 
 @pytest.mark.asyncio
 async def test_save_somewhere():
-    storage = JsonStorage(f"{JsonStorage.get_test_dir()}/{random_name()}.json")
+
+    storage = JsonStorage(f"$test/{fake.word()}.json")
     data = {"key1": {"value": "data1"}}
     await storage.upsert(data)
     await storage.save()
@@ -48,9 +53,7 @@ async def test_get_by_ids(test_store):
 
 
 @pytest.mark.asyncio
-async def test_filter_keys(test_store):
-    from faker import Faker
-    fake = Faker()
+async def test_filter_keys(test_store):  
     k1 = fake.word()
     k2 = fake.word()
     await test_store.upsert({k1: {"value": "data1"}})

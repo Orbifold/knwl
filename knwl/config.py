@@ -136,7 +136,7 @@ default_config = {
         "default": "basic",
         "basic": {
             "class": "knwl.storage.json_storage.JsonStorage",
-            "path": "$test/data.json",
+            "path": "$data/data.json",
         },
         "node-store": {
             "class": "knwl.storage.json_storage.JsonStorage",
