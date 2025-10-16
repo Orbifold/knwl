@@ -57,12 +57,19 @@ default_config = {
         },
     },
     "semantic_graph": {
-        "default": "local",
+        "default": "memory",
         "local": {
             "class": "knwl.semantic.graph.semantic_graph.SemanticGraph",
-            "graph_store": "@/graph/graph-store",  # the topology
+            "graph_store": "@/graph/nx",  # the topology
             "node_embeddings": "@/vector/nodes",  # the node embeddings
             "edge_embeddings": "@/vector/edges",  # the edge embeddings
+            "summarization": "@/summarization/ollama",  # how to summarize long texts
+        },
+        "memory": {
+            "class": "knwl.semantic.graph.semantic_graph.SemanticGraph",
+            "graph_store": "@/graph/memory",  # the topology
+            "node_embeddings": "@/vector/memory",  # the node embeddings
+            "edge_embeddings": "@/vector/memory",  # the edge embeddings
             "summarization": "@/summarization/ollama",  # how to summarize long texts
         },
     },
@@ -118,6 +125,11 @@ default_config = {
             "path": "$test/graphrag",
             "collection_name": "edges",
         },
+        "memory": {
+            "class": "knwl.storage.chroma_storage.ChromaStorage",
+            "memory": True,
+            "collection_name": "default",
+        },
     },
     "graph": {
         "default": "nx",
@@ -126,6 +138,11 @@ default_config = {
             "format": "graphml",
             "memory": False,
             "path": "$test/graph.graphml",
+        },
+        "memory": {
+            "class": "knwl.storage.networkx_storage.NetworkXGraphStorage",
+            "format": "graphml",
+            "memory": True,
         },
     },
     "json": {

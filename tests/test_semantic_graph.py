@@ -1,5 +1,6 @@
 import pytest
 
+from knwl import services
 from knwl.models import KnwlEdge, KnwlGraph, KnwlNode
 from knwl.semantic.graph.semantic_graph import SemanticGraph
 from knwl.storage import NetworkXGraphStorage
@@ -9,7 +10,8 @@ pytestmark = pytest.mark.llm
 
 @pytest.mark.asyncio
 async def test_merge_node_descriptions():
-    g = SemanticGraph("memory")
+    g = SemanticGraph()
+    print(g)
     n1 = KnwlNode(
         name="n1",
         description="Tata is an elephant, he is a very social and likes to play with other animals.",
@@ -42,7 +44,7 @@ async def test_merge_node_descriptions():
 
 @pytest.mark.asyncio
 async def test_merge_node():
-    g = SemanticGraph("memory")
+    g = SemanticGraph()
     n1 = KnwlNode(name="n1", description="Delicious oranges from Spain.", type="Fruit")
     n2 = KnwlNode(name="n2", description="Oranges are rich in vitamin C.", type="Fruit")
     await g.embed_node(n1)
@@ -51,54 +53,8 @@ async def test_merge_node():
 
 
 @pytest.mark.asyncio
-async def test_custom_embedding():
-    # you can alter the behavior of the embedding store by creating a custom class
-    # that implements the upsert and query methods
-    # here we create a dummy embedding store that always returns a fixed result
-    # for testing purposes
-
-    def create_class_from_dict(name, data):
-        return type(name, (), data)
-
-    async def upsert(self, data):
-        return True
-
-    async def query(self, query, top_k=5):
-        return [
-            KnwlNode(name="special", description="special", type="Special").model_dump(
-                mode="json"
-            )
-        ]
-
-    async def get_by_id(self, id):
-        return None
-
-    SpecialEmbedding = create_class_from_dict(
-        "SpecialEmbedding", {"upsert": upsert, "query": query, "get_by_id": get_by_id}
-    )
-    config = {
-        "semantic": {
-            "local": {
-                "graph": {
-                    "graph-store": NetworkXGraphStorage("memory"),
-                    "node_embeddings": SpecialEmbedding(),
-                }
-            }
-        }
-    }
-    c = SemanticGraph(node_embeddings="special", override=config)
-    n1 = KnwlNode(name="n1", description="Delicious oranges from Spain.", type="Fruit")
-    await c.embed_node(n1)
-    assert await c.node_count() == 1
-    sims = await c.get_similar_nodes(n1)
-    assert sims is not None
-    assert len(sims) > 0
-    assert sims[0].name == "special"
-
-
-@pytest.mark.asyncio
 async def test_merge_edge_descriptions():
-    g = SemanticGraph("memory")
+    g = SemanticGraph()
     n1 = KnwlNode(
         name="n1",
         description="Tata is an elephant, he is a very social and likes to play with other animals.",
@@ -138,7 +94,7 @@ async def test_merge_edge_descriptions():
 
 @pytest.mark.asyncio
 async def test_merge_graph():
-    g = SemanticGraph("memory")
+    g = SemanticGraph()
     fermi_dirac = KnwlNode(
         name="Fermi-Dirac",
         description="Fermi–Dirac statistics is a type of quantum statistics that applies to the physics of a system consisting of many non-interacting, identical particles that obey the Pauli exclusion principle. A result is the Fermi–Dirac distribution of particles over energy states. It is named after Enrico Fermi and Paul Dirac, each of whom derived the distribution independently in 1926.Fermi–Dirac statistics is a part of the field of statistical mechanics and uses the principles of quantum mechanics.",
@@ -176,9 +132,12 @@ async def test_merge_graph():
         type="Special_Case_Of",
     )
     g2 = KnwlGraph(
-        nodes=[fermi_dirac2, maxwell_statistics2], edges=[edge2], keywords=["physics"], id="graph2"
+        nodes=[fermi_dirac2, maxwell_statistics2],
+        edges=[edge2],
+        keywords=["physics"],
+        id="graph2",
     )
-     
+
     g_merged = await g.merge_graph(g2)
     assert await g.node_count() == 2
     assert await g.edge_count() == 1

@@ -23,38 +23,31 @@ class SemanticGraph(SemanticGraphBase):
         summarization: SummarizationBase = None,
     ):
         super().__init__()
-
-        if (
-            len(args) == 1
-            and isinstance(args[0], str)
-            and args[0].strip().lower() in ["memory", "test"]
-        ):
-            self.graph_store = NetworkXGraphStorage("memory")
-            self.node_embeddings = ChromaStorage("memory")
-            self.edge_embeddings = ChromaStorage("memory")
-            self.summarization = OllamaSummarization()
-            log(f"Semantic graph initialized all memory.")
-        else:
-
-            specs = Services.get_service_specs("semantic", override=config)
-            if specs is None:
-                log.error("No semantic graph service configured.")
-                raise ValueError("No semantic graph service configured.")
-            self.validate_config(specs)
-            self.graph_store: GraphBase = self.get_service(
-                specs["graph"]["graph-store"], override=config
+        self.graph_store = graph_store
+        self.node_embeddings = node_embeddings
+        self.edge_embeddings = edge_embeddings
+        self.summarization = summarization
+        if self.graph_store is None:
+            raise ValueError("SemanticGraph: graph_store is required.")
+        if not isinstance(self.graph_store, GraphBase):
+            raise ValueError("SemanticGraph: graph_store must be a GraphBase instance.")
+        if self.node_embeddings is None:
+            raise ValueError("SemanticGraph: node_embeddings is required.")
+        if not isinstance(self.node_embeddings, VectorStorageBase):
+            raise ValueError(
+                "SemanticGraph: node_embeddings must be a VectorStorageBase instance."
             )
-            self.node_embeddings: VectorStorageBase = self.get_service(
-                specs["graph"]["node_embeddings"], override=config
-            )  # print(type(self.graph_store).__name__)
-            self.edge_embeddings: VectorStorageBase = self.get_service(
-                specs["graph"]["edge-embeddings"], override=config
+        if self.edge_embeddings is None:
+            raise ValueError("SemanticGraph: edge_embeddings is required.")
+        if not isinstance(self.edge_embeddings, VectorStorageBase):
+            raise ValueError(
+                "SemanticGraph: edge_embeddings must be a VectorStorageBase instance."
             )
-            self.summarization: SummarizationBase = self.get_service(
-                specs["graph"]["summarization"], override=config
-            )
-            log(
-                f"Semantic graph initialized with {type(self.graph_store).__name__}, {type(self.node_embeddings).__name__}, {type(self.edge_embeddings).__name__}, {type(self.summarization).__name__}"
+        if self.summarization is None:
+            raise ValueError("SemanticGraph: summarization is required.")
+        if not isinstance(self.summarization, SummarizationBase):
+            raise ValueError(
+                "SemanticGraph: summarization must be a SummarizationBase instance."
             )
 
     def validate_config(self, specs):
@@ -307,3 +300,9 @@ class SemanticGraph(SemanticGraphBase):
 
     async def edge_count(self) -> int:
         return await self.graph_store.edge_count()
+
+    def __repr__(self):
+        return f"<SemanticGraph, graph={self.graph_store.__class__.__name__}, nodes={self.node_embeddings.__class__.__name__}, edge_embeddings={self.edge_embeddings.__class__.__name__}, summarization={self.summarization.__class__.__name__}>"
+
+    def __str__(self):
+        return self.__repr__()

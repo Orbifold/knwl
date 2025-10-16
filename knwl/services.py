@@ -191,6 +191,9 @@ class Services:
     def instantiate_service_specs(self, specs: dict, override=None) -> object:
         class_path = specs.get("class", None)
         if class_path is None:
+
+            service_name = specs["service_name"]
+            variant_name = specs["variant_name"]
             raise ValueError(
                 f"Service variant '{variant_name}' for {service_name} does not specify a class to instantiate."
             )
