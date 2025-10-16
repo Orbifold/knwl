@@ -28,9 +28,9 @@ default_config = {
         },
         "ollama": {
             "class": "knwl.summarization.ollama.OllamaSummarization",
-            "model": "gemma3:4b",
+            "llm": "@/llm/gemma_small",
             "max_tokens": 150,
-            "chunker": "tiktoken",
+            "chunker": "@/chunking/tiktoken",
         },
     },
     "entity_extraction": {
@@ -56,15 +56,14 @@ default_config = {
             "max_glean": 3,
         },
     },
-    "semantic": {
+    "semantic_graph": {
         "default": "local",
         "local": {
-            "graph": {
-                "graph-store": "graph/graph-store",  # the topology
-                "node_embeddings": "vector/nodes",  # the node embeddings
-                "edge-embeddings": "vector/edges",  # the edge embeddings
-                "summarization": "summarization/ollama",  # how to summarize long texts
-            }
+            "class": "knwl.semantic.graph.semantic_graph.SemanticGraph",
+            "graph_store": "@/graph/graph-store",  # the topology
+            "node_embeddings": "@/vector/nodes",  # the node embeddings
+            "edge_embeddings": "@/vector/edges",  # the edge embeddings
+            "summarization": "@/summarization/ollama",  # how to summarize long texts
         },
     },
     "llm": {
@@ -83,10 +82,10 @@ default_config = {
             "temperature": 0.1,
             "context_window": 32768,
         },
-        "gemma-small": {
+        "gemma_small": {
             "class": "knwl.llm.ollama.OllamaClient",
             "model": "gemma3:4b",
-            "caching_service": "json",
+            "caching_service": "@/llm_caching/json",
             "temperature": 0.1,
             "context_window": 32768,
         },
@@ -127,12 +126,6 @@ default_config = {
             "format": "graphml",
             "memory": False,
             "path": "$test/graph.graphml",
-        },
-        "graph-store": {
-            "class": "knwl.storage.networkx_storage.NetworkXGraphStorage",
-            "format": "graphml",
-            "memory": False,
-            "path": "$test/graphrag/graph.graphml",
         },
     },
     "json": {

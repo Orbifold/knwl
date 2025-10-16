@@ -21,8 +21,6 @@ async def test_extraction():
     assert len(result["relationships"]) > 0
     assert len(result["entities"]) > 0
 
-
-
     g = await extractor.extract(text)
     assert g is not None
     assert len(g.nodes) > 0

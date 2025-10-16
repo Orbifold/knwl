@@ -1,4 +1,5 @@
 from typing import Union
+from knwl.di import defaults
 from knwl.logging import log
 from knwl.models import KnwlNode, KnwlEdge
 from knwl.models.KnwlGraph import KnwlGraph
@@ -11,11 +12,17 @@ from knwl.summarization.ollama import OllamaSummarization
 from knwl.summarization.summarization_base import SummarizationBase
 
 
+@defaults("semantic_graph")
 class SemanticGraph(SemanticGraphBase):
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        config = kwargs.get("override", None)
+    def __init__(
+        self,
+        graph_store: GraphBase = None,
+        node_embeddings: VectorStorageBase = None,
+        edge_embeddings: VectorStorageBase = None,
+        summarization: SummarizationBase = None,
+    ):
+        super().__init__()
 
         if (
             len(args) == 1

@@ -1,20 +1,34 @@
-from dataclasses import dataclass, field
 from datetime import datetime
+from typing import Callable
 
+from pydantic import BaseModel, Field
 from rich.text import Text
 
 from knwl.models.KnwlContext import KnwlContext
 
 
-@dataclass(frozen=False)
-class KnwlResponse:
-    question: str = field(default="None supplied")
-    answer: str = field(default="None supplied")
-    context: KnwlContext = field(default_factory=KnwlContext)
-
-    rag_time: float = field(default=0.0)
-    llm_time: float = field(default=0.0)
-    timestamp: str = field(default=datetime.now().isoformat())
+class KnwlResponse(BaseModel):
+    """
+    Represents a response from the KNWL system containing the answer, context, and performance metrics.
+    
+    Attributes:
+        question (str): The original question that was asked.
+        answer (str): The generated answer from the LLM.
+        context (KnwlContext): The context information including chunks, nodes, edges, and references.
+        rag_time (float): Time taken for RAG operations in seconds.
+        llm_time (float): Time taken for LLM processing in seconds.
+        timestamp (str): ISO format timestamp of when the response was created.
+    """
+    # Note: Not frozen to allow mutation of timing fields during processing
+    model_config = {"frozen": False}
+    
+    question: str = Field(default="None supplied", description="The original question that was asked.")
+    answer: str = Field(default="None supplied", description="The generated answer from the LLM.")
+    context: KnwlContext = Field(default_factory=KnwlContext, description="The context information including chunks, nodes, edges, and references.")
+    
+    rag_time: float = Field(default=0.0, description="Time taken for RAG operations in seconds.")
+    llm_time: float = Field(default=0.0, description="Time taken for LLM processing in seconds.")
+    timestamp: str = Field(default_factory=lambda: datetime.now().isoformat(), description="ISO format timestamp of when the response was created.")
 
     @property
     def total_time(self):

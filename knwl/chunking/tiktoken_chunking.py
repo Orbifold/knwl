@@ -4,16 +4,10 @@ from chromadb import get_settings
 from knwl.chunking.chunking_base import ChunkingBase
 from knwl.models.KnwlChunk import KnwlChunk
 import tiktoken
-from knwl.di import inject_config
+from knwl.di import defaults
 
 
-@inject_config(
-    {
-        "chunking.tiktoken.model": "model",
-        "chunking.tiktoken.size": "chunk_size",
-        "chunking.tiktoken.overlap": "chunk_overlap",
-    }
-)
+@defaults("chunking", "tiktoken")
 class TiktokenChunking(ChunkingBase):
     """
     Chunking implementation using tiktoken for token-based chunking.

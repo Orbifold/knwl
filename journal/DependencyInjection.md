@@ -627,7 +627,7 @@ Like other DI decorators, `@defaults` supports runtime configuration overrides:
 custom_config = {
     "entity_extraction": {
         "basic": {
-            "llm": "@/llm/gemma-small"  # Override to use different LLM
+            "llm": "@/llm/gemma_small"  # Override to use different LLM
         }
     }
 }
