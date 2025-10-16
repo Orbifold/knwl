@@ -1,13 +1,13 @@
 import time
 from typing import List
+import os
 
 import openai
 from knwl.di import defaults
 from knwl.llm import LLMBase, LLMCacheBase
 from knwl.logging import log
 from knwl.models import KnwlLLMAnswer
-
-
+ 
 @defaults("llm", "openai")
 class OpenAIClient(LLMBase):
     def __init__(
@@ -18,14 +18,27 @@ class OpenAIClient(LLMBase):
         caching_service: LLMCacheBase = None,
     ):
         super().__init__()
-        self.client = openai.AsyncClient()
-
+        self._client = None
         self._model = model
         self._temperature = temperature
         self._context_window = context_window
         if not caching_service:
             log.warn("OpenaiClient: No caching service provided, caching disabled.")
         self._caching_service = caching_service
+
+    @property
+    def client(self):
+        """Lazy initialization of OpenAI client"""
+        if self._client is None:
+            try:            
+                self._client = openai.AsyncClient()
+            except openai.OpenAIError as e:
+                if "OPENAI_API_KEY" in str(e):
+                    log.error(
+                        "OpenAIClient: OPENAI_API_KEY environment variable not set. Please set it to use OpenAI."
+                    )
+                raise e
+        return self._client
 
     @property
     def model(self):

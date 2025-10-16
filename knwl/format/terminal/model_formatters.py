@@ -300,13 +300,13 @@ class KnwlExtractionTerminalFormatter(ModelFormatter):
         max_entities = options.get("max_entities", 10)
 
         # Statistics
-        total_nodes = sum(len(nodes) for nodes in model.entities.values())
+        total_nodes = sum(len(nodes) for nodes in model.nodes.values())
 
         stats_table = Table(show_header=False, box=None, padding=(0, 1))
         stats_table.add_column("Metric", style=formatter.theme.KEY_STYLE)
         stats_table.add_column("Value", style=formatter.theme.HIGHLIGHT)
 
-        stats_table.add_row("Entity Types", str(len(model.entities)))
+        stats_table.add_row("Entity Types", str(len(model.nodes)))
         stats_table.add_row("Total Nodes", str(total_nodes))
         stats_table.add_row("Edges", str(len(model.edges)))
         if model.keywords:
@@ -315,7 +315,7 @@ class KnwlExtractionTerminalFormatter(ModelFormatter):
         content = [stats_table]
 
         # Show entity breakdown
-        if show_entities and model.entities:
+        if show_entities and model.nodes:
             content.append(Text("\n"))
             content.append(
                 Text("Entities by Type:", style=formatter.theme.SUBTITLE_STYLE)
@@ -326,13 +326,10 @@ class KnwlExtractionTerminalFormatter(ModelFormatter):
             entity_table.add_column(
                 "Count", style=formatter.theme.HIGHLIGHT, justify="right"
             )
-            entity_table.add_column("Examples", style=formatter.theme.VALUE_STYLE)
+            entity_table.add_column("Name", style=formatter.theme.VALUE_STYLE)
 
-            for entity_type, nodes in list(model.entities.items())[:max_entities]:
-                examples = ", ".join([node.name for node in nodes[:3]])
-                if len(nodes) > 3:
-                    examples += "..."
-                entity_table.add_row(entity_type, str(len(nodes)), examples)
+            for entity_name, nodes in list(model.nodes.items())[:max_entities]:
+                entity_table.add_row(", ".join([u.type for u in nodes]), str(len(nodes)), entity_name)
 
             content.append(entity_table)
 

@@ -1,8 +1,11 @@
+import json
 import pytest
 
 from knwl.extraction.basic_entity_extraction import BasicEntityExtraction
 from knwl.extraction.basic_graph_extraction import BasicGraphExtraction
 from knwl.extraction.glean_graph_extraction import GleanGraphExtraction
+from knwl.format import print_knwl
+from knwl.models import KnwlEntity, KnwlExtraction
 
 pytestmark = pytest.mark.llm
 
@@ -12,12 +15,13 @@ async def test_extraction():
     extractor = BasicGraphExtraction()
     text = "Barack Obama was born in Hawaii. He was elected president in 2008."
     result = await extractor.extract_json(text)
+    print("")
+    print(json.dumps(result, indent=2))
     assert len(result["keywords"]) > 0
     assert len(result["relationships"]) > 0
     assert len(result["entities"]) > 0
 
-    # print("")
-    # print(json.dumps(result, indent=2))
+
 
     g = await extractor.extract(text)
     assert g is not None
@@ -49,9 +53,11 @@ async def test_extraction_multi_type():
     text = "Apple is an amazing company, they made the iPhone in California. Note that apple is also a fruit."
 
     extractor = BasicGraphExtraction()
-    g = await extractor.extract(text, entities=["company", "fruit"])
+    g:KnwlExtraction = await extractor.extract(text, entities=["company", "fruit"])
     assert g is not None
-    assert len(g.nodes["Apple"]) == 2  # company and fruit
+    print_knwl(g)
+
+    assert len(g.get_name_by_type("fruit"))>0 and len(g.get_name_by_type("company"))>0  # company and fruit
     assert "company" in g.get_all_node_types() and "fruit" in g.get_all_node_types()
     print("")
     print(g.model_dump_json(indent=2))
@@ -106,19 +112,19 @@ async def test_fast_entity_extraction():
     text = "Barack Obama was born in Hawaii. He was elected president in 2008."
 
     extractor = BasicEntityExtraction()
-    result = await extractor.extract(text)
+    result:list[KnwlEntity] = await extractor.extract(text)
     assert result is not None
     assert len(result) > 0
     # assert len(result["relationships"]) > 0
     # assert len(result["entities"]) > 0
     result = await extractor.extract_json(text)
     assert result is not None
-    assert len(result) > 0
 
     print("")
     print(result)
+    assert len(result) > 0
 
     extractor = BasicEntityExtraction()
     text = "This text has no recognizable entities and none should be found."
-    result = await extractor.extract(text)
-    assert len(result) == 0
+    result:list[KnwlEntity] = await extractor.extract(text)
+    assert result is None

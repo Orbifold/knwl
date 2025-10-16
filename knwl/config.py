@@ -49,9 +49,12 @@ default_config = {
         },
     },
     "glean_graph_extraction": {
-        "class": "knwl.extraction.glean_graph_extraction.GleanGraphExtraction",
-        "llm": "@/llm/ollama",
-        "max_glean": 3,
+        "default": "max3",
+        "max3": {
+            "class": "knwl.extraction.glean_graph_extraction.GleanGraphExtraction",
+            "llm": "@/llm/ollama",
+            "max_glean": 3,
+        },
     },
     "semantic": {
         "default": "local",

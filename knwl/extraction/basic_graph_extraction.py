@@ -4,13 +4,13 @@ from knwl.models.KnwlGraph import KnwlGraph
 from knwl.prompts import prompts
 from knwl.utils import parse_llm_record, split_string_by_multi_markers
 from knwl.llm.llm_base import LLMBase
-from knwl.di import service
+from knwl.di import defaults, service
 
 continue_prompt = prompts.extraction.iterate_entity_extraction
 if_loop_prompt = prompts.extraction.glean_break
 
 
-@service("llm")
+@defaults("graph_extraction")
 class BasicGraphExtraction(GraphExtractionBase):
     def __init__(self, llm: LLMBase = None):
         super().__init__()
@@ -19,6 +19,10 @@ class BasicGraphExtraction(GraphExtractionBase):
         if not isinstance(llm, LLMBase):
             raise TypeError("BasicGraphExtraction: llm must be an instance of LLMBase.")
         self._llm = llm
+
+    @property
+    def llm(self) -> LLMBase:
+        return self._llm
 
     def get_extraction_prompt(self, text, entity_types=None):
         if self.extraction_mode == "fast":

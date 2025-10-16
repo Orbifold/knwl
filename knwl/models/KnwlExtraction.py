@@ -185,3 +185,12 @@ class KnwlExtraction(BaseModel):
                 for t in e.keywords:
                     types.add(t)
         return list(types)
+
+    def get_name_by_type(self, entity_type: str) -> List[str]:
+        """Get all nodes of a specific type."""
+        coll = set()
+        for k in self.nodes.keys():
+            for n in self.nodes[k]:
+                if n.type == entity_type:
+                    coll.add(n.name)
+        return list(coll) 

@@ -10,7 +10,6 @@ pytestmark = pytest.mark.llm
 
 fake = Faker()
 
-
 @pytest.mark.asyncio
 async def test_basic_ask():
     """
@@ -85,10 +84,10 @@ async def test_override_caching():
     )
 
     config = {
-        "llm": {"ollama": {"caching_service": "@/llm_caching/special"}},
+        "llm": {"openai": {"caching_service": "@/llm_caching/special"}},
         "llm_caching": {"special": {"class": SpecialClass()}},
     }
-    llm = services.get_service("llm", "ollama", override=config)
+    llm = services.get_service("llm", "openai", override=config)
     assert llm.caching_service is not None
     assert llm.caching_service.name == "Swa"
     assert await llm.is_cached("Anything") is True

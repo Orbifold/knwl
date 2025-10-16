@@ -4,7 +4,7 @@ dickens/
 book.txt
 .idea/
 dist/
-venv
+.venv
 tests/data/**/*
 .coverage
 **/.DS_Store
@@ -12,5 +12,10 @@ workdir/
 .idea
 .vscode
 **/*.log
-
+.pytest_cache/
 /data/
+
+# Environment variables
+.env
+.env.local
+.env.*.local

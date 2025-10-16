@@ -20,26 +20,48 @@ class ChromaStorage(VectorStorageBase):
 
     metadata: list[str]
 
-    def __init__(self, collection_name: str = "default", metadata=None, memory: bool = False, path: str = "$test/vector"):
-        super().__init__()         
-        self.memory = memory
-        self.metadata = metadata or []
-        self.collection_name = collection_name
-        self.path = path
-        if self.path is not None and "." in self.path.split("/")[-1]:
+    def __init__(
+        self,
+        collection_name: str = "default",
+        metadata=None,
+        memory: bool = False,
+        path: str = "$test/vector",
+    ):
+        super().__init__()
+        self._in_memory = memory
+        self._metadata = metadata or []
+        self._collection_name = collection_name
+        self._path = path
+        if self._path is not None and "." in self._path.split("/")[-1]:
             log.warn(
-                f"The Chroma path '{self.path}' contains a '.' but should be a directory, not a file."
+                f"The Chroma path '{self._path}' contains a '.' but should be a directory, not a file."
             )
-        if not self.memory and self.path is not None:
-            self.path = get_full_path(self.path)
-            self.client = chromadb.PersistentClient(path=self.path)
+        if not self._in_memory and self._path is not None:
+            self._path = get_full_path(self._path)
+            self.client = chromadb.PersistentClient(path=self._path)
 
         else:
             self.client = chromadb.Client()
 
         self.collection = self.client.get_or_create_collection(
-            name=self.collection_name
+            name=self._collection_name
         )
+
+    @property
+    def metadata(self):
+        return self._metadata
+
+    @property
+    def collection_name(self):
+        return self._collection_name
+
+    @property
+    def path(self):
+        return self._path
+
+    @property
+    def in_memory(self):
+        return self._in_memory
 
     async def query(self, query: str, top_k: int = 1) -> list[dict]:
         # ====================================================================================
@@ -48,8 +70,10 @@ class ChromaStorage(VectorStorageBase):
         # ====================================================================================
 
         if not isinstance(query, str):
-            raise ValueError("Query must be a string. If you have a model, use model_dump_json() first.")
-        if len(self.metadata) > 0:
+            raise ValueError(
+                "Query must be a string. If you have a model, use model_dump_json() first."
+            )
+        if len(self._metadata) > 0:
             found = self.collection.query(
                 query_texts=query, n_results=top_k, include=["documents", "metadatas"]
             )
@@ -80,8 +104,8 @@ class ChromaStorage(VectorStorageBase):
                 embedding = value["embedding"]
             if "embeddings" in value:
                 embedding = value["embeddings"]
-            if len(self.metadata) > 0:
-                metadata = {k: value.get(k, None) for k in self.metadata}
+            if len(self._metadata) > 0:
+                metadata = {k: value.get(k, None) for k in self._metadata}
                 self.collection.upsert(
                     ids=key,
                     documents=str_value,
@@ -95,9 +119,9 @@ class ChromaStorage(VectorStorageBase):
         return data
 
     async def clear(self):
-        self.client.delete_collection(self.collection_name)
+        self.client.delete_collection(self._collection_name)
         self.collection = self.client.get_or_create_collection(
-            name=self.collection_name
+            name=self._collection_name
         )
 
     async def count(self):
@@ -129,3 +153,6 @@ class ChromaStorage(VectorStorageBase):
 
     async def get_collection_names(self):
         return [col.name for col in self.client.list_collections()]
+
+    def __repr__(self):
+        return f"ChromaStorage, collection={self._collection_name}, path={self._path}, memory={self._in_memory}, metadata={self._metadata})"

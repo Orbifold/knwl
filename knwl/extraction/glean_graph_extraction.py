@@ -1,10 +1,10 @@
 from knwl.prompts import prompts
 from knwl.extraction.basic_graph_extraction import BasicGraphExtraction
-from knwl.utils import split_string_by_multi_markers, parse_llm_record
 from knwl.logging import log
 from knwl.llm.llm_base import LLMBase
-@service("llm", param_name="llm")
-@inject_config("graph_extraction", param_name="config")
+from knwl.di import defaults
+
+@defaults("glean_graph_extraction")
 class GleanGraphExtraction(BasicGraphExtraction):
     """
     An advanced extraction class that iteratively refines entity extraction through multiple gleaning passes.
