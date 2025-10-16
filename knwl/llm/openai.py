@@ -7,6 +7,7 @@ from knwl.llm import LLMBase, LLMCacheBase
 from knwl.logging import log
 from knwl.models import KnwlLLMAnswer
 
+
 @defaults("llm", "openai")
 class OpenAIClient(LLMBase):
     def __init__(
@@ -25,6 +26,22 @@ class OpenAIClient(LLMBase):
         if not caching_service:
             log.warn("OpenaiClient: No caching service provided, caching disabled.")
         self._caching_service = caching_service
+
+    @property
+    def model(self):
+        return self._model
+
+    @property
+    def temperature(self):
+        return self._temperature
+
+    @property
+    def context_window(self):
+        return self._context_window
+
+    @property
+    def caching_service(self):
+        return self._caching_service
 
     async def ask(
         self,
@@ -67,7 +84,7 @@ class OpenAIClient(LLMBase):
         return await self.caching_service.is_in_cache(messages, "openai", self.model)
 
     def __repr__(self):
-        return f"openai/{self.model}, temperature={self.temperature},  caching_service={self.caching_service}>"
+        return f"<OpenAIClient, model={self.model}, temperature={self.temperature},  caching_service={self.caching_service}>"
 
     def __str__(self):
         return self.__repr__()

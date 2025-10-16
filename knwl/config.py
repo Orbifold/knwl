@@ -76,14 +76,14 @@ default_config = {
         "openai": {
             "class": "knwl.llm.openai.OpenAIClient",
             "model": "gpt-4o-mini",
-            "caching": "@/llm_caching/json",
+            "caching_service": "@/llm_caching/json",
             "temperature": 0.1,
             "context_window": 32768,
         },
         "gemma-small": {
             "class": "knwl.llm.ollama.OllamaClient",
             "model": "gemma3:4b",
-            "caching": "json",
+            "caching_service": "json",
             "temperature": 0.1,
             "context_window": 32768,
         },

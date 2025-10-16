@@ -20,12 +20,40 @@ class TestDependencyInjection:
     """
     Test cases for the dependency injection decorators and functionality.
     """
-
+    
     def setup_method(self):
         """Clean up DI container before each test."""
         container._service_registry.clear()
         container._config_registry.clear()
         container._defaults_registry.clear()
+    def test_fail_to_inject_service(self):
+        """Test behavior when service creation fails."""
+        with patch("knwl.di.services") as mock_services:
+            mock_services.create_service.side_effect = Exception("Service not found")
+
+            @service("non_existent_service")
+            def test_function(svc=None):
+                return svc
+
+            with pytest.raises(Exception, match="Service not found"):
+                test_function()
+
+            mock_services.create_service.assert_called_once_with(
+                "non_existent_service", variant_name=None, override=None
+            )
+
+    def test_no_config(self):
+        """Test behavior when no configuration is present."""
+        with patch("knwl.di.get_config") as mock_get_config:
+            mock_get_config.return_value = None
+
+            @inject_config("non.existent.key")
+            def test_function(key=None):
+                return key
+
+            result = test_function()
+            assert result is None
+            mock_get_config.assert_called_once_with("non", "existent", "key")
 
     def test_service_decorator_basic(self):
         """Test basic service injection."""
@@ -792,6 +820,613 @@ class TestDependencyInjection:
             # Should not raise an error, just skip injection
             instance = TestClass()
             assert instance.param is None
+
+    def test_inject_config_class_decorator(self):
+        """Test inject_config decorator on a class."""
+        
+        with patch("knwl.di.get_config") as mock_get_config:
+            mock_get_config.side_effect = lambda *keys: {
+                ("api", "host"): "class.example.com",
+                ("api", "port"): 9000,
+            }.get(keys, None)
+            
+            @inject_config("api.host", "api.port")
+            class TestService:
+                def __init__(self, host=None, port=None):
+                    self.host = host
+                    self.port = port
+            
+            instance = TestService()
+            assert instance.host == "class.example.com"
+            assert instance.port == 9000
+
+    def test_inject_config_class_with_dict_format(self):
+        """Test inject_config decorator on a class with dictionary format."""
+        
+        with patch("knwl.di.get_config") as mock_get_config:
+            mock_get_config.side_effect = lambda *keys: {
+                ("chunking", "tiktoken", "model"): "gpt-4",
+                ("chunking", "tiktoken", "size"): 512,
+            }.get(keys, None)
+            
+            @inject_config({
+                "chunking.tiktoken.model": "model",
+                "chunking.tiktoken.size": "chunk_size"
+            })
+            class ChunkingService:
+                def __init__(self, model=None, chunk_size=None):
+                    self.model = model
+                    self.chunk_size = chunk_size
+            
+            instance = ChunkingService()
+            assert instance.model == "gpt-4"
+            assert instance.chunk_size == 512
+
+    def test_inject_config_class_with_param_name(self):
+        """Test inject_config decorator on a class with custom param_name."""
+        
+        with patch("knwl.di.get_config") as mock_get_config:
+            mock_get_config.side_effect = lambda *keys: {
+                ("api", "host"): "custom.host.com",
+            }.get(keys, None)
+            
+            @inject_config("api.host", param_name="server_host")
+            class TestService:
+                def __init__(self, server_host=None):
+                    self.host = server_host
+            
+            instance = TestService()
+            assert instance.host == "custom.host.com"
+
+    def test_inject_config_class_dict_with_additional_keys_error(self):
+        """Test that dict format with additional keys raises error."""
+        
+        with pytest.raises(ValueError, match="Cannot use additional config keys with dictionary format"):
+            @inject_config({"api.host": "host"}, "api.port")
+            class TestService:
+                def __init__(self, host=None, port=None):
+                    pass
+
+    def test_inject_config_class_dict_with_param_name_error(self):
+        """Test that dict format with param_name raises error."""
+        
+        with pytest.raises(ValueError, match="Cannot use param_name with dictionary format"):
+            @inject_config({"api.host": "host"}, param_name="custom")
+            class TestService:
+                def __init__(self, host=None):
+                    pass
+
+    def test_inject_config_function_dict_with_additional_keys_error(self):
+        """Test that function decorator dict format with additional keys raises error."""
+        
+        with pytest.raises(ValueError, match="Cannot use additional config keys with dictionary format"):
+            @inject_config({"api.host": "host"}, "api.port")
+            def test_function(host=None, port=None):
+                pass
+
+    def test_inject_config_function_dict_with_param_name_error(self):
+        """Test that function decorator dict format with param_name raises error."""
+        
+        with pytest.raises(ValueError, match="Cannot use param_name with dictionary format"):
+            @inject_config({"api.host": "host"}, param_name="custom")
+            def test_function(host=None):
+                pass
+
+    def test_inject_config_function_param_name_with_multiple_keys_error(self):
+        """Test that param_name with multiple keys raises error."""
+        
+        with pytest.raises(ValueError, match="param_name can only be used with a single config key"):
+            @inject_config("api.host", "api.port", param_name="custom")
+            def test_function(custom=None):
+                pass
+
+    def test_defaults_decorator_function(self):
+        """Test defaults decorator on a function."""
+        
+        with patch("knwl.di.get_config") as mock_get_config:
+            mock_get_config.side_effect = lambda *args, **kwargs: {
+                ("llm", "default"): "ollama",
+                ("llm", "ollama"): {
+                    "class": "test.LLM",
+                    "model": "qwen2.5:14b",
+                    "temperature": 0.1
+                }
+            }.get(args)
+            
+            @defaults("llm")
+            def process_text(text, model=None, temperature=None):
+                return {"text": text, "model": model, "temperature": temperature}
+            
+            result = process_text("hello")
+            assert result["model"] == "qwen2.5:14b"
+            assert result["temperature"] == 0.1
+
+    def test_defaults_decorator_no_service_config(self):
+        """Test defaults decorator when service config is not found."""
+        
+        with patch("knwl.di.get_config") as mock_get_config:
+            mock_get_config.side_effect = lambda *args, **kwargs: {
+                ("unknown_service", "default"): "variant1",
+                ("unknown_service", "variant1"): None  # No config
+            }.get(args)
+            
+            @defaults("unknown_service")
+            def test_function(param=None):
+                return param
+            
+            result = test_function()
+            assert result is None
+
+    def test_defaults_decorator_empty_string_values(self):
+        """Test that empty string values are skipped during defaults injection."""
+        
+        with patch("knwl.di.get_config") as mock_get_config:
+            mock_get_config.side_effect = lambda *args, **kwargs: {
+                ("llm", "default"): "ollama",
+                ("llm", "ollama"): {
+                    "class": "test.LLM",
+                    "model": "",  # Empty string should be skipped
+                    "temperature": 0.1
+                }
+            }.get(args)
+            
+            @defaults("llm")
+            def test_function(model=None, temperature=None):
+                return {"model": model, "temperature": temperature}
+            
+            result = test_function()
+            assert result["model"] is None  # Should not be injected
+            assert result["temperature"] == 0.1
+
+    def test_defaults_decorator_none_string_values(self):
+        """Test that 'None' string values are skipped during defaults injection."""
+        
+        with patch("knwl.di.get_config") as mock_get_config:
+            mock_get_config.side_effect = lambda *args, **kwargs: {
+                ("llm", "default"): "ollama",
+                ("llm", "ollama"): {
+                    "class": "test.LLM",
+                    "model": "none",  # 'none' string should be skipped
+                    "temperature": 0.1
+                }
+            }.get(args)
+            
+            @defaults("llm")
+            def test_function(model=None, temperature=None):
+                return {"model": model, "temperature": temperature}
+            
+            result = test_function()
+            assert result["model"] is None  # Should not be injected
+            assert result["temperature"] == 0.1
+
+    def test_defaults_decorator_explicit_none_conversion(self):
+        """Test that already-bound 'None' string values are converted to None."""
+        
+        with patch("knwl.di.get_config") as mock_get_config:
+            mock_get_config.side_effect = lambda *args, **kwargs: {
+                ("llm", "default"): "ollama",
+                ("llm", "ollama"): {
+                    "class": "test.LLM",
+                    "model": "qwen2.5:14b",
+                    "temperature": 0.1
+                }
+            }.get(args)
+            
+            @defaults("llm")
+            def test_function(model="None", temperature=None):
+                return {"model": model, "temperature": temperature}
+            
+            # Pass "None" explicitly - this tests the bound argument conversion
+            result = test_function(model="None")
+            assert result["model"] is None  # Should be converted
+            assert result["temperature"] == 0.1
+
+    def test_safe_bind_partial_with_var_keyword(self):
+        """Test safe_bind_partial with **kwargs parameter."""
+        
+        def func_with_kwargs(a, b=None, **kwargs):
+            return {"a": a, "b": b, "kwargs": kwargs}
+        
+        bound = container.safe_bind_partial(func_with_kwargs, 1, b=2, extra1="x", extra2="y")
+        assert bound.arguments["a"] == 1
+        assert bound.arguments["b"] == 2
+        # Extra kwargs are collected in the 'kwargs' key
+        assert "kwargs" in bound.arguments
+        assert bound.arguments["kwargs"]["extra1"] == "x"
+        assert bound.arguments["kwargs"]["extra2"] == "y"
+
+    def test_safe_bind_partial_without_var_keyword(self):
+        """Test safe_bind_partial filtering out invalid kwargs."""
+        
+        def func_without_kwargs(a, b=None):
+            return {"a": a, "b": b}
+        
+        # Should filter out extra1 and extra2
+        bound = container.safe_bind_partial(func_without_kwargs, 1, b=2, extra1="x", extra2="y")
+        assert bound.arguments["a"] == 1
+        assert bound.arguments["b"] == 2
+        assert "extra1" not in bound.arguments
+        assert "extra2" not in bound.arguments
+
+    def test_safe_bind_partial_with_self(self):
+        """Test safe_bind_partial with class method (self parameter)."""
+        
+        class TestClass:
+            def method(self, a, b=None):
+                return {"a": a, "b": b}
+        
+        instance = TestClass()
+        # When calling safe_bind_partial on a bound method, 'self' is already bound
+        # so we just pass 'a' and other params
+        bound = container.safe_bind_partial(instance.method, 1, b=2, extra="ignore")
+        # The bound method already has 'self', so 'a' gets value 1
+        assert "a" in bound.arguments
+        assert bound.arguments["a"] == 1
+        assert bound.arguments["b"] == 2
+        # 'extra' should be filtered out since method doesn't accept it
+        assert "extra" not in bound.arguments
+
+    def test_get_override_value_simple(self):
+        """Test _get_override_value with simple key."""
+        from knwl.di import _get_override_value
+        
+        override = {"api": {"host": "test.com", "port": 8080}}
+        assert _get_override_value(override, "api.host") == "test.com"
+        assert _get_override_value(override, "api.port") == 8080
+
+    def test_get_override_value_deep_nested(self):
+        """Test _get_override_value with deeply nested keys."""
+        from knwl.di import _get_override_value
+        
+        override = {"level1": {"level2": {"level3": {"key": "value"}}}}
+        assert _get_override_value(override, "level1.level2.level3.key") == "value"
+
+    def test_get_override_value_missing_key(self):
+        """Test _get_override_value with missing key returns default."""
+        from knwl.di import _get_override_value
+        
+        override = {"api": {"host": "test.com"}}
+        assert _get_override_value(override, "api.missing", "default") == "default"
+        assert _get_override_value(override, "missing.key", None) is None
+
+    def test_get_override_value_empty_dict(self):
+        """Test _get_override_value with empty override dict."""
+        from knwl.di import _get_override_value
+        
+        assert _get_override_value({}, "any.key", "default") == "default"
+        assert _get_override_value(None, "any.key", "default") == "default"
+
+    def test_service_provider_context_manager(self):
+        """Test ServiceProvider as context manager."""
+        
+        provider = ServiceProvider(api={"host": "override.com"})
+        
+        with provider as p:
+            assert p is provider
+            assert p.overrides == {"api": {"host": "override.com"}}
+
+    def test_inject_config_list_format(self):
+        """Test inject_config with list format."""
+        
+        with patch("knwl.di.get_config") as mock_get_config:
+            mock_get_config.side_effect = lambda *keys: {
+                ("api", "host"): "list.host.com",
+                ("api", "port"): 7000,
+            }.get(keys, None)
+            
+            @inject_config(["api.host", "api.port"])
+            def test_function(host=None, port=None):
+                return {"host": host, "port": port}
+            
+            result = test_function()
+            assert result["host"] == "list.host.com"
+            assert result["port"] == 7000
+
+    def test_inject_config_tuple_format(self):
+        """Test inject_config with tuple format."""
+        
+        with patch("knwl.di.get_config") as mock_get_config:
+            mock_get_config.side_effect = lambda *keys: {
+                ("db", "user"): "admin",
+                ("db", "password"): "secret",
+            }.get(keys, None)
+            
+            @inject_config(("db.user", "db.password"))
+            def test_function(user=None, password=None):
+                return {"user": user, "password": password}
+            
+            result = test_function()
+            assert result["user"] == "admin"
+            assert result["password"] == "secret"
+
+    def test_defaults_skip_class_parameter(self):
+        """Test that 'class' parameter is skipped during defaults injection."""
+        
+        with patch("knwl.di.get_config") as mock_get_config:
+            mock_get_config.side_effect = lambda *args, **kwargs: {
+                ("service", "default"): "variant1",
+                ("service", "variant1"): {
+                    "class": "some.class.Name",  # Should be skipped
+                    "param1": "value1"
+                }
+            }.get(args)
+            
+            @defaults("service")
+            def test_function(param1=None):
+                return {"param1": param1}
+            
+            result = test_function()
+            assert result["param1"] == "value1"
+
+    def test_wrapper_kwargs_extraction(self):
+        """Test that wrapper properly extracts and merges kwargs."""
+        
+        mock_service = Mock()
+        
+        with patch("knwl.di.services") as mock_services:
+            mock_services.create_service.return_value = mock_service
+            
+            @service("llm")
+            def test_function(text, llm=None, **extra):
+                return {"llm": llm, "extra": extra}
+            
+            result = test_function("test", custom_arg="value")
+            
+            assert result["llm"] is mock_service
+            # The wrapper merges kwargs, so extra gets nested
+            assert "custom_arg" in result["extra"] or result["extra"].get("extra", {}).get("custom_arg") == "value"
+
+    def test_register_defaults_injection(self):
+        """Test register_defaults_injection method."""
+        
+        container.register_defaults_injection(
+            "test_func", "service_name", "variant_name", {"key": "value"}
+        )
+        
+        assert "test_func" in container._defaults_registry
+        defaults_info = container._defaults_registry["test_func"]
+        assert defaults_info["service_name"] == "service_name"
+        assert defaults_info["variant_name"] == "variant_name"
+        assert defaults_info["override"] == {"key": "value"}
+
+    def test_inject_config_with_dict_mapping(self):
+        """Test inject_config function decorator with dict mapping format."""
+        
+        with patch("knwl.di.get_config") as mock_get_config:
+            mock_get_config.side_effect = lambda *keys: {
+                ("chunking", "size"): 1024,
+                ("chunking", "overlap"): 128,
+            }.get(keys, None)
+            
+            @inject_config({
+                "chunking.size": "chunk_size",
+                "chunking.overlap": "overlap_size"
+            })
+            def test_function(chunk_size=None, overlap_size=None):
+                return {"chunk_size": chunk_size, "overlap_size": overlap_size}
+            
+            result = test_function()
+            assert result["chunk_size"] == 1024
+            assert result["overlap_size"] == 128
+
+    def test_legacy_config_injection_with_param_name(self):
+        """Test legacy config injection format with custom param_name."""
+        
+        with patch("knwl.di.get_config") as mock_get_config:
+            mock_get_config.side_effect = lambda *keys: {
+                ("api", "endpoint"): "https://api.example.com",
+            }.get(keys, None)
+            
+            @inject_config("api.endpoint", param_name="url")
+            def test_function(url=None):
+                return {"url": url}
+            
+            result = test_function()
+            assert result["url"] == "https://api.example.com"
+
+    def test_auto_inject_unknown_service(self):
+        """Test auto_inject with unknown service parameter (should not be injected)."""
+        
+        @auto_inject
+        def test_function(text: str, unknown_service=None, other_param=None):
+            return {"unknown": unknown_service, "other": other_param}
+        
+        result = test_function("test")
+        assert result["unknown"] is None
+        assert result["other"] is None
+
+    def test_inject_services_invalid_tuple_spec(self):
+        """Test inject_services with invalid tuple specification."""
+        
+        # A tuple with wrong number of elements
+        with pytest.raises(ValueError, match="Invalid service specification"):
+            @inject_services(param=("service_only",))  # Tuple with only 1 element
+            def test_function(param=None):
+                pass
+
+    def test_defaults_service_reference_with_variant(self):
+        """Test defaults decorator with service reference that has variant."""
+        
+        with patch("knwl.di.get_config") as mock_get_config, \
+             patch("knwl.di.services") as mock_services:
+            
+            mock_get_config.side_effect = lambda *args, **kwargs: {
+                ("service", "default"): "variant1",
+                ("service", "variant1"): {
+                    "class": "test.Service",
+                    "llm": "@/llm"  # Service reference without variant
+                }
+            }.get(args)
+            
+            mock_llm = Mock()
+            mock_services.get_service.return_value = mock_llm
+            
+            @defaults("service")
+            def test_function(llm=None):
+                return llm
+            
+            result = test_function()
+            assert result is mock_llm
+            # Should be called with variant_name=None when not specified
+            mock_services.get_service.assert_called_once_with(
+                "llm", variant_name=None, override=None
+            )
+
+    def test_inject_services_dict_spec_without_service(self):
+        """Test inject_services with dict spec missing 'service' key."""
+        
+        @inject_services(param={"variant": "test", "singleton": True})
+        def test_function(param=None):
+            return param
+        
+        # This should handle the case where service_name is None
+        # The decorator should still be applied, but injection might fail
+        func_name = f"{test_function.__module__}.{test_function.__qualname__}"
+        assert func_name in container._service_registry
+
+    def test_config_injection_with_empty_override(self):
+        """Test config injection when override dict is empty."""
+        
+        with patch("knwl.di.get_config") as mock_get_config:
+            mock_get_config.side_effect = lambda *keys: {
+                ("api", "host"): "config.host.com",
+            }.get(keys, None)
+            
+            @inject_config("api.host", override={})
+            def test_function(host=None):
+                return host
+            
+            result = test_function()
+            assert result == "config.host.com"
+
+    def test_defaults_with_none_value(self):
+        """Test defaults decorator when config value is None."""
+        
+        with patch("knwl.di.get_config") as mock_get_config:
+            mock_get_config.side_effect = lambda *args, **kwargs: {
+                ("service", "default"): "variant1",
+                ("service", "variant1"): {
+                    "class": "test.Service",
+                    "param1": None,  # Explicitly None
+                    "param2": "value2"
+                }
+            }.get(args)
+            
+            @defaults("service")
+            def test_function(param1=None, param2=None):
+                return {"param1": param1, "param2": param2}
+            
+            result = test_function()
+            # param1 should remain None (not injected)
+            assert result["param1"] is None
+            assert result["param2"] == "value2"
+
+    def test_service_with_override(self):
+        """Test service decorator with override parameter."""
+        
+        mock_service = Mock()
+        
+        with patch("knwl.di.services") as mock_services:
+            mock_services.create_service.return_value = mock_service
+            
+            override_config = {"llm": {"model": "custom-model"}}
+            
+            @service("llm", override=override_config)
+            def test_function(llm=None):
+                return llm
+            
+            result = test_function()
+            
+            mock_services.create_service.assert_called_once_with(
+                "llm", variant_name=None, override=override_config
+            )
+            assert result is mock_service
+
+    def test_singleton_service_with_override(self):
+        """Test singleton_service decorator with override parameter."""
+        
+        mock_service = Mock()
+        
+        with patch("knwl.di.services") as mock_services:
+            mock_services.get_service.return_value = mock_service
+            
+            override_config = {"graph": {"backend": "networkx"}}
+            
+            @singleton_service("graph", override=override_config)
+            def test_function(graph=None):
+                return graph
+            
+            result = test_function()
+            
+            mock_services.get_service.assert_called_once_with(
+                "graph", variant_name=None, override=override_config
+            )
+            assert result is mock_service
+
+    def test_inject_services_with_override(self):
+        """Test inject_services with override in dict spec."""
+        
+        mock_llm = Mock()
+        
+        with patch("knwl.di.services") as mock_services:
+            mock_services.create_service.return_value = mock_llm
+            
+            @inject_services(
+                llm={
+                    "service": "llm",
+                    "variant": "openai",
+                    "singleton": False,
+                    "override": {"llm": {"model": "gpt-4"}}
+                }
+            )
+            def test_function(llm=None):
+                return llm
+            
+            result = test_function()
+            assert result is mock_llm
+
+    def test_defaults_class_with_override(self):
+        """Test defaults decorator on class with override."""
+        
+        with patch("knwl.di.get_config") as mock_get_config:
+            mock_get_config.side_effect = lambda *args, **kwargs: {
+                ("llm", "default"): "ollama",
+                ("llm", "ollama"): {
+                    "class": "test.LLM",
+                    "model": "qwen2.5:14b",
+                }
+            }.get(args)
+            
+            override_config = {"llm": {"ollama": {"model": "override-model"}}}
+            
+            @defaults("llm", override=override_config)
+            class TestClass:
+                def __init__(self, model=None):
+                    self.model = model
+            
+            instance = TestClass()
+            # Should use config value since override doesn't match the structure
+            assert instance.model == "qwen2.5:14b"
+
+    def test_register_config_injection_dict_format(self):
+        """Test register_config_injection with dict mapping format."""
+        
+        config_mapping = {
+            "api.host": "server_host",
+            "api.port": "server_port"
+        }
+        
+        container.register_config_injection(
+            "test_func", 
+            config_mapping,
+            param_name=None,
+            override={"api": {"host": "override.com"}}
+        )
+        
+        assert "test_func" in container._config_registry
+        config_info = container._config_registry["test_func"]
+        assert config_info["config_mapping"] == config_mapping
+        assert config_info["override"] == {"api": {"host": "override.com"}}
 
 
 if __name__ == "__main__":

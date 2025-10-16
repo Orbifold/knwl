@@ -235,6 +235,7 @@ class Services:
                 valid_kwargs[param_name] = param
 
         instance = cls(**valid_kwargs)
+
         return instance
 
     def instantiate_service(
@@ -266,7 +267,9 @@ class Services:
             raise ValueError(
                 f"Service variant '{variant_name}' for {service_name} not found in configuration."
             )
-        return self.instantiate_service_specs(specs, override=override)
+        instance =  self.instantiate_service_specs(specs, override=override)
+        instance.service_config = specs
+        return instance
 
 
 services = Services()

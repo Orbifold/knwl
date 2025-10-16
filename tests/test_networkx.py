@@ -9,7 +9,7 @@ from knwl.storage.networkx_storage import NetworkXGraphStorage
 
 @pytest.fixture
 def test_storage():
-    return NetworkXGraphStorage("memory")
+    return NetworkXGraphStorage( )
 
 
 @pytest.mark.asyncio

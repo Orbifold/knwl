@@ -4,20 +4,28 @@ from knwl.llm.llm_cache_base import LLMCacheBase
 from knwl.models import KnwlLLMAnswer
 from knwl.storage.json_storage import JsonStorage
 from knwl.di import defaults
-@defaults("llm_caching","json")
+
+
+@defaults("llm_caching", "json")
 class JsonLLMCache(LLMCacheBase):
     """
     A thin wrapper around a JSON storage object to provide caching functionality for LLM.
     """
 
-    def __init__(self,path:str=None, enabled:bool=True):
+    def __init__(self, path: str = None, enabled: bool = True):
         super().__init__()
-        self.path = path
+        self._path = path
         self.enabled = enabled
         if path is None:
             self.enabled = False
 
-        self.storage = JsonStorage(path=self.path, enabled=self.enabled)
+        self.storage = JsonStorage(path=self._path, enabled=self.enabled)
+
+    @property
+    def path(self):
+        if self.storage is None:
+            return None
+        return self.storage.path
 
     async def is_in_cache(
         self, messages: str | List[str] | List[dict], llm_service: str, llm_model: str
@@ -82,7 +90,7 @@ class JsonLLMCache(LLMCacheBase):
         await self.save()
 
     def __repr__(self):
-        return f"<JsonLLMCache, path={self.path}, enabled={self.enabled}>"
+        return f"<JsonLLMCache, path={self._path}, enabled={self.enabled}>"
 
     def __str__(self):
         return self.__repr__()

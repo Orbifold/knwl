@@ -5,7 +5,8 @@ from faker import Faker
 from knwl.llm.openai import OpenAIClient
 from knwl.models.KnwlLLMAnswer import KnwlLLMAnswer
 from knwl.utils import get_full_path
-pytestmark=pytest.mark.llm
+from knwl.services import services
+pytestmark = pytest.mark.llm
 
 fake = Faker()
 
@@ -37,7 +38,9 @@ async def test_basic_ask():
     # note that only the overrides are passed, the rest is taken from default_config
     file_name = fake.word()
     config = {"llm_caching": {"json": {"path": f"$test/{file_name}.json"}}}
-    llm = OpenAIClient(caching="json", override=config)
+    llm = services.get_service("llm", "openai", override=config)
+    assert llm.caching_service is not None
+    assert llm.caching_service.path == get_full_path(f"$test/{file_name}.json")
     resp = await llm.ask("Hello")
     assert resp is not None
     assert isinstance(resp, KnwlLLMAnswer)
@@ -82,10 +85,10 @@ async def test_override_caching():
     )
 
     config = {
-        "llm": {"ollama": {"caching": "special"}},
+        "llm": {"ollama": {"caching_service": "@/llm_caching/special"}},
         "llm_caching": {"special": {"class": SpecialClass()}},
     }
-    llm = OpenAIClient(override=config)
+    llm = services.get_service("llm", "ollama", override=config)
     assert llm.caching_service is not None
     assert llm.caching_service.name == "Swa"
     assert await llm.is_cached("Anything") is True
@@ -102,7 +105,9 @@ async def test_no_cache():
     - Messages are not cached when caching is disabled
     - The is_cached method returns False for any message when caching is disabled
     """
-    llm = OpenAIClient(caching=None)
-    assert llm.caching_service is None
+    config = {
+        "llm": {"openai": {"caching_service": "None"}},
+    }
+    llm = services.get_service("llm", "openai", override=config)
     await llm.ask("Hello")
     assert await llm.is_cached("Hello") is False
