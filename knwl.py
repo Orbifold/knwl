@@ -4,7 +4,7 @@ from typing import List
 
 from knwl.chunking.tiktoken_chunking import TiktokenChunking
 from knwl.config import get_config
-from knwl.models.KnwlBasicGraph import KnwlBasicGraph
+
 from knwl.models.KnwlChunk import KnwlChunk
 from knwl.models.KnwlContext import KnwlContext
 from knwl.models.KnwlDegreeEdge import KnwlDegreeEdge

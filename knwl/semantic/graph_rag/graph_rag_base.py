@@ -10,20 +10,16 @@ from knwl.models.KnwlNode import KnwlNode
 
 class GraphRAGBase(FrameworkBase, ABC):
     @abstractmethod
-    async def embed_node(self, node: KnwlNode) -> KnwlNode | None:
-        pass
+    async def embed_node(self, node: KnwlNode) -> KnwlNode | None: ...
 
     @abstractmethod
-    async def embed_nodes(self, nodes: list[KnwlNode]) -> list[KnwlNode]:
-        pass
+    async def embed_nodes(self, nodes: list[KnwlNode]) -> list[KnwlNode]: ...
 
     @abstractmethod
-    async def embed_edge(self, edge: KnwlEdge) -> KnwlEdge | None:
-        pass
+    async def embed_edge(self, edge: KnwlEdge) -> KnwlEdge | None: ...
 
     @abstractmethod
-    async def embed_edges(self, edges: List[KnwlEdge]) -> List[KnwlEdge]:
-        pass
+    async def embed_edges(self, edges: List[KnwlEdge]) -> List[KnwlEdge]: ...
 
     @abstractmethod
     async def ingest(self, input: str | KnwlInput | KnwlDocument) -> KnwlGraph | None:
@@ -33,21 +29,22 @@ class GraphRAGBase(FrameworkBase, ABC):
         - Extract entities and relationships
         - Embed (consolidate) nodes and edges (graph and vector store)
         """
-        pass
+        ...
 
     @abstractmethod
-    async def extract(self,input: str | KnwlInput | KnwlDocument) -> KnwlGraph | None:
+    async def extract(self, input: str | KnwlInput | KnwlDocument) -> KnwlGraph | None:
         """
         Extract a knowledge graph from raw text or KnwlInput/KnwlDocument.
         This is the same as `ingest` but without embedding (consolidation).
         """
-        pass
-    
+        ...
+
     @abstractmethod
-    async def augment(self, input: str | KnwlInput | KnwlRagInput) -> KnwlContext | None:
+    async def augment(
+        self, input: str | KnwlInput | KnwlRagInput
+    ) -> KnwlContext | None:
         """
         Retrieve context from the knowledge graph and augment the input text.
         All you need to answer questions or generate text with context.
         """
-        pass
-    
+        ...

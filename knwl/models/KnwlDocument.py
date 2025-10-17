@@ -18,12 +18,22 @@ class KnwlDocument(BaseModel):
         description (str): A description of the source document. Defaults to an empty string.
     """
 
-    content: str
-    id: Optional[str] = Field(default=None, description="Unique identifier for the document")
-    timestamp: str = Field(default_factory=lambda: datetime.now().isoformat(), description="Creation timestamp")
+    content: str = Field(..., description="The content of the document")
+    id: Optional[str] = Field(
+        default=None, description="Unique identifier for the document"
+    )
+    timestamp: str = Field(
+        default_factory=lambda: datetime.now().isoformat(),
+        description="Creation timestamp",
+    )
     description: str = Field(default="", description="Document description")
     name: str = Field(default="", description="Document name")
-    type_name: str = Field(default="KnwlDocument", frozen=True, description="The type name of this class, for serialization purposes.")
+    type_name: str = Field(
+        default="KnwlDocument",
+        frozen=True,
+        description="The type name of this class, for serialization purposes.",
+    )
+    # todo: have ontology in a separate ontology store
 
     model_config = {"frozen": True}
 
@@ -36,13 +46,19 @@ class KnwlDocument(BaseModel):
     @model_validator(mode="after")
     def set_id(self) -> "KnwlDocument":
         if self.content is not None and len(str.strip(self.content)) > 0:
-            object.__setattr__(self, "id", self.hash_keys(self.content, self.name, self.description))
+            object.__setattr__(
+                self, "id", self.hash_keys(self.content, self.name, self.description)
+            )
         return self
 
     @staticmethod
     def from_input(input: KnwlInput):
-        return KnwlDocument(content=input.text, name=input.name, description=input.description)
+        return KnwlDocument(
+            content=input.text, name=input.name, description=input.description
+        )
 
     @staticmethod
     def hash_keys(content: str, name: str = None, description: str = None) -> str:
-        return hash_with_prefix(content + " " + (name or "") + " " + (description or ""), prefix="doc-")
+        return hash_with_prefix(
+            content + " " + (name or "") + " " + (description or ""), prefix="doc-"
+        )
