@@ -1658,7 +1658,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "chromadb", specifier = ">=0.5.16" },
+    { name = "chromadb", specifier = ">=1.1.1" },
     { name = "faker", marker = "extra == 'dev'", specifier = ">=30.8.2" },
     { name = "graspologic", specifier = ">=3.4.1" },
     { name = "jupyter", marker = "extra == 'dev'", specifier = ">=1.1.1" },

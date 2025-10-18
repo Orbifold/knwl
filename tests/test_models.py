@@ -113,3 +113,22 @@ def test_knwlinput():
     assert input.name.startswith("Input ")
     assert input.description == ""
     assert input.id is not None
+
+
+def test_merge_graphs():
+    node1 = KnwlNode(name="Node1", type="TypeA")
+    node2 = KnwlNode(name="Node2", type="TypeB")
+    node3 = KnwlNode(name="Node3", type="TypeC")
+    edge1 = KnwlEdge(source_id=node1.id, target_id=node2.id, type="relates_to")
+
+    g1 = KnwlGraph(nodes=[node1, node3], edges=[])
+    g2 = KnwlGraph(nodes=[node1, node2], edges=[edge1])
+
+    g_merged = g1.merge(g2)
+    assert len(g_merged.nodes) == 3
+    assert len(g_merged.edges) == 1
+    assert g_merged.node_exists(node1)
+    assert g_merged.node_exists(node2)
+    assert g_merged.node_exists(node3)
+    assert g_merged.edge_exists(edge1)
+    assert g_merged.id == g1.id  # id of merged graph is same as first graph

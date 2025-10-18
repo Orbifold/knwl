@@ -101,3 +101,17 @@ async def test_chroma_via_service():
     assert "special" in names
     found = await chroma.get_by_id("b1")
     assert found is not None
+
+@pytest.mark.asyncio
+async def test_chroma_memory_service():
+    chroma = services.create_service("vector", "memory")
+    assert chroma.in_memory is True
+    await chroma.upsert({"m1": {"content": "memory data"}})
+    found = await chroma.get_by_id("m1")
+    assert found is not None
+    await chroma.clear()
+    found = await chroma.get_by_id("m1")
+    assert found is None
+    await chroma.upsert({"m2": {"content": "more memory data"}})
+    found = await chroma.get_by_id("m2")
+    assert found is not None

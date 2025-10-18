@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from knwl.framework_base import FrameworkBase
 
 
-class GraphBase(FrameworkBase):
+class GraphStorageBase(FrameworkBase):
     """
     Base class for graph storage implementations.
     Strictly speaking, the graph is a directed multigraph, meaning multiple edges can exist between the same pair of nodes.

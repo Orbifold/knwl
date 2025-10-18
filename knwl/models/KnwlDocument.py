@@ -45,7 +45,7 @@ class KnwlDocument(BaseModel):
 
     @model_validator(mode="after")
     def set_id(self) -> "KnwlDocument":
-        if self.content is not None and len(str.strip(self.content)) > 0:
+        if self.id is None and self.content is not None and len(str.strip(self.content)) > 0:
             object.__setattr__(
                 self, "id", self.hash_keys(self.content, self.name, self.description)
             )
@@ -54,11 +54,11 @@ class KnwlDocument(BaseModel):
     @staticmethod
     def from_input(input: KnwlInput):
         return KnwlDocument(
-            content=input.text, name=input.name, description=input.description
+            content=input.text, name=input.name, description=input.description, id=input.id
         )
 
     @staticmethod
     def hash_keys(content: str, name: str = None, description: str = None) -> str:
         return hash_with_prefix(
-            content + " " + (name or "") + " " + (description or ""), prefix="doc-"
+            content + " " + (name or "") + " " + (description or ""), prefix="doc|>"
         )

@@ -23,6 +23,7 @@ from knwl.models import (
     KnwlExtraction,
     KnwlContext,
     KnwlResponse,
+    KnwlGragIngestion,
 )
 
 
@@ -89,7 +90,7 @@ class KnwlEdgeTerminalFormatter(ModelFormatter):
             text.append(model.source_id[:8], style="cyan")
             text.append(f" ─[{model.type}]→ ", style="bold green")
             text.append(model.target_id[:8], style="cyan")
-            
+
             return text
 
         # Full representation
@@ -329,7 +330,9 @@ class KnwlExtractionTerminalFormatter(ModelFormatter):
             entity_table.add_column("Name", style=formatter.theme.VALUE_STYLE)
 
             for entity_name, nodes in list(model.nodes.items())[:max_entities]:
-                entity_table.add_row(", ".join([u.type for u in nodes]), str(len(nodes)), entity_name)
+                entity_table.add_row(
+                    ", ".join([u.type for u in nodes]), str(len(nodes)), entity_name
+                )
 
             content.append(entity_table)
 
@@ -417,4 +420,59 @@ class KnwlResponseTerminalFormatter(ModelFormatter):
             title="💬 Response",
             subtitle=f"Completed in {model.total_time:.2f}s",
             border_style=formatter.theme.SUCCESS,
+        )
+
+
+@register_formatter(KnwlGragIngestion, "terminal")
+class KnwlGragIngestionTerminalFormatter(ModelFormatter):
+    """Formatter for KnwlGragIngestion models."""
+
+    def format(self, model: KnwlGragIngestion, formatter, **options) -> Panel:
+        show_entities = options.get("show_entities", True)
+        show_edges = options.get("show_edges", True)
+        
+        max_entities = options.get("max_entities", 10)
+        """Format a KnwlGragIngestion as a rich panel with statistics."""
+        content = [
+            Text(f"Document Id: {model.input.id}", style=formatter.theme.MUTED),
+            Text(
+                f"Nodes: {len(model.graph.nodes)}, Edges: {len(model.graph.edges)}",
+                style=formatter.theme.MUTED,
+            ),
+        ]
+        if show_entities:
+            content.append(Text("\n"))
+            content.append(Text("Entities:", style=formatter.theme.SUBTITLE_STYLE))
+
+            entity_table = Table(box=formatter.theme.TABLE_BOX)
+            entity_table.add_column("Type", style=formatter.theme.TYPE_STYLE)
+            entity_table.add_column("Name", style=formatter.theme.VALUE_STYLE)
+            for node in model.graph.nodes[:max_entities]:
+                entity_table.add_row(node.type, node.name)
+
+            content.append(entity_table)
+
+        if show_edges:
+            content.append(Text("\n"))
+            content.append(Text("Edges:", style=formatter.theme.SUBTITLE_STYLE))
+
+            edge_table = Table(box=formatter.theme.TABLE_BOX)
+            edge_table.add_column("Type", style=formatter.theme.TYPE_STYLE)
+            edge_table.add_column("Source", style=formatter.theme.VALUE_STYLE)
+            edge_table.add_column("Target", style=formatter.theme.VALUE_STYLE)
+            for edge in model.graph.edges[:max_entities]:
+                source_node = model.graph.get_node_by_id(edge.source_id)
+                target_node = model.graph.get_node_by_id(edge.target_id)
+                if source_node and target_node:
+                    edge_table.add_row(
+                        edge.type, source_node.name, target_node.name
+                    )
+
+            content.append(edge_table)
+        from rich.console import Group
+
+        return formatter.create_panel(
+            Group(*content),
+            title="👁️ Graph Ingestion",
+            subtitle=f"{len(model.graph.nodes)} nodes, {len(model.graph.edges)} edges",
         )

@@ -10,6 +10,8 @@ from .KnwlRagInput import KnwlRagInput
 from .KnwlContext import KnwlContext
 from .KnwlEntity import KnwlEntity
 from .KnwlBlob import KnwlBlob
+from .KnwlGragIngestion import KnwlGragIngestion
+
 __all__ = [
     "KnwlNode",
     "KnwlEdge",
@@ -23,4 +25,5 @@ __all__ = [
     "KnwlLLMAnswer",
     "KnwlEntity",
     "KnwlBlob",
+    "KnwlGragIngestion",
 ]

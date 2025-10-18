@@ -1,4 +1,5 @@
 from abc import ABC
+from knwl.di import defaults
 from knwl.models import KnwlBlob
 from knwl.storage.blob_storage_base import BlobStorageBase
 import os
@@ -8,7 +9,7 @@ from typing import Any, Optional
 
 from knwl.utils import get_full_path
 
-
+@defaults("blob", "file_system")
 class FileStorage(BlobStorageBase, ABC):
     """Local file system implementation of blob storage."""
 

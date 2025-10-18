@@ -8,7 +8,7 @@ import networkx as nx
 from pydantic import BaseModel
 
 from knwl.logging import log
-from knwl.storage.graph_base import GraphBase
+from knwl.storage.graph_base import GraphStorageBase
 from knwl.utils import *
 from knwl.di import defaults
 
@@ -22,7 +22,7 @@ class EdgeSpecs:
 
 
 @defaults("graph", "nx")
-class NetworkXGraphStorage(GraphBase):
+class NetworkXGraphStorage(GraphStorageBase):
     """
     A class to handle storage and manipulation of a directed multi-graph using NetworkX.
 

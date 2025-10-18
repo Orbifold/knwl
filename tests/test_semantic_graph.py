@@ -1,10 +1,11 @@
+import asyncio
 import pytest
 
 from knwl import services
 from knwl.models import KnwlEdge, KnwlGraph, KnwlNode
 from knwl.semantic.graph.semantic_graph import SemanticGraph
 from knwl.storage import NetworkXGraphStorage
-
+from knwl.services import get_service, create_service
 pytestmark = pytest.mark.llm
 
 
@@ -44,7 +45,7 @@ async def test_merge_node_descriptions():
 
 @pytest.mark.asyncio
 async def test_merge_node():
-    g = SemanticGraph()
+    g = get_service("semantic_graph", "memory")  
     n1 = KnwlNode(name="n1", description="Delicious oranges from Spain.", type="Fruit")
     n2 = KnwlNode(name="n2", description="Oranges are rich in vitamin C.", type="Fruit")
     await g.embed_node(n1)
@@ -94,7 +95,11 @@ async def test_merge_edge_descriptions():
 
 @pytest.mark.asyncio
 async def test_merge_graph():
-    g = SemanticGraph()
+    # emnbedding twice the same graph with overlapping nodes and edge
+    # fermi --> maxwell
+    g = get_service("semantic_graph", "memory")  
+    await g.clear()
+    # await asyncio.sleep(1)  # wait for clear to propagate
     fermi_dirac = KnwlNode(
         name="Fermi-Dirac",
         description="Fermi–Dirac statistics is a type of quantum statistics that applies to the physics of a system consisting of many non-interacting, identical particles that obey the Pauli exclusion principle. A result is the Fermi–Dirac distribution of particles over energy states. It is named after Enrico Fermi and Paul Dirac, each of whom derived the distribution independently in 1926.Fermi–Dirac statistics is a part of the field of statistical mechanics and uses the principles of quantum mechanics.",
@@ -139,9 +144,11 @@ async def test_merge_graph():
     )
 
     g_merged = await g.merge_graph(g2)
+    # remains with the same topology
     assert await g.node_count() == 2
     assert await g.edge_count() == 1
     assert g_merged is not None
+    # getting the same id, though the content has changed
     assert g_merged.id == "graph2"
     assert g_merged.keywords == ["physics"]
     assert len(g_merged.nodes) == 2

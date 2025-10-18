@@ -104,6 +104,9 @@ class ChromaStorage(VectorStorageBase):
                 embedding = value["embedding"]
             if "embeddings" in value:
                 embedding = value["embeddings"]
+            self.collection = self.client.get_or_create_collection(
+                name=self._collection_name
+            ) # hack: on `clear` seems to cause issues
             if len(self._metadata) > 0:
                 metadata = {k: value.get(k, None) for k in self._metadata}
                 self.collection.upsert(

@@ -112,6 +112,7 @@ class GraphExtractionBase(FrameworkBase, ABC):
                 keywords=item["types"],
                 weight=item["weight"],
                 chunkIds=[chunk_id] if chunk_id else [],
+                type=item["types"][0] if len(item["types"]) > 0 else "Unknown",
             )
             # the edge key is the tuple of the source and target names, NOT the ids. Is corrected below
             edge_key = f"({edge.source_id},{edge.target_id})"
@@ -146,6 +147,7 @@ class GraphExtractionBase(FrameworkBase, ABC):
                     keywords=e.keywords,
                     weight=e.weight,
                     chunkIds=e.chunk_ids,
+                    type=e.type
                 )
                 corrected_edges[key].append(corrected_edge)
         return KnwlExtraction(

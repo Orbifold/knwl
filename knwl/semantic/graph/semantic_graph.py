@@ -6,7 +6,7 @@ from knwl.models.KnwlGraph import KnwlGraph
 from knwl.semantic.graph.semantic_graph_base import SemanticGraphBase
 from knwl.services import Services
 from knwl.storage import NetworkXGraphStorage, ChromaStorage
-from knwl.storage.graph_base import GraphBase
+from knwl.storage.graph_base import GraphStorageBase
 from knwl.storage.vector_storage_base import VectorStorageBase
 from knwl.summarization.ollama import OllamaSummarization
 from knwl.summarization.summarization_base import SummarizationBase
@@ -17,7 +17,7 @@ class SemanticGraph(SemanticGraphBase):
 
     def __init__(
         self,
-        graph_store: GraphBase = None,
+        graph_store: GraphStorageBase = None,
         node_embeddings: VectorStorageBase = None,
         edge_embeddings: VectorStorageBase = None,
         summarization: SummarizationBase = None,
@@ -29,7 +29,7 @@ class SemanticGraph(SemanticGraphBase):
         self.summarization = summarization
         if self.graph_store is None:
             raise ValueError("SemanticGraph: graph_store is required.")
-        if not isinstance(self.graph_store, GraphBase):
+        if not isinstance(self.graph_store, GraphStorageBase):
             raise ValueError("SemanticGraph: graph_store must be a GraphBase instance.")
         if self.node_embeddings is None:
             raise ValueError("SemanticGraph: node_embeddings is required.")
@@ -49,40 +49,6 @@ class SemanticGraph(SemanticGraphBase):
             raise ValueError(
                 "SemanticGraph: summarization must be a SummarizationBase instance."
             )
-
-    def validate_config(self, specs):
-        """
-        Validates the semantic graph configuration specifications.
-
-        This method ensures that all required configuration sections are present
-        in the semantic service specifications for proper graph functionality.
-
-        Args:
-            specs (dict): Configuration specifications dictionary containing
-                         semantic service settings.
-
-        Raises:
-            ValueError: If any required configuration section is missing:
-                       - "graph": Main graph configuration section
-                       - "graph-store": Graph storage configuration
-                       - "node_embeddings": Node embedding configuration
-                       - "edge-embeddings": Edge embedding configuration
-                       - "summarization": Summarization configuration
-
-        Returns:
-            None: Method only validates configuration and raises exceptions
-                  if validation fails.
-        """
-        if "graph" not in specs:
-            raise ValueError("No graph configuration found in semantic service.")
-        if "graph-store" not in specs["graph"]:
-            raise ValueError("No graph-store configured in semantic service.")
-        if "node_embeddings" not in specs["graph"]:
-            raise ValueError("No node_embeddings configured in semantic service.")
-        if "edge-embeddings" not in specs["graph"]:
-            raise ValueError("No edge-embeddings configured in semantic service.")
-        if "summarization" not in specs["graph"]:
-            raise ValueError("No summarization configured in semantic service.")
 
     async def embed_edge(self, edge: KnwlEdge) -> KnwlEdge | None:
         # TODO: consider embedding of the description only
@@ -122,9 +88,9 @@ class SemanticGraph(SemanticGraphBase):
             log(e)
             raise e
 
-    async def embed_edges(self, edges: list[KnwlEdge]):
+    async def embed_edges(self, edges: list[KnwlEdge]) -> list[KnwlEdge]:
         if edges is None or len(edges) == 0:
-            return
+            return []
         coll = []
         for e in edges:
             ne = await self.embed_edge(e)
@@ -247,13 +213,72 @@ class SemanticGraph(SemanticGraphBase):
             edges.append(KnwlEdge(**e))
         return edges
 
-    async def merge_graph(self, graph: KnwlGraph):
+    async def merge_graph(self, graph):
+        """
+        Merge a graph into the semantic graph.
+
+        Args:
+            graph (KnwlGraph): The graph to merge.
+
+        Returns:
+            The merged graph.
+        """
         if graph is None:
             return
         ns = await self.embed_nodes(graph.nodes)
         es = await self.embed_edges(graph.edges)
         g = KnwlGraph(nodes=ns, edges=es, keywords=graph.keywords, id=graph.id)
         return g
+
+    async def consolidate_graphs(
+        self, g1: KnwlGraph, g2: KnwlGraph
+    ) -> KnwlGraph | None:
+        """
+        Consolidate two knowledge graphs into one, merging (descriptions of) nodes and edges.
+        Does not store anything, just returns the consolidated graph.
+        The returned graph has the id of g1.
+        """
+        if g1 is None and g2 is None:
+            return None
+        if g1 is None:
+            return g2
+        if g2 is None:
+            return g1
+
+        merged_nodes = {node.id: node for node in g1.nodes}
+        for node in g2.nodes:
+            if node.id in merged_nodes:
+                # merge descriptions
+                existing_node = merged_nodes[node.id]
+                summary = await self.summarization.summarize(
+                    [existing_node.description, node.description]
+                )
+                if summary is not None and len(summary.strip()) > 0:
+                    merged_nodes[node.id] = existing_node.update(
+                        description=summary.strip()
+                    )
+            else:
+                merged_nodes[node.id] = node
+
+        merged_edges = {edge.id: edge for edge in g1.edges}
+        for edge in g2.edges:
+            if edge.id in merged_edges:
+                # merge descriptions
+                existing_edge = merged_edges[edge.id]
+                summary = await self.summarization.summarize(
+                    [existing_edge.description, edge.description]
+                )
+                if summary is not None and len(summary.strip()) > 0:
+                    merged_edges[edge.id] = existing_edge.update(
+                        description=summary.strip()
+                    )
+            else:
+                merged_edges[edge.id] = edge
+
+        return KnwlGraph(
+            id = g1.id,
+            nodes=list(merged_nodes.values()), edges=list(merged_edges.values())
+        )
 
     async def get_similar_nodes(self, node: KnwlNode, top_k: int = 5) -> list[KnwlNode]:
         """
@@ -300,6 +325,11 @@ class SemanticGraph(SemanticGraphBase):
 
     async def edge_count(self) -> int:
         return await self.graph_store.edge_count()
+
+    async def clear(self) -> None:
+        await self.graph_store.clear()
+        await self.node_embeddings.clear()
+        await self.edge_embeddings.clear()
 
     def __repr__(self):
         return f"<SemanticGraph, graph={self.graph_store.__class__.__name__}, nodes={self.node_embeddings.__class__.__name__}, edge_embeddings={self.edge_embeddings.__class__.__name__}, summarization={self.summarization.__class__.__name__}>"

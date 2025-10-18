@@ -1,4 +1,4 @@
-from typing import List
+from typing import Dict, List
 from uuid import uuid4
 
 from pydantic import BaseModel, Field, model_validator
@@ -79,6 +79,31 @@ class KnwlGraph(BaseModel):
     def edge_exists(self, id: KnwlEdge | str) -> bool:
         edge_id = id.id if isinstance(id, KnwlEdge) else id
         return edge_id in self.get_edge_ids()
+
+    def merge(self, other: "KnwlGraph") -> "KnwlGraph":
+        """
+        Merge another KnwlGraph into this one and return a new KnwlGraph.
+        The id of the merged graph is the same as this graph.
+        Note: this is not semantically aware merging, it simply concatenates the nodes and edges.
+        """
+        # unique nodes by id
+        merged_nodes_dict: Dict[str, KnwlNode] = {}
+        for node in self.nodes + other.nodes:
+            merged_nodes_dict[node.id] = node
+        merged_nodes = list(merged_nodes_dict.values())
+
+        # unique edges by id
+        merged_edges_dict: Dict[str, KnwlEdge] = {}
+        for edge in self.edges + other.edges:
+            merged_edges_dict[edge.id] = edge
+        merged_edges = list(merged_edges_dict.values())
+
+        return KnwlGraph(
+            id=self.id,
+            nodes=merged_nodes,
+            edges=merged_edges,
+            keywords=list(set(self.keywords + other.keywords)),
+        )
 
     @model_validator(mode="after")
     def validate_consistency(self):

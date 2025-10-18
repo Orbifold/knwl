@@ -45,7 +45,7 @@ default_config = {
         "basic": {
             "class": "knwl.extraction.basic_graph_extraction.BasicGraphExtraction",
             "mode": "full",  # fast or full
-            "llm": "@/llm/ollama",
+            "llm": "@/llm/openai",
         },
     },
     "glean_graph_extraction": {
@@ -166,6 +166,24 @@ default_config = {
         "chunk-store": {
             "class": "knwl.storage.json_storage.JsonStorage",
             "path": "$test/graphrag/chunk_store.json",
+        },
+    },
+    "blob": {
+        "default": "file_system",
+        "file_system": {
+            "class": "knwl.storage.file_storage.FileStorage",
+            "base_path": "$data/blobs",
+        },
+    },
+    "graph_rag": {
+        "default": "local",
+        "local": {
+            "class": "knwl.semantic.graph_rag.graph_rag.GraphRAG",
+            "semantic_graph": "@/semantic_graph/memory",
+            "blob_storage": "none",  # don't save the documents
+            "chunker": "@/chunking/tiktoken",
+            "graph_extractor": "@/graph_extraction/basic"
+           
         },
     },
 }

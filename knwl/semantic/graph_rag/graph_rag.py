@@ -1,14 +1,26 @@
 from logging import log
+from knwl.chunking.chunking_base import ChunkingBase
 from knwl.di import defaults
+from knwl.extraction.graph_extraction_base import GraphExtractionBase
+from knwl.models.KnwlChunk import KnwlChunk
+from knwl.models.KnwlGragIngestion import KnwlGragIngestion
 from knwl.semantic.graph.semantic_graph_base import SemanticGraphBase
 from knwl.semantic.graph_rag.graph_rag_base import GraphRAGBase
 from typing import Any, Dict, List, Optional
 
-from knwl.models import KnwlContext, KnwlEdge, KnwlGraph, KnwlInput, KnwlRagInput
+from knwl.models import (
+    KnwlBlob,
+    KnwlContext,
+    KnwlEdge,
+    KnwlGraph,
+    KnwlInput,
+    KnwlRagInput,
+)
 from knwl.models.KnwlDocument import KnwlDocument
 from knwl.models.KnwlEdge import KnwlEdge
 from knwl.models.KnwlNode import KnwlNode
 from knwl.services import Services
+from knwl.storage.blob_storage_base import BlobStorageBase
 
 
 @defaults("graph_rag")
@@ -30,15 +42,43 @@ class GraphRAG(GraphRAGBase):
     """
 
     def __init__(
-        self, semantic_graph: Optional[SemanticGraphBase] = None, *args, **kwargs
+        self,
+        semantic_graph: Optional[SemanticGraphBase] = None,
+        blob_storage: Optional[BlobStorageBase] = None,
+        chunker: Optional[ChunkingBase] = None,
+        graph_extractor: Optional[GraphExtractionBase] = None,
     ):
-        super().__init__(*args, **kwargs)
-        self.semantic_graph = semantic_graph
+        super().__init__()
+        self.semantic_graph: SemanticGraphBase = semantic_graph
+        self.blob_storage: BlobStorageBase = blob_storage
+        self.chunker: ChunkingBase = chunker
+        self.graph_extractor: GraphExtractionBase = graph_extractor
+        self.validate_services()
+
+    def validate_services(self) -> None:
         if self.semantic_graph is None:
             raise ValueError("GraphRAG: semantic_graph must be provided.")
         if not isinstance(self.semantic_graph, SemanticGraphBase):
             raise ValueError(
                 "GraphRAG: semantic_graph must be an instance of SemanticGraphBase."
+            )
+
+        if self.blob_storage is not None and not isinstance(
+            self.blob_storage, BlobStorageBase
+        ):
+            raise ValueError(
+                "GraphRAG: blob_storage must be an instance of BlobStorageBase."
+            )
+        if self.chunker is None:
+            raise ValueError("GraphRAG: chunker must be provided.")
+        if not isinstance(self.chunker, ChunkingBase):
+            raise ValueError("GraphRAG: chunker must be an instance of ChunkingBase.")
+
+        if self.graph_extractor is None:
+            raise ValueError("GraphRAG: graph_extractor must be provided.")
+        if not isinstance(self.graph_extractor, GraphExtractionBase):
+            raise ValueError(
+                "GraphRAG: graph_extractor must be an instance of GraphExtractionBase."
             )
 
     async def embed_node(self, node: KnwlNode) -> KnwlNode | None:
@@ -53,47 +93,80 @@ class GraphRAG(GraphRAGBase):
     async def embed_edges(self, edges: List[KnwlEdge]) -> List[KnwlEdge]:
         return await self.semantic_graph.embed_edges(edges)
 
-    async def ingest(self, input: str | KnwlInput | KnwlDocument) -> KnwlGraph | None:
+    async def ingest(
+        self,
+        input: str | KnwlInput | KnwlDocument,
+        store_source: bool = False,
+        enable_chunking: bool = True,
+    ) -> KnwlGraph | None:
         """
         Ingest raw text or KnwlInput/KnwlDocument and convert to knowledge graph:
         - Chunk the text if necessary
         - Extract entities and relationships
         - Embed (consolidate) nodes and edges (graph and vector store)
         """
+
+    async def extract(
+        self, input: str | KnwlInput | KnwlDocument,
+        enable_chunking: bool = True
+    ) -> KnwlGragIngestion | None:
+        """
+        Extract a knowledge graph from raw text or KnwlInput/KnwlDocument.
+        This is the same as `ingest` but without storing anything.
+        """
         # ============================================================================================
         # Validate input
         # ============================================================================================
         if input is None:
             raise ValueError("GraphRAG: input cannot be None.")
-        content_to_ingest = None
-        # ============================================================================================
-        # Determine content to ingest based on input type
-        # ============================================================================================
-        if isinstance(input, str):
-            content_to_ingest = input
-        elif isinstance(input, KnwlInput):
-            content_to_ingest = input.content
-        elif isinstance(input, KnwlDocument):
-            content_to_ingest = input.content
-        if content_to_ingest is None or len(content_to_ingest.strip()) == 0:
-            raise ValueError("GraphRAG: input content cannot be None or empty.")
+
         # ============================================================================================
         # Convert input to KnwlDocument
         # ============================================================================================
-        document_to_ingest = None
+        document_to_ingest: KnwlDocument = None
         if isinstance(input, KnwlDocument):
             document_to_ingest = input
         elif isinstance(input, KnwlInput):
             document_to_ingest = KnwlDocument.from_input(input)
         elif isinstance(input, str):
             document_to_ingest = KnwlDocument(content=input)
-        await self.save_sources([document_to_ingest])
-    async def extract(self, input: str | KnwlInput | KnwlDocument) -> KnwlGraph | None:
-        """
-        Extract a knowledge graph from raw text or KnwlInput/KnwlDocument.
-        This is the same as `ingest` but without embedding (consolidation).
-        """
-        pass
+        result = KnwlGragIngestion(input=document_to_ingest)
+
+        # ============================================================================================
+        # Chunking
+        # ============================================================================================
+        if enable_chunking:
+            chunks: List[KnwlChunk] = await self.chunker.chunk(
+                document_to_ingest.content, source_key=document_to_ingest.id
+            )
+        else:
+            chunks = [KnwlChunk(content=document_to_ingest.content)]
+        if len(chunks) == 0:
+            log.warn("GraphRAG: No chunks were created from the input document.")
+            return result
+        result.chunks = chunks
+        # ============================================================================================
+        # Extract knowledge graph from chunks
+        # ============================================================================================
+        # merge graphs from all chunks
+        extracted_graph: KnwlGraph = None
+        for chunk in chunks:
+            chunk_graph = await self.graph_extractor.extract_graph(chunk.content)
+            if chunk_graph is not None:
+                # semantic merge into KG
+                if extracted_graph is None:
+                    extracted_graph = chunk_graph
+                else:
+                    # this is not a semantic merge but a simple concatenation in order to return the end result
+                    extracted_graph = await self.semantic_graph.consolidate_graphs(extracted_graph, chunk_graph)
+
+        if extracted_graph is None:
+            log.warn(
+                "GraphRAG: No knowledge graph was extracted from the input document."
+            )
+            return result
+        result.graph = extracted_graph
+        return result
 
     async def augment(
         self, input: str | KnwlInput | KnwlRagInput
@@ -108,10 +181,10 @@ class GraphRAG(GraphRAGBase):
         """
         Save source documents to the vector store.
         """
-        if self.semantic_graph is None or not hasattr(
-            self.semantic_graph, "save_sources"
-        ):
-            raise ValueError(
-                "GraphRAG: semantic_graph must be provided and have a save_sources method."
-            )
-        return await self.semantic_graph.save_sources(sources)
+        # saving originals is optional
+        if self.blob_storage is None:
+            return False
+        for source in sources:
+            blob = KnwlBlob.from_document(source)
+            await self.blob_storage.upsert(blob)
+        return True

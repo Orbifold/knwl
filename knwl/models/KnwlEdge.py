@@ -27,18 +27,43 @@ class KnwlEdge(BaseModel):
 
     source_id: str = Field(description="The Id of the source node.")
     target_id: str = Field(description="The Id of the target node.")
-    type: str = Field(default="Unknown", description="The type of the relation. In a property modeled graph this should be an ontology class.", )
-    type_name: str = Field(default="KnwlEdge", frozen=True, description="The type name of the edge for (de)serialization purposes.", )
-    id: str = Field(default=None, description="The unique identifier of the node, automatically generated from the required fields.", init=False, )
-    chunk_ids: List[str] = Field(default_factory=list, description="The chunk identifiers associated with this edge.", )
-    keywords: Optional[list[str]] = Field(default_factory=list, description="Keywords associated with the edge. These can be used as types or labels in a property graph. Note that the names of the keywords should ideally be from an ontology.", )
+    type: str = Field(
+        default="Unknown",
+        description="The type of the relation. In a property modeled graph this should be an ontology class.",
+    )
+    type_name: str = Field(
+        default="KnwlEdge",
+        frozen=True,
+        description="The type name of the edge for (de)serialization purposes.",
+    )
+    id: str = Field(
+        default=None,
+        description="The unique identifier of the node, automatically generated from the required fields.",
+        init=False,
+    )
+    chunk_ids: List[str] = Field(
+        default_factory=list,
+        description="The chunk identifiers associated with this edge.",
+    )
+    keywords: Optional[list[str]] = Field(
+        default_factory=list,
+        description="Keywords associated with the edge. These can be used as types or labels in a property graph. Note that the names of the keywords should ideally be from an ontology.",
+    )
 
-    description: Optional[str] = Field(default="", description="A description of the edge.")
-    weight: float = Field(default=1.0, description="The weight of the edge. This can be used to represent the strength or importance of the relationship. This is given by domain experts or derived from data extraction.", )
+    description: Optional[str] = Field(
+        default="", description="A description of the edge."
+    )
+    weight: float = Field(
+        default=1.0,
+        description="The weight of the edge. This can be used to represent the strength or importance of the relationship. This is given by domain experts or derived from data extraction.",
+    )
 
     @staticmethod
     def hash_edge(e: "KnwlEdge") -> str:
-        return hash_with_prefix(e.source_id + " " + e.target_id + " " + e.type, prefix="edge|>", )
+        return hash_with_prefix(
+            e.source_id + " " + e.target_id + " " + e.type,
+            prefix="edge|>",
+        )
 
     @field_validator("source_id")
     @classmethod
@@ -65,7 +90,11 @@ class KnwlEdge(BaseModel):
     def update_id(self):
         # Note that using only source and target is not enough to ensure uniqueness
         object.__setattr__(self, "id", KnwlEdge.hash_edge(self))
-
+        if self.type is None or len(self.type.strip()) == 0:
+            if self.keywords and len(self.keywords) > 0:
+                object.__setattr__(self, "type", self.keywords[0])
+            else:
+                object.__setattr__(self, "type", "Unknown")
         return self
 
     @staticmethod
@@ -84,7 +113,9 @@ class KnwlEdge(BaseModel):
         allowed_fields = {"type", "description"}
         invalid_fields = set(kwargs.keys()) - allowed_fields
         if invalid_fields:
-            raise ValueError(f"Invalid fields: {invalid_fields}. Only 'type'  and 'description' are allowed.")
+            raise ValueError(
+                f"Invalid fields: {invalid_fields}. Only 'type'  and 'description' are allowed."
+            )
         new_edge = self.model_copy(update=kwargs)
         # pydantic does not call the model_validator on model_copy, so we need to set the id manually
         object.__setattr__(new_edge, "id", self.hash_edge(new_edge))

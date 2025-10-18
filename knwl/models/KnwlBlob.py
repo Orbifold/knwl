@@ -135,6 +135,7 @@ class KnwlBlob(BaseModel):
                 UTF-8 bytes, and the same name and description as the source document.
         """
         return KnwlBlob(
+            id=document.id,
             data=document.content.encode("utf-8"),
             name=document.name,
             description=document.description,

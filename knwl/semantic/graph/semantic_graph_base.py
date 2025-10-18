@@ -22,7 +22,12 @@ class SemanticGraphBase(FrameworkBase, ABC):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
+    @abstractmethod
+    async def clear(self) -> None:
+        """
+        Clear the entire semantic graph, removing all nodes and edges.
+        """
+        ...
     @abstractmethod
     async def embed_node(self, node: KnwlNode) -> KnwlNode | None:
         """
@@ -40,7 +45,7 @@ class SemanticGraphBase(FrameworkBase, ABC):
         Returns:
             KnwlNode | None: The embedded node or None if the input is None.
         """
-        pass
+        ...
 
     @abstractmethod
     async def embed_nodes(self, nodes: list[KnwlNode]) -> list[KnwlNode]:
@@ -53,7 +58,7 @@ class SemanticGraphBase(FrameworkBase, ABC):
         Returns:
             list[KnwlNode]: List of embedded nodes.
         """
-        pass
+        ...
 
     @abstractmethod
     async def embed_edge(self, edge: KnwlEdge) -> KnwlEdge | None:
@@ -66,7 +71,7 @@ class SemanticGraphBase(FrameworkBase, ABC):
         Returns:
             KnwlEdge | None: The embedded edge or None if the input is None.
         """
-        pass
+        ...
 
     @abstractmethod
     async def embed_edges(self, edges: list[KnwlEdge]):
@@ -79,7 +84,7 @@ class SemanticGraphBase(FrameworkBase, ABC):
         Returns:
             List of embedded edges.
         """
-        pass
+        ...
 
     @abstractmethod
     async def merge_node_descriptions(self, node: KnwlNode) -> KnwlNode:
@@ -96,7 +101,7 @@ class SemanticGraphBase(FrameworkBase, ABC):
         Returns:
             KnwlNode: The node with merged description.
         """
-        pass
+        ...
 
     @abstractmethod
     async def merge_edge_descriptions(self, edge: KnwlEdge) -> KnwlEdge:
@@ -113,7 +118,7 @@ class SemanticGraphBase(FrameworkBase, ABC):
         Returns:
             KnwlEdge: The edge with merged description.
         """
-        pass
+        ...
 
     @abstractmethod
     async def get_node_by_id(self, id: str) -> KnwlNode | None:
@@ -126,7 +131,7 @@ class SemanticGraphBase(FrameworkBase, ABC):
         Returns:
             KnwlNode | None: The node if found, None otherwise.
         """
-        pass
+        ...
 
     @abstractmethod
     async def get_edge_by_id(self, id: str) -> KnwlEdge | None:
@@ -139,7 +144,7 @@ class SemanticGraphBase(FrameworkBase, ABC):
         Returns:
             KnwlEdge | None: The edge if found, None otherwise.
         """
-        pass
+        ...
 
     @abstractmethod
     async def node_exists(self, id: KnwlNode | str) -> bool:
@@ -152,7 +157,7 @@ class SemanticGraphBase(FrameworkBase, ABC):
         Returns:
             bool: True if the node exists, False otherwise.
         """
-        pass
+        ...
 
     @abstractmethod
     async def edge_exists(self, id: KnwlEdge | str) -> bool:
@@ -165,7 +170,7 @@ class SemanticGraphBase(FrameworkBase, ABC):
         Returns:
             bool: True if the edge exists, False otherwise.
         """
-        pass
+        ...
 
     @abstractmethod
     async def get_edges(
@@ -182,10 +187,10 @@ class SemanticGraphBase(FrameworkBase, ABC):
         Returns:
             Union[list[KnwlEdge], None]: List of edges if found, None otherwise.
         """
-        pass
+        ...
 
     @abstractmethod
-    async def merge_graph(self, graph: KnwlGraph):
+    async def merge_graph(self, graph: KnwlGraph) -> KnwlGraph|None:
         """
         Merge a graph into the semantic graph.
 
@@ -195,7 +200,7 @@ class SemanticGraphBase(FrameworkBase, ABC):
         Returns:
             The merged graph.
         """
-        pass
+        ...
 
     @abstractmethod
     async def get_similar_nodes(self, node: KnwlNode, top_k: int = 5) -> list[KnwlNode]:
@@ -214,7 +219,7 @@ class SemanticGraphBase(FrameworkBase, ABC):
             list[KnwlNode]: A list of nodes that are most similar to the input node,
                 ordered by similarity score (most similar first).
         """
-        pass
+        ...
 
     @abstractmethod
     async def get_similar_edges(self, edge: KnwlEdge, top_k: int = 5) -> list[KnwlEdge]:
@@ -230,7 +235,7 @@ class SemanticGraphBase(FrameworkBase, ABC):
             list[KnwlEdge]: A list of edges that are most similar to the input edge,
                 ordered by similarity score (most similar first).
         """
-        pass
+        ...
 
     @abstractmethod
     async def node_count(self) -> int:
@@ -240,7 +245,7 @@ class SemanticGraphBase(FrameworkBase, ABC):
         Returns:
             int: The number of nodes.
         """
-        pass
+        ...
 
     @abstractmethod
     async def edge_count(self) -> int:
@@ -250,4 +255,21 @@ class SemanticGraphBase(FrameworkBase, ABC):
         Returns:
             int: The number of edges.
         """
-        pass
+        ...
+
+    @abstractmethod
+    async def consolidate_graphs(
+        self, g1: KnwlGraph, g2: KnwlGraph
+    ) -> KnwlGraph | None:
+        """
+        Consolidate two knowledge graphs into one, merging nodes and edges
+        that are semantically similar.
+
+        Args:
+            g1 (KnwlGraph): The first knowledge graph.
+            g2 (KnwlGraph): The second knowledge graph.
+
+        Returns:
+            KnwlGraph | None: The consolidated knowledge graph.
+        """
+        ...

@@ -1,6 +1,6 @@
 [project]
 name = "knwl"
-version = "0.6.6"
+version = "0.7.0"
 description = "Graph RAG"
 authors = [
     {name = "Swa", email = "swa@orbifold.net"}
@@ -17,9 +17,9 @@ dependencies = [
     "tenacity>=9.0.0",
     "ollama>=0.4.7",
     "openai>=1.53.0",
-    "chromadb>=0.5.16",
     "pydantic>=2.0.0",
     "rich>=13.0.0",
+    "chromadb>=1.1.1",
 ]
 
 [project.optional-dependencies]

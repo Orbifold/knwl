@@ -227,14 +227,16 @@ class Services:
                 # reference to another service or value
                 if isinstance(param_value, str) and param_value.startswith("@/"):
                     value_ref = get_config(param_value, override=override)
-                    if isinstance(value_ref, dict) and "class" in value_ref:                        
+                    if isinstance(value_ref, dict) and "class" in value_ref:
                         # it's a service specification
-                        param = self.instantiate_service_specs(value_ref, override=override)
+                        param = self.instantiate_service_specs(
+                            value_ref, override=override
+                        )
                     else:
-                        # whatever value 
-                        param = value_ref      
+                        # whatever value
+                        param = value_ref
                 else:
-                    param = param_value          
+                    param = param_value
                 valid_kwargs[param_name] = param
 
         instance = cls(**valid_kwargs)
@@ -270,9 +272,28 @@ class Services:
             raise ValueError(
                 f"Service variant '{variant_name}' for {service_name} not found in configuration."
             )
-        instance =  self.instantiate_service_specs(specs, override=override)
+        instance = self.instantiate_service_specs(specs, override=override)
         instance.service_config = specs
         return instance
 
 
 services = Services()
+
+
+def get_service(service_name: str, variant_name: str = None, override=None) -> object:
+    """
+    An alias to `Services.get_service` for easier access.
+    """
+    return services.get_service(
+        service_name, variant_name=variant_name, override=override
+    )
+
+def create_service(
+    service_name: str, variant_name: str = None, override=None
+) -> object:
+    """
+    An alias to `services.create_service` for easier access.
+    """
+    return services.create_service(
+        service_name, variant_name=variant_name, override=override
+    )

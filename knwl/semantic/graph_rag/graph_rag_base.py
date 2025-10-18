@@ -5,6 +5,7 @@ from knwl.framework_base import FrameworkBase
 from knwl.models import KnwlContext, KnwlEdge, KnwlGraph, KnwlInput, KnwlRagInput
 from knwl.models.KnwlDocument import KnwlDocument
 from knwl.models.KnwlEdge import KnwlEdge
+from knwl.models.KnwlGragIngestion import KnwlGragIngestion
 from knwl.models.KnwlNode import KnwlNode
 
 
@@ -32,7 +33,7 @@ class GraphRAGBase(FrameworkBase, ABC):
         ...
 
     @abstractmethod
-    async def extract(self, input: str | KnwlInput | KnwlDocument) -> KnwlGraph | None:
+    async def extract(self, input: str | KnwlInput | KnwlDocument) -> KnwlGragIngestion | None:
         """
         Extract a knowledge graph from raw text or KnwlInput/KnwlDocument.
         This is the same as `ingest` but without embedding (consolidation).
