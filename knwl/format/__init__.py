@@ -65,6 +65,7 @@ from knwl.format.markdown_formatter import MarkdownFormatter
 
 # Import model formatters to trigger registration
 from knwl.format.terminal import model_formatters
+from knwl.models import KnwlGraph
 
 # Cache formatter instances
 _formatter_cache = {}
@@ -170,6 +171,18 @@ def render_knwl(obj: Any, format_type: str = "terminal", **options) -> None:
     formatter = get_formatter(format_type)
     formatter.render(obj, **options)
 
+def render_mermaid(obj: KnwlGraph, **options) -> None:
+    """
+    Render a KnwlGraph object as a Mermaid diagram.
+
+    Args:
+        obj: The KnwlGraph object to render
+        **options: Additional rendering options
+    """
+    formatter = get_formatter("markdown")
+    if not isinstance(formatter, MarkdownFormatter):
+        raise ValueError("Mermaid rendering is only supported in markdown format.")
+    formatter.render_mermaid(obj, **options)
 
 def print_knwl(obj: Any, **options) -> None:
     """

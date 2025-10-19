@@ -9,6 +9,7 @@ from typing import Any, Dict, List
 from pydantic import BaseModel
 
 from knwl.format.formatter_base import FormatterBase, ModelFormatter, get_registry
+from knwl.models.KnwlGraph import KnwlGraph
 
 
 class MarkdownFormatter(FormatterBase):
@@ -197,3 +198,32 @@ generator: Knwl Framework
     def create_code_block(self, code: str, language: str = "") -> str:
         """Create a Markdown code block."""
         return f"```{language}\n{code}\n```"
+
+    def render_mermaid(self, graph: "KnwlGraph", **options) -> None:
+        """
+        Render a KnwlGraph as a Mermaid diagram in Markdown.
+        
+        Args:
+            graph: The KnwlGraph object to render
+            **options: Additional rendering options
+        """
+        mermaid_lines = ["```mermaid", "graph TD"]
+        
+        # for node in graph.nodes:
+        #     mermaid_lines.append(f'    {node.id}["{self._escape(node.name)}"]')
+        
+        for edge in graph.edges:
+            source_node = graph.get_node_by_id(edge.source_id)
+            target_node = graph.get_node_by_id(edge.target_id)
+            if source_node and target_node:
+                mermaid_lines.append(f'    {source_node.name} -->|{self._escape(edge.type)}| {target_node.name}')
+
+        mermaid_lines.append("```")
+        
+        mermaid_code = "\n".join(mermaid_lines)
+        output_file = options.get("output_file")
+        if output_file:
+            with open(output_file, 'w', encoding='utf-8') as f:
+                f.write(mermaid_code)
+        else:
+            print(mermaid_code)

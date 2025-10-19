@@ -33,7 +33,9 @@ class GraphRAGBase(FrameworkBase, ABC):
         ...
 
     @abstractmethod
-    async def extract(self, input: str | KnwlInput | KnwlDocument) -> KnwlGragIngestion | None:
+    async def extract(
+        self, input: str | KnwlInput | KnwlDocument, enable_chunking: bool = True
+    ) -> KnwlGragIngestion | None:
         """
         Extract a knowledge graph from raw text or KnwlInput/KnwlDocument.
         This is the same as `ingest` but without embedding (consolidation).

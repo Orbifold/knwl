@@ -98,17 +98,61 @@ class GraphRAG(GraphRAGBase):
         input: str | KnwlInput | KnwlDocument,
         store_source: bool = False,
         enable_chunking: bool = True,
+        store_chunks: bool = False,
     ) -> KnwlGraph | None:
         """
-        Ingest raw text or KnwlInput/KnwlDocument and convert to knowledge graph:
-        - Chunk the text if necessary
-        - Extract entities and relationships
-        - Embed (consolidate) nodes and edges (graph and vector store)
+        Ingest raw text or KnwlInput/KnwlDocument and convert to knowledge graph.
+        See also the `extract` method which does the same without storing anything.
         """
+        result: KnwlGragIngestion = await self.extract(
+            input, enable_chunking=enable_chunking
+        )
+        if result.graph is None:
+            log.warn("GraphRAG: No knowledge graph was extracted to ingest.")
+            return None
+
+        # ============================================================================================
+        # Store source document
+        # ============================================================================================
+        if store_source:
+            if self.blob_storage is None:
+                log.warn(
+                    "GraphRAG: blob_storage is not configured, cannot store source document."
+                )
+            else:
+                await self.save_sources([result.input])
+        # ============================================================================================
+        # Store chunks
+        # ============================================================================================
+        # todo: needs the StorageAdapter here to store in diverse places
+        if store_chunks:
+            if self.blob_storage is None:
+                log.warn(
+                    "GraphRAG: blob_storage is not configured, cannot store chunks."
+                )
+            else:
+                chunk_documents: List[KnwlDocument] = []
+                for chunk in result.chunks:
+                    chunk_doc = KnwlDocument.from_chunk(
+                        chunk, source_document_id=result.input.id
+                    )
+                    chunk_documents.append(chunk_doc)
+                await self.save_sources(chunk_documents)
+        # ============================================================================================
+        # Merge graph into semantic graph
+        # ============================================================================================
+        # note that the `extract` method already consolidated the data semantically
+        await self.semantic_graph.graph.merge(result.graph)
+        # ============================================================================================
+        # Vectorize nodes and edges
+        # ============================================================================================
+        await self.semantic_graph.embed_nodes(result.graph.nodes)
+        await self.semantic_graph.embed_edges(result.graph.edges)
+
+        return result.graph
 
     async def extract(
-        self, input: str | KnwlInput | KnwlDocument,
-        enable_chunking: bool = True
+        self, input: str | KnwlInput | KnwlDocument, enable_chunking: bool = True
     ) -> KnwlGragIngestion | None:
         """
         Extract a knowledge graph from raw text or KnwlInput/KnwlDocument.
@@ -152,13 +196,16 @@ class GraphRAG(GraphRAGBase):
         extracted_graph: KnwlGraph = None
         for chunk in chunks:
             chunk_graph = await self.graph_extractor.extract_graph(chunk.content)
+            result.chunk_graphs.append(chunk_graph)
             if chunk_graph is not None:
                 # semantic merge into KG
                 if extracted_graph is None:
                     extracted_graph = chunk_graph
                 else:
                     # this is not a semantic merge but a simple concatenation in order to return the end result
-                    extracted_graph = await self.semantic_graph.consolidate_graphs(extracted_graph, chunk_graph)
+                    extracted_graph = await self.semantic_graph.consolidate_graphs(
+                        extracted_graph, chunk_graph
+                    )
 
         if extracted_graph is None:
             log.warn(

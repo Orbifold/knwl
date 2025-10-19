@@ -4,6 +4,7 @@ from typing import Union
 from knwl.framework_base import FrameworkBase
 from knwl.models import KnwlNode, KnwlEdge
 from knwl.models.KnwlGraph import KnwlGraph
+from knwl.storage.graph_base import GraphStorageBase
 
 
 class SemanticGraphBase(FrameworkBase, ABC):
@@ -22,6 +23,9 @@ class SemanticGraphBase(FrameworkBase, ABC):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+    @property
+    def graph(self) -> GraphStorageBase:...
+    
     @abstractmethod
     async def clear(self) -> None:
         """

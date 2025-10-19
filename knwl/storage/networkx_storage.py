@@ -498,7 +498,7 @@ class NetworkXGraphStorage(GraphStorageBase):
         else:
             return None
 
-    async def get_node_edges(self, source_node_id: str) -> list | None:
+    async def get_node_edges(self, source_node_id: str) -> list[dict] | None:
         """
         Retrieves all edges connected to the given node.
 
@@ -799,3 +799,16 @@ class NetworkXGraphStorage(GraphStorageBase):
             node_data["id"] = id
             self.graph.add_node(id, **node_data)
             return {"id": id, **node_data}
+
+    async def merge(self, nodes: list[dict], edges: list[dict]) -> None:
+        for node in nodes:
+            await self.upsert_node(node)
+        for edge in edges:
+            source_id = edge.get("source_id")
+            target_id = edge.get("target_id")
+            if source_id is None or target_id is None:
+                raise ValueError(
+                    "NetworkXStorage: edge must contain 'source_id' and 'target_id'"
+                )
+            await self.upsert_edge(source_id, target_id, edge)
+        await self.save()

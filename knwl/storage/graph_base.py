@@ -30,7 +30,7 @@ class GraphStorageBase(FrameworkBase):
         Returns:
             bool: True if the node exists in the graph, False otherwise.
         """
-        pass
+        ...
 
     @abstractmethod
     async def edge_exists(self, source_or_key: Union[BaseModel,str,dict], target_node_id:  Union[BaseModel,str,dict] = None) -> bool:
@@ -44,7 +44,7 @@ class GraphStorageBase(FrameworkBase):
         Returns:
             bool: True if the edge exists, False otherwise.
         """
-        pass
+        ...
 
     @abstractmethod
     async def get_node_by_id(self, node_id: str) -> Union[dict, None]:
@@ -58,7 +58,7 @@ class GraphStorageBase(FrameworkBase):
             Union[dict, None]: A dictionary containing the node data if found,
                               None if the node does not exist.
         """
-        pass
+        ...
 
     @abstractmethod
     async def get_node_by_name(self, node_name) -> Union[list[dict], None]:
@@ -72,7 +72,7 @@ class GraphStorageBase(FrameworkBase):
             List[dict] | None: Since the name is not unique and can appear with different semantic types (e.g. Apple as fruit and as company), a list of dictionaries is returned if found, None otherwise.
 
         """
-        pass
+        ...
 
     @abstractmethod
     async def node_degree(self, node_id: str) -> int:
@@ -85,7 +85,7 @@ class GraphStorageBase(FrameworkBase):
         Returns:
             int: The degree of the node, or 0 if the node does not exist.
         """
-        pass
+        ...
 
     @abstractmethod
     async def edge_degree(self, source_id: str, target_id: str) -> int:
@@ -99,7 +99,7 @@ class GraphStorageBase(FrameworkBase):
         Returns:
             int: The degree of the edge, or 0 if the edge does not exist.
         """
-        pass
+        ...
 
     @abstractmethod
     async def get_edges  (
@@ -124,10 +124,10 @@ class GraphStorageBase(FrameworkBase):
             NotImplementedError: This is an abstract method that must be implemented
                 by subclasses.
         """
-        pass
+        ...
 
     @abstractmethod
-    async def get_node_edges(self, source_node_id):
+    async def get_node_edges(self, source_node_id: str) -> list[dict] | None:
         """
         Retrieves all edges connected to the given node.
 
@@ -135,9 +135,9 @@ class GraphStorageBase(FrameworkBase):
             source_node_id (str): The ID of the source node.
 
         Returns:
-            List[KnwlEdge] | None: A list of KnwlEdge objects if the node exists, None otherwise.
+            List[dict] | None: A list of edge objects if the node exists, None otherwise.
         """
-        pass
+        ...
 
     @abstractmethod
     async def get_attached_edges(self, nodes):
@@ -150,7 +150,7 @@ class GraphStorageBase(FrameworkBase):
         Returns:
             List[KnwlEdge]: A list of KnwlEdge objects attached to the given nodes.
         """
-        pass
+        ...
 
     @abstractmethod
     async def get_edge_degrees(self, edges):
@@ -163,7 +163,7 @@ class GraphStorageBase(FrameworkBase):
         Returns:
             List[int]: A list of degrees for the given edges.
         """
-        pass
+        ...
 
     @abstractmethod
     async def get_semantic_endpoints(
@@ -185,7 +185,7 @@ class GraphStorageBase(FrameworkBase):
         Args:
             edge_ids (List[str]): A list of node IDs for which to retrieve names.
         """
-        pass
+        ...
 
     @abstractmethod
     async def get_edge_by_id(self, edge_id: str) -> Union[dict, None]:
@@ -199,7 +199,7 @@ class GraphStorageBase(FrameworkBase):
             Union[dict, None]: A dictionary containing the edge data if found,
                               None if the edge does not exist.
         """
-        pass
+        ...
 
     @abstractmethod
     async def upsert_node(self, node_id: BaseModel|str|dict, node_data=None):
@@ -217,7 +217,7 @@ class GraphStorageBase(FrameworkBase):
         Returns:
             None: This method performs the upsert operation but doesn't return a value.
         """
-        pass
+        ...
 
     @abstractmethod
     async def upsert_edge(
@@ -235,7 +235,7 @@ class GraphStorageBase(FrameworkBase):
         Returns:
             The result of the upsert operation (implementation-specific)
         """
-        pass
+        ...
 
     @abstractmethod
     async def clear(self):
@@ -248,7 +248,7 @@ class GraphStorageBase(FrameworkBase):
         Returns:
             None
         """
-        pass
+        ...
 
     @abstractmethod
     async def node_count(self):
@@ -261,7 +261,7 @@ class GraphStorageBase(FrameworkBase):
         Raises:
             NotImplementedError: This method must be implemented by subclasses.
         """
-        pass
+        ...
 
     @abstractmethod
     async def edge_count(self):
@@ -274,7 +274,7 @@ class GraphStorageBase(FrameworkBase):
         Raises:
             NotImplementedError: This method must be implemented by subclasses.
         """
-        pass
+        ...
 
     @abstractmethod
     async def remove_node(self, node_id: str):
@@ -293,7 +293,7 @@ class GraphStorageBase(FrameworkBase):
             This method should also handle cleanup of any edges connected to the node
             being removed to maintain graph integrity.
         """
-        pass
+        ...
 
     @abstractmethod
     async def remove_edge(self, source_node_id_or_key: str, target_node_id: str = None,type: str = None):
@@ -317,7 +317,7 @@ class GraphStorageBase(FrameworkBase):
             is provided alone, it should be a unique edge identifier. If both parameters
             are provided, they represent the source and target nodes of the edge to remove.
         """
-        pass
+        ...
 
     @abstractmethod
     async def get_edge_weights(
@@ -335,4 +335,22 @@ class GraphStorageBase(FrameworkBase):
             dict[str, float]: A dictionary where keys are edge types and values are their corresponding weights.
                 If no edges are found, an empty dictionary is returned.
         """
-        pass
+        ...
+
+    @abstractmethod
+    async def merge(self, nodes: list[dict], edges: list[dict]) -> None:
+        """
+        Merge another graph into the current graph storage.
+
+        Args:
+            nodes (list[dict]): A list of node dictionaries to merge into the graph.
+            edges (list[dict]): A list of edge dictionaries to merge into the graph.
+
+        Returns:
+            None
+
+        Note:
+            This method should handle merging nodes and edges from the provided graph
+            into the existing graph storage, ensuring no duplicates and maintaining integrity.
+        """
+        ...

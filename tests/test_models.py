@@ -1,6 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
+from knwl.format import render_mermaid
 from knwl.models import KnwlEdge, KnwlGraph, KnwlNode, KnwlInput, KnwlDocument
 
 
@@ -132,3 +133,5 @@ def test_merge_graphs():
     assert g_merged.node_exists(node3)
     assert g_merged.edge_exists(edge1)
     assert g_merged.id == g1.id  # id of merged graph is same as first graph
+
+    render_mermaid(g_merged)
