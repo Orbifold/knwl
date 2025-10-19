@@ -40,6 +40,13 @@ default_config = {
             "llm": "@/llm/openai",
         },
     },
+    "keywords_extraction": {
+        "default": "basic",
+        "basic": {
+            "class": "knwl.extraction.basic_keywords_extraction.BasicKeywordsExtraction",
+            "llm": "@/llm/openai",
+        },
+    },
     "graph_extraction": {
         "default": "basic",
         "basic": {

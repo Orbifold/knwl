@@ -7,10 +7,12 @@ providing beautiful, informative terminal representations.
 
 from typing import Any
 
+from matplotlib.pyplot import table
 from rich.panel import Panel
 from rich.table import Table
 from rich.tree import Tree
 from rich.text import Text
+from rich.console import Group
 
 from knwl.format.formatter_base import ModelFormatter, register_formatter
 from knwl.models import (
@@ -24,6 +26,7 @@ from knwl.models import (
     KnwlContext,
     KnwlResponse,
     KnwlGragIngestion,
+    KnwlKeywords,
 )
 
 
@@ -186,7 +189,6 @@ class KnwlGraphTerminalFormatter(ModelFormatter):
                     )
                 )
 
-        from rich.console import Group
 
         return formatter.create_panel(
             Group(*content),
@@ -336,7 +338,6 @@ class KnwlExtractionTerminalFormatter(ModelFormatter):
 
             content.append(entity_table)
 
-        from rich.console import Group
 
         return formatter.create_panel(
             Group(*content),
@@ -413,7 +414,6 @@ class KnwlResponseTerminalFormatter(ModelFormatter):
             context_formatter = KnwlContextTerminalFormatter()
             content.append(context_formatter.format(model.context, formatter))
 
-        from rich.console import Group
 
         return formatter.create_panel(
             Group(*content),
@@ -430,7 +430,7 @@ class KnwlGragIngestionTerminalFormatter(ModelFormatter):
     def format(self, model: KnwlGragIngestion, formatter, **options) -> Panel:
         show_entities = options.get("show_entities", True)
         show_edges = options.get("show_edges", True)
-        
+
         max_entities = options.get("max_entities", 10)
         """Format a KnwlGragIngestion as a rich panel with statistics."""
         content = [
@@ -464,15 +464,48 @@ class KnwlGragIngestionTerminalFormatter(ModelFormatter):
                 source_node = model.graph.get_node_by_id(edge.source_id)
                 target_node = model.graph.get_node_by_id(edge.target_id)
                 if source_node and target_node:
-                    edge_table.add_row(
-                        edge.type, source_node.name, target_node.name
-                    )
+                    edge_table.add_row(edge.type, source_node.name, target_node.name)
 
             content.append(edge_table)
-        from rich.console import Group
 
         return formatter.create_panel(
             Group(*content),
             title="👁️ Graph Ingestion",
             subtitle=f"{len(model.graph.nodes)} nodes, {len(model.graph.edges)} edges",
+        )
+
+
+@register_formatter(KnwlKeywords, "terminal")
+class KnwlKeywordsTerminalFormatter(ModelFormatter):
+    """Formatter for KnwlKeywords models."""
+
+    def format(self, model: KnwlKeywords, formatter, **options) -> Panel:
+        """Format a KnwlKeywords as a rich panel."""
+        content = []
+        
+        content.append(Text("\n"))
+        content.append(
+            Text("🔼 High-Level Keywords:", style=formatter.theme.SUBTITLE_STYLE)
+        )
+        if model.high_level is None or len(model.high_level) == 0:
+            content.append(Text("None", style="bold white"))
+        else:
+            content.append(
+                Text(", ".join(model.high_level) or "None", style="bold white")
+            )
+        content.append(Text("\n"))
+        content.append(
+            Text("🔽 Low-Level Keywords:", style=formatter.theme.SUBTITLE_STYLE)
+        )
+        if model.low_level is None or len(model.low_level) == 0:
+            content.append(Text("None", style="bold white"))
+        else:
+            content.append(
+                Text(", ".join(model.low_level) or "None", style="bold white")
+            )
+
+        return formatter.create_panel(
+            Group(*content),
+            title="🏷️ Keywords Extraction", 
+            subtitle="Extracted Keywords"
         )

@@ -21,7 +21,7 @@ from knwl.models.KnwlRagNode import KnwlRagNode
 from knwl.models.KnwlRagReference import KnwlRagReference
 from knwl.models.KnwlRagText import KnwlRagText
 from knwl.models.KnwlResponse import KnwlResponse
-from knwl.models.QueryParam import QueryParam
+from knwl.models.GragParams import GragParams
 from knwl.prompts import prompts
 from knwl.storage.json_storage import JsonStorage
 from knwl.storage.vector_storage_base import VectorStorageBase
@@ -476,7 +476,7 @@ class Knwl:
             refs.append(KnwlRagReference(id=origin_id, index=str(i), description=doc["description"], name=doc["name"], timestamp=doc["timestamp"]))
         return refs
 
-    async def query(self, query: str, param: QueryParam = QueryParam()) -> KnwlResponse:
+    async def query(self, query: str, param: GragParams = GragParams()) -> KnwlResponse:
         """
         Executes a query based on the specified mode in the QueryParam.
 
@@ -511,7 +511,7 @@ class Knwl:
             logger.error(f"Error during query: {e}")
             return KnwlResponse(answer=e.args[0])
 
-    async def query_local(self, query: str, query_param: QueryParam) -> KnwlResponse:
+    async def query_local(self, query: str, query_param: GragParams) -> KnwlResponse:
         """
         Executes a local query and returns the response.
         The local query takes the neighborhood of the hit nodes and uses the low-level keywords to find the most related text units.
@@ -571,7 +571,7 @@ class Knwl:
 
         return KnwlResponse(question=query, answer=response, context=context, rag_time=rag_time, llm_time=r.timing)
 
-    async def get_local_query_context(self, query, query_param: QueryParam) -> KnwlContext | None:
+    async def get_local_query_context(self, query, query_param: GragParams) -> KnwlContext | None:
         """
         This really is the heart of the whole GraphRAG intelligence.
 
@@ -622,7 +622,7 @@ class Knwl:
 
         return KnwlContext(nodes=node_recs, edges=edge_recs, chunks=chunk_recs, references=refs)
 
-    async def get_primary_nodes(self, query: str, query_param: QueryParam) -> List[KnwlDegreeNode] | None:
+    async def get_primary_nodes(self, query: str, query_param: GragParams) -> List[KnwlDegreeNode] | None:
         """
         Asynchronously retrieves primary nodes based on a query and query parameters.
         This is essentially a basic RAG step over nodes.
@@ -763,7 +763,7 @@ class Knwl:
             records.append(KnwlRagNode(order=d, name=n.name, type=n.type, description=n.description, id=n.id, index=str(i)))
         return records
 
-    async def get_graph_rag_relations(self, node_datas: list[KnwlDegreeNode], query_param: QueryParam) -> List[KnwlRagEdge]:
+    async def get_graph_rag_relations(self, node_datas: list[KnwlDegreeNode], query_param: GragParams) -> List[KnwlRagEdge]:
         all_attached_edges = await self.graph_storage.get_attached_edges(node_datas)
         all_edges_degree = await self.graph_storage.get_edge_degrees(all_attached_edges)
         all_edge_ids = unique_strings([e.id for e in all_attached_edges])
@@ -796,7 +796,7 @@ class Knwl:
             mapping[node_id] = node.name
         return mapping
 
-    async def query_global(self, query, query_param: QueryParam) -> KnwlResponse:
+    async def query_global(self, query, query_param: GragParams) -> KnwlResponse:
         context = None
         start_time = time.time()
 
@@ -839,13 +839,13 @@ class Knwl:
 
         return KnwlResponse(answer=response, context=context, rag_time=rag_time, llm_time=a.timing)
 
-    async def get_naive_query_context(self, chunks: List[KnwlRagChunk], query_param: QueryParam):
+    async def get_naive_query_context(self, chunks: List[KnwlRagChunk], query_param: GragParams):
         chunk_recs = []
         for i, t in enumerate(chunks):
             chunk_recs.append(KnwlRagChunk(id=str(i), text=t.text, order=t.order))
         return KnwlContext(chunks=chunk_recs)
 
-    async def get_global_query_context(self, keywords, query_param: QueryParam):
+    async def get_global_query_context(self, keywords, query_param: GragParams):
 
         # ====================== Primary Edge ======================================
         primary_edges = await self.edge_vectors.query(keywords, top_k=query_param.top_k)
@@ -877,14 +877,14 @@ class Knwl:
 
         return KnwlContext(nodes=node_recs, edges=edge_recs, chunks=chunk_recs, references=refs)
 
-    async def create_description_stats_from_edges(self, primary_edge: list[KnwlEdge], query_param: QueryParam):
+    async def create_description_stats_from_edges(self, primary_edge: list[KnwlEdge], query_param: GragParams):
         stats = {}
         for edge in primary_edge:
             degree = await self.graph_storage.edge_degree(edge.source_id, edge.targetId)
             stats[edge.id] = degree
         return stats
 
-    async def get_rag_texts_from_edges(self, edges: list[KnwlEdge], query_param: QueryParam, ) -> List[KnwlRagText]:
+    async def get_rag_texts_from_edges(self, edges: list[KnwlEdge], query_param: GragParams, ) -> List[KnwlRagText]:
         stats = await self.create_chunk_stats_from_edges(edges)
         chunk_ids = unique_strings([e.chunkIds for e in edges])
         coll = []
@@ -895,7 +895,7 @@ class Knwl:
         coll = sorted(coll, key=lambda x: x.order, reverse=True)
         return coll
 
-    async def query_naive(self, query, query_param: QueryParam) -> KnwlResponse:
+    async def query_naive(self, query, query_param: GragParams) -> KnwlResponse:
         """
         Perform a naive query on the chunk vectors and generate a response.
         This is classic RAG without using the knowledge graph.
@@ -933,7 +933,7 @@ class Knwl:
 
         return KnwlResponse(answer=response, context=context, rag_time=rag_time, llm_time=r.timing)
 
-    async def query_hybrid(self, query, query_param: QueryParam) -> KnwlResponse:
+    async def query_hybrid(self, query, query_param: GragParams) -> KnwlResponse:
         low_level_context = None
         high_level_context = None
 

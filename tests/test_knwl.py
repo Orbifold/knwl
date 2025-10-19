@@ -19,7 +19,7 @@ from knwl.models.KnwlExtraction import KnwlExtraction
 from knwl.models.KnwlInput import KnwlInput
 from knwl.models.KnwlNode import KnwlNode
 from knwl.models.KnwlResponse import KnwlResponse
-from knwl.models.QueryParam import QueryParam
+from knwl.models.GragParams import GragParams
 from knwl.prompts import prompts
 from knwl.storage import JsonStorage, ChromaStorage, NetworkXGraphStorage
 from knwl.utils import hash_with_prefix
@@ -59,13 +59,13 @@ class TestRealCases:
     @pytest.mark.asyncio
     @pytest.mark.llm
     async def test_local(self, knwl):
-        response = await knwl.query("Who is John?", QueryParam(mode="local"))
+        response = await knwl.query("Who is John?", GragParams(mode="local"))
         response.print()
 
     @pytest.mark.asyncio
     @pytest.mark.llm
     async def test_global(self, knwl):
-        response = await knwl.query("Who is John?", QueryParam(mode="global"))
+        response = await knwl.query("Who is John?", GragParams(mode="global"))
         print()
         print("======================== Context ====================================")
         print(response.context)
@@ -83,7 +83,7 @@ class TestRealCases:
     @pytest.mark.asyncio
     @pytest.mark.llm
     async def test_naive(self, knwl):
-        response = await knwl.query("Who is John?", QueryParam(mode="naive"))
+        response = await knwl.query("Who is John?", GragParams(mode="naive"))
         print()
         print("======================== Context ====================================")
         print(response.context.get_documents())
@@ -99,7 +99,7 @@ class TestRealCases:
     @pytest.mark.asyncio
     @pytest.mark.llm
     async def test_hybrid(self, knwl):
-        response = await knwl.query("Who is John?", QueryParam(mode="hybrid"))
+        response = await knwl.query("Who is John?", GragParams(mode="hybrid"))
         print()
         print("======================== Context ====================================")
         print(response.context)
@@ -388,7 +388,7 @@ class TestQuery:
     async def test_get_local_query_context_no_results(self, mocker):
         s = Knwl()
         query = "test query"
-        query_param = QueryParam(top_k=5)
+        query_param = GragParams(top_k=5)
 
         mocker.patch.object(s.node_vectors, 'query', return_value=[])
         result = await s.get_local_query_context(query, query_param)
@@ -398,7 +398,7 @@ class TestQuery:
     async def test_get_primary_nodes_no_results(self, mocker):
         s = Knwl()
         query = "test query"
-        query_param = QueryParam(top_k=5)
+        query_param = GragParams(top_k=5)
 
         mocker.patch.object(s.node_vectors, 'query', return_value=[])
         result = await s.get_primary_nodes(query, query_param)
@@ -408,7 +408,7 @@ class TestQuery:
     async def test_get_primary_nodes_some_missing_nodes(self, mocker):
         s = Knwl()
         query = "test query"
-        query_param = QueryParam(top_k=5)
+        query_param = GragParams(top_k=5)
         found = [{"name": "node1", "id": "node1"}, {"name": "node2", "id": "node2"}]
         node_datas = [KnwlNode(name="node1", type="Person", description="Description 1", chunkIds=["chunk1"]), None]
         node_degrees = [3, 2]
@@ -429,7 +429,7 @@ class TestQuery:
     async def test_get_primary_nodes_all_nodes_present(self, mocker):
         s = Knwl()
         query = "test query"
-        query_param = QueryParam(top_k=5)
+        query_param = GragParams(top_k=5)
         found = [{"name": "node1", "id": "node1"}, {"name": "node2", "id": "node2"}]
         node_datas = [KnwlNode(name="node1", type="Person", description="Description 1", chunkIds=["chunk1"]), KnwlNode(name="node2", type="Location", description="Description 2", chunkIds=["chunk2"])]
         node_degrees = [3, 2]
@@ -455,7 +455,7 @@ class TestQuery:
     @pytest.mark.asyncio
     async def test_get_attached_edges_with_nodes(self, mocker):
         s = Knwl()
-        query_param = QueryParam()
+        query_param = GragParams()
         nodes = [KnwlNode(name="node1", type="Person", description="Description 1", chunkIds=["chunk1"]), KnwlNode(name="node2", type="Location", description="Description 2", chunkIds=["chunk2"])]
         edges = [KnwlEdge(weight=1.1, source_id="node1", targetId="node2", description="Edge 1", keywords="keyword1", chunkIds=["chunk1"]), KnwlEdge(weight=2.2, source_id="node2", targetId="node4", description="Edge 2", keywords="keyword2", chunkIds=["chunk2"]), KnwlEdge(weight=3.3, source_id="node2", targetId="node6", description="Edge 3", keywords="keyword2", chunkIds=["chunk43"])]
 
@@ -472,7 +472,7 @@ class TestQuery:
     @pytest.mark.asyncio
     async def test_get_attached_edges_some_missing_edges(self, mocker):
         s = Knwl()
-        query_param = QueryParam()
+        query_param = GragParams()
         nodes = [KnwlNode(name="node1", type="Person", description="Description 1", chunkIds=["chunk1"]), KnwlNode(name="node2", type="Location", description="Description 2", chunkIds=["chunk2"])]
         edges = [[KnwlEdge(weight=1.0, source_id="node1", targetId="node2", description="Edge 1", keywords="keyword1", chunkIds=["chunk1"])], [KnwlEdge(weight=1.3, source_id="node1", targetId="node3", description="Edge 2", keywords="keyword1", chunkIds=["chunk1"])], [KnwlEdge(weight=1.3, source_id="node1", targetId="node3", description="Edge 2", keywords="keyword1", chunkIds=["chunk1"])]  # duplicate edge by intention
                  ]
@@ -499,13 +499,13 @@ class TestQuery:
         await s.insert([doc1, doc2, doc3], basic_rag=True)
         assert await s.count_documents() == 3
 
-        response = await s.query("Who is John?", QueryParam(mode="naive"))
+        response = await s.query("Who is John?", GragParams(mode="naive"))
         assert response is not None
         print()
         print(response.answer)  # something like: John is a software engineer who is 34 years old. No other specific details about him are provided in the given information.
         assert "John is a software engineer" in response.answer
 
-        response = await s.query("What is z1?", QueryParam(mode="naive"))
+        response = await s.query("What is z1?", GragParams(mode="naive"))
         assert response is not None
         print()
         print(response.answer)

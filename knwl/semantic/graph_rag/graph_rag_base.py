@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
 
 from knwl.framework_base import FrameworkBase
-from knwl.models import KnwlContext, KnwlEdge, KnwlGraph, KnwlInput, KnwlRagInput
+from knwl.models import GragParams, KnwlContext, KnwlEdge, KnwlGraph, KnwlInput, KnwlRagInput
 from knwl.models.KnwlDocument import KnwlDocument
 from knwl.models.KnwlEdge import KnwlEdge
 from knwl.models.KnwlGragIngestion import KnwlGragIngestion
@@ -44,7 +44,9 @@ class GraphRAGBase(FrameworkBase, ABC):
 
     @abstractmethod
     async def augment(
-        self, input: str | KnwlInput | KnwlRagInput
+        self, 
+        input: str | KnwlInput | KnwlRagInput,
+        params: GragParams = None
     ) -> KnwlContext | None:
         """
         Retrieve context from the knowledge graph and augment the input text.

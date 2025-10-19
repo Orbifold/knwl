@@ -9,6 +9,7 @@ from knwl.semantic.graph_rag.graph_rag_base import GraphRAGBase
 from typing import Any, Dict, List, Optional
 
 from knwl.models import (
+    GragParams,
     KnwlBlob,
     KnwlContext,
     KnwlEdge,
@@ -216,7 +217,9 @@ class GraphRAG(GraphRAGBase):
         return result
 
     async def augment(
-        self, input: str | KnwlInput | KnwlRagInput
+        self,
+        input: str | KnwlInput | KnwlRagInput,
+        params: GragParams = None   
     ) -> KnwlContext | None:
         """
         Retrieve context from the knowledge graph and augment the input text.

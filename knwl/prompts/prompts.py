@@ -12,7 +12,7 @@ class Prompts:
         self._summarization = SummarizationPrompts()
         self._extraction = (
             ExtractionPrompts()
-        )  # self.rag = RAGPrompts()  # self.summarization = SummarizationPrompts()
+        )   
 
     @property
     def extraction(self) -> ExtractionPrompts:

@@ -11,6 +11,8 @@ from .KnwlContext import KnwlContext
 from .KnwlEntity import KnwlEntity
 from .KnwlBlob import KnwlBlob
 from .KnwlGragIngestion import KnwlGragIngestion
+from .GragParams import GragParams
+from .KnwlKeywords import KnwlKeywords
 
 __all__ = [
     "KnwlNode",
@@ -26,4 +28,6 @@ __all__ = [
     "KnwlEntity",
     "KnwlBlob",
     "KnwlGragIngestion",
+    "GragParams",
+    "KnwlKeywords",
 ]

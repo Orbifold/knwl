@@ -11,6 +11,7 @@ class ExtractionPrompts:
         self._full_entity_extraction_template = None
         self._iterate_entity_template = None
         self._glean_break_template = None
+        self._keywords_extraction_template = None
 
     def fast_graph_extraction(self, text: str, entity_types: list[str] = None) -> str:
         if self._fast_entity_extraction_template is None:
@@ -55,7 +56,15 @@ class ExtractionPrompts:
             entities=", ".join(entity_types or PromptConstants.DEFAULT_ENTITY_TYPES),
             text=text,
         )
-
+    def keywords_extraction(self, text: str) -> str:
+        if self._keywords_extraction_template is None:
+            with open(
+                os.path.join(current_dir, "templates", "keywords_extraction.txt"),
+                "r",
+            ) as f:
+                self._keywords_extraction_template = f.read()
+        return self._keywords_extraction_template.format(text=text)
+    
     def iterate_entity_extraction(self) -> str:
         if self._iterate_entity_template is None:
             with open(
@@ -73,3 +82,4 @@ class ExtractionPrompts:
             ) as f:
                 self._glean_break_template = f.read()
         return self._glean_break_template
+

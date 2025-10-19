@@ -5,13 +5,13 @@ from pydantic import BaseModel, Field
 QueryModes = Literal["local", "global", "hybrid", "naive"]
 
 
-class QueryParam(BaseModel):
+class GragParams(BaseModel):
     """
-    Parameters for configuring query operations in the KNWL system.
+    Parameters of grag augmentation.
     
     Attributes:
         mode (QueryModes): The query mode to use - local, global, hybrid, or naive.
-        only_need_context (bool): Whether to only return context without generating an answer.
+        
         response_type (str): The type of response format to generate.
         top_k (int): Number of top-k items to retrieve (entities in local mode, relationships in global mode).
         max_token_for_text_unit (int): Maximum number of tokens for original chunks.
@@ -24,7 +24,6 @@ class QueryParam(BaseModel):
 
     mode: QueryModes = Field(default="global", description="The query mode to use - local, global, hybrid, or naive.")
 
-    only_need_context: bool = Field(default=False, description="Whether to only return context without generating an answer.")
 
     response_type: str = Field(default="Multiple Paragraphs", description="The type of response format to generate.")
 
