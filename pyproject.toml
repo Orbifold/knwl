@@ -1,6 +1,7 @@
 [project]
 name = "knwl"
-version = "0.7.0"
+license = "MIT"
+version = "0.7.1"
 description = "Graph RAG"
 authors = [
     {name = "Swa", email = "swa@orbifold.net"}
@@ -12,14 +13,20 @@ dependencies = [
     "graspologic>=3.4.1",
     "networkx>=3.4.2",
     "transformers>=4.46.1",
-    "tiktoken>=0.8.0",    
+    "tiktoken>=0.8.0",
     "tenacity>=9.0.0",
     "ollama>=0.4.7",
     "openai>=1.53.0",
     "pydantic>=2.0.0",
     "rich>=13.0.0",
     "chromadb>=1.1.1",
+    "wikipedia>=1.4.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/Orbifold/knwl"
+Repository = "https://github.com/Orbifold/knwl"
+Documentation = "https://github.com/Orbifold/knwl"
 
 [project.optional-dependencies]
 dev = [
@@ -29,6 +36,9 @@ dev = [
     "pytest-mock>=3.14.0",
     "pytest-asyncio>=0.24.0",
     "pytest>=8.3.3",
+    "aiohttp>=3.13.1",
+    "beautifulsoup4>=4.14.2",
+    "markdownify>=1.2.0",
 ]
 
 
@@ -44,4 +54,5 @@ dev-dependencies = [
     "pytest-mock>=3.14.0",
     "pytest-asyncio>=0.24.0",
     "pytest>=8.3.3",
+    "wikipedia-api>=0.8.1",
 ]

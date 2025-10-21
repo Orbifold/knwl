@@ -1,2 +1,6 @@
+from knwl.semantic.graph_rag.graph_rag_base import GraphRAGBase
+
+
 class GragStrategyBase:
-    pass
+    def __init__(self, grag: "GraphRAGBase"):
+        self.grag = grag

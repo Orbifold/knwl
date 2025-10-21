@@ -3,7 +3,7 @@ from typing import List
 from pydantic import BaseModel, Field
 
 
-class KnwlRagEdge(BaseModel):
+class KnwlContextEdge(BaseModel):
     """
     Represents an edge in a RAG (Retrieval-Augmented Generation) graph.
     

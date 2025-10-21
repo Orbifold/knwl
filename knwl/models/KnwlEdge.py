@@ -57,6 +57,10 @@ class KnwlEdge(BaseModel):
         default=1.0,
         description="The weight of the edge. This can be used to represent the strength or importance of the relationship. This is given by domain experts or derived from data extraction.",
     )
+    data: dict = Field(
+        default_factory=dict,
+        description="Additional data associated with the knowledge node.",
+    )
 
     @staticmethod
     def hash_edge(e: "KnwlEdge") -> str:
@@ -64,7 +68,26 @@ class KnwlEdge(BaseModel):
             e.source_id + " " + e.target_id + " " + e.type,
             prefix="edge|>",
         )
+    def has_data(self, key: str) -> bool:
+        """
+        Check if the KnwlNode has any additional data.
 
+        Returns:
+            bool: True if the data dictionary is not empty, False otherwise.
+        """
+
+        return key in self.data
+
+    def get_data(self, key: str):
+        """
+        Get additional data associated with the KnwlNode.
+
+        Returns:
+            The value associated with the key in the data dictionary, or None if the key does not exist.
+        """
+
+        return self.data.get(key, None)
+    
     @field_validator("source_id")
     @classmethod
     def validate_source_id(cls, v):
@@ -108,13 +131,13 @@ class KnwlEdge(BaseModel):
 
     def update(self, **kwargs) -> "KnwlEdge":
         """
-        Create a new KnwlNode instance with updated fields. Only 'name', 'type', and 'description' can be updated.
+        Create a new KnwlNode instance with updated fields. Only 'type', 'description', 'weight', 'keywords', 'chunk_ids', and 'data' are allowed.
         """
-        allowed_fields = {"type", "description"}
+        allowed_fields = {"type", "description", "weight", "keywords", "chunk_ids", "data"}
         invalid_fields = set(kwargs.keys()) - allowed_fields
         if invalid_fields:
             raise ValueError(
-                f"Invalid fields: {invalid_fields}. Only 'type'  and 'description' are allowed."
+                f"Invalid fields: {invalid_fields}. Only 'type', 'description', 'weight', 'keywords', 'chunk_ids', and 'data' are allowed."
             )
         new_edge = self.model_copy(update=kwargs)
         # pydantic does not call the model_validator on model_copy, so we need to set the id manually

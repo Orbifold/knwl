@@ -277,3 +277,37 @@ class SemanticGraphBase(FrameworkBase, ABC):
             KnwlGraph | None: The consolidated knowledge graph.
         """
         ...
+    @abstractmethod
+    async def nearest_nodes(
+        self, query: str, top_k: int = 5
+    ) -> list[KnwlNode]:
+        """
+        Retrieve the nearest nodes to a given query string based on semantic similarity.
+
+        Args:
+            query (str): The query string to find nearest nodes for.
+            top_k (int, optional): The maximum number of nearest nodes to return.
+                Defaults to 5.
+
+        Returns:
+            list[KnwlNode]: A list of nodes that are nearest to the query,
+                ordered by similarity score (most similar first).
+        """
+        ...
+    @abstractmethod
+    async def nearest_edges(
+        self, query: str, top_k: int = 5
+    ) -> list[KnwlEdge]:
+        """
+        Retrieve the nearest edges to a given query string based on semantic similarity.
+
+        Args:
+            query (str): The query string to find nearest edges for.
+            top_k (int, optional): The maximum number of nearest edges to return.
+                Defaults to 5.
+
+        Returns:
+            list[KnwlEdge]: A list of edges that are nearest to the query,
+                ordered by similarity score (most similar first).
+        """
+        ...

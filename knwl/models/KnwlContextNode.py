@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 
 
-class KnwlRagNode(BaseModel):
+class KnwlContextNode(BaseModel):
     """
     Represents a node in a RAG (Retrieval-Augmented Generation) graph.
     

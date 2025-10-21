@@ -1,7 +1,7 @@
 from knwl.models import KnwlInput
-from knwl.models.KnwlRagEdge import KnwlRagEdge
+from knwl.models.KnwlContextEdge import KnwlContextEdge
 from knwl.models.KnwlRagReference import KnwlRagReference
-from knwl.models.KnwlRagNode import KnwlRagNode
+from knwl.models.KnwlContextNode import KnwlContextNode
 from knwl.models.KnwlRagChunk import KnwlRagChunk
 
 from pydantic import BaseModel, Field
@@ -9,12 +9,16 @@ from typing import List
 
 
 class KnwlContext(BaseModel):
+    """
+    Represents the augmented context based on the knowledge graph for a given input.
+    """
+
     input: str | KnwlInput = Field(
         description="The original input text or KnwlInput object."
     )
     chunks: List[KnwlRagChunk] = Field(default_factory=list)
-    nodes: List[KnwlRagNode] = Field(default_factory=list)
-    edges: List[KnwlRagEdge] = Field(default_factory=list)
+    nodes: List[KnwlContextNode] = Field(default_factory=list)
+    edges: List[KnwlContextEdge] = Field(default_factory=list)
     references: List[KnwlRagReference] = Field(default_factory=list)
 
     model_config = {"frozen": True}
@@ -27,13 +31,13 @@ class KnwlContext(BaseModel):
 
     def get_nodes_table(self):
         return "\n".join(
-            ["\t".join(KnwlRagNode.get_header())]
+            ["\t".join(KnwlContextNode.get_header())]
             + [node.to_row() for node in self.nodes]
         )
 
     def get_edges_table(self):
         return "\n".join(
-            ["\t".join(KnwlRagEdge.get_header())]
+            ["\t".join(KnwlContextEdge.get_header())]
             + [edge.to_row() for edge in self.edges]
         )
 

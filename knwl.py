@@ -16,8 +16,8 @@ from knwl.models.KnwlGraph import KnwlGraph
 from knwl.models.KnwlInput import KnwlInput
 from knwl.models.KnwlNode import KnwlNode
 from knwl.models.KnwlRagChunk import KnwlRagChunk
-from knwl.models.KnwlRagEdge import KnwlRagEdge
-from knwl.models.KnwlRagNode import KnwlRagNode
+from knwl.models.KnwlContextEdge import KnwlContextEdge
+from knwl.models.KnwlContextNode import KnwlContextNode
 from knwl.models.KnwlRagReference import KnwlRagReference
 from knwl.models.KnwlRagText import KnwlRagText
 from knwl.models.KnwlResponse import KnwlResponse
@@ -605,12 +605,12 @@ class Knwl:
         # ====================== Primary Nodes ==================================
         node_recs = []
         for i, n in enumerate(primary_nodes):
-            node_recs.append(KnwlRagNode(id=n.id, index=str(i), name=n.name, type=n.type, description=n.description, order=n.degree))
+            node_recs.append(KnwlContextNode(id=n.id, index=str(i), name=n.name, type=n.type, description=n.description, order=n.degree))
 
         # ====================== Relations ======================================
         edge_recs = []
         for i, e in enumerate(use_relations):
-            edge_recs.append(KnwlRagEdge(id=e.id, index=str(i), source=e.source, target=e.target, description=e.description, keywords=e.keywords, weight=e.weight, order=e.order))
+            edge_recs.append(KnwlContextEdge(id=e.id, index=str(i), source=e.source, target=e.target, description=e.description, keywords=e.keywords, weight=e.weight, order=e.order))
 
         # ====================== Chunks ========================================
         chunk_recs = []
@@ -744,7 +744,7 @@ class Knwl:
         graph_rag_texts = sorted(graph_rag_chunks.values(), key=lambda x: x.order, reverse=True)
         return graph_rag_texts
 
-    async def get_rag_records_from_edges(self, primary_edges: list[KnwlEdge]) -> List[KnwlRagNode]:
+    async def get_rag_records_from_edges(self, primary_edges: list[KnwlEdge]) -> List[KnwlContextNode]:
         """
         Collects the endpoint nodes of the given primary edges and retrieves their node information. The order corresponds to the degree of the node.
 
@@ -760,10 +760,10 @@ class Knwl:
         records = []
         for i, v in enumerate(zip(all_nodes, all_degrees)):
             n, d = v
-            records.append(KnwlRagNode(order=d, name=n.name, type=n.type, description=n.description, id=n.id, index=str(i)))
+            records.append(KnwlContextNode(order=d, name=n.name, type=n.type, description=n.description, id=n.id, index=str(i)))
         return records
 
-    async def get_graph_rag_relations(self, node_datas: list[KnwlDegreeNode], query_param: GragParams) -> List[KnwlRagEdge]:
+    async def get_graph_rag_relations(self, node_datas: list[KnwlDegreeNode], query_param: GragParams) -> List[KnwlContextEdge]:
         all_attached_edges = await self.graph_storage.get_attached_edges(node_datas)
         all_edges_degree = await self.graph_storage.get_edge_degrees(all_attached_edges)
         all_edge_ids = unique_strings([e.id for e in all_attached_edges])
@@ -772,12 +772,12 @@ class Knwl:
         for i, v in enumerate(zip(all_attached_edges, all_edges_degree)):
             e, d = v
             if e is not None:
-                all_edges_data.append(KnwlRagEdge(order=d, source=edge_endpoint_names[e.id][0], target=edge_endpoint_names[e.id][1], keywords=e.keywords, description=e.description, weight=e.weight, id=e.id, index=str(i)))
+                all_edges_data.append(KnwlContextEdge(order=d, source=edge_endpoint_names[e.id][0], target=edge_endpoint_names[e.id][1], keywords=e.keywords, description=e.description, weight=e.weight, id=e.id, index=str(i)))
         # sort by edge degree and weight descending
         all_edges_data = sorted(all_edges_data, key=lambda x: (x.order, x.weight), reverse=True)
         return all_edges_data
 
-    async def get_graph_rag_relations_from_edges(self, vector_edges: List[KnwlEdge]) -> List[KnwlRagEdge]:
+    async def get_graph_rag_relations_from_edges(self, vector_edges: List[KnwlEdge]) -> List[KnwlContextEdge]:
         edge_degrees = await asyncio.gather(*[self.graph_storage.edge_degree(r.source_id, r.targetId) for r in vector_edges])
         degree_edges = [KnwlDegreeEdge(degree=d, **e.model_dump(mode="json")) for e, d in zip(vector_edges, edge_degrees)]
         degree_edges = sorted(degree_edges, key=lambda x: (x.degree, x.weight), reverse=True)
@@ -786,7 +786,7 @@ class Knwl:
         all_edges_data = []
         for i, e in enumerate(degree_edges):
             if e is not None:
-                all_edges_data.append(KnwlRagEdge(order=e.degree, source=edge_endpoint_names[e.source_id], target=edge_endpoint_names[e.targetId], keywords=e.keywords, description=e.description, weight=e.weight, id=e.id, index=str(i)))
+                all_edges_data.append(KnwlContextEdge(order=e.degree, source=edge_endpoint_names[e.source_id], target=edge_endpoint_names[e.targetId], keywords=e.keywords, description=e.description, weight=e.weight, id=e.id, index=str(i)))
         return all_edges_data
 
     async def node_id_to_name(self, node_ids: List[str]) -> dict[str:str]:
@@ -858,13 +858,13 @@ class Knwl:
         # ====================== Relations ======================================
         edge_recs = []
         for i, e in enumerate(semantic_edges):
-            edge_recs.append(KnwlRagEdge(index=str(i), id=e.id, source=e.source, target=e.target, description=e.description, keywords=e.keywords, weight=e.weight, order=e.order))
+            edge_recs.append(KnwlContextEdge(index=str(i), id=e.id, source=e.source, target=e.target, description=e.description, keywords=e.keywords, weight=e.weight, order=e.order))
 
         # ====================== Entities ======================================
         node_recs = []
         use_nodes = await self.get_rag_records_from_edges(primary_edges)
         for i, n in enumerate(use_nodes):
-            node_recs.append(KnwlRagNode(index=str(i), id=n.id, name=n.name, type=n.type, description=n.description, order=n.order))
+            node_recs.append(KnwlContextNode(index=str(i), id=n.id, name=n.name, type=n.type, description=n.description, order=n.order))
 
         # ====================== Chunks ========================================
         use_texts = await self.get_rag_texts_from_edges(primary_edges, query_param)

@@ -19,3 +19,4 @@ workdir/
 .env
 .env.local
 .env.*.local
+tests/library/**/*.md

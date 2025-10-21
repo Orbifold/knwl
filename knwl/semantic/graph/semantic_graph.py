@@ -336,6 +336,20 @@ class SemanticGraph(SemanticGraphBase):
         await self.node_embeddings.clear()
         await self.edge_embeddings.clear()
 
+    async def nearest_nodes(self, query, top_k = 5):
+        results =  await self.node_embeddings.query(query, top_k=top_k)
+        nodes = []
+        for r in results:
+            nodes.append(KnwlNode(**r))
+        return nodes
+
+    async def nearest_edges(self, query, top_k = 5):
+        results =  await self.edge_embeddings.query(query, top_k=top_k)
+        edges = []
+        for r in results:
+            edges.append(KnwlEdge(**r))
+        return edges
+
     def __repr__(self):
         return f"<SemanticGraph, graph={self._graph_store.__class__.__name__}, nodes={self.node_embeddings.__class__.__name__}, edge_embeddings={self.edge_embeddings.__class__.__name__}, summarization={self.summarization.__class__.__name__}>"
 

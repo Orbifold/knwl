@@ -33,18 +33,23 @@ def random_nodes():
     for _ in range(5):
         selected_type = random_node_type()
         if selected_type == "Person":
-            nodes.append(KnwlNode(name=fake.name(), description=fake.text(), type="Person"))
+            nodes.append(
+                KnwlNode(name=fake.name(), description=fake.text(), type="Person")
+            )
         elif selected_type == "Company":
-            nodes.append(KnwlNode(name=fake.company(), description=fake.text(), type="Company"))
+            nodes.append(
+                KnwlNode(name=fake.company(), description=fake.text(), type="Company")
+            )
         else:  # Location
-            nodes.append(KnwlNode(name=fake.city(), description=fake.text(), type="Location"))
+            nodes.append(
+                KnwlNode(name=fake.city(), description=fake.text(), type="Location")
+            )
     return nodes
 
 
 @pytest.fixture
 def random_edge(random_nodes):
     return KnwlEdge(
-
         source_id=random.choice(random_nodes).id,
         target_id=random.choice(random_nodes).id,
         keywords=random_relation_type(),
@@ -65,3 +70,10 @@ def random_edges(random_nodes):
             )
         )
     return edges
+
+
+@pytest.fixture
+async def random_article():
+    from tests.library.collect import get_random_article
+
+    return await get_random_article()
