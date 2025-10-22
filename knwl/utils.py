@@ -30,7 +30,7 @@ def unique_strings(ar: List[str] | List[List[str]]) -> List[str]:
     if len(ar) == 0:
         return []
     if isinstance(ar[0], list):
-        ar = [item for sublist in ar for item in sublist]
+        ar = [item for sublist in ar for item in sublist if item is not None]
         return list(set(ar))
     else:
         return list(set(ar))
@@ -466,10 +466,10 @@ def parse_llm_record(rec: str, delimiter: str = "|") -> list[str] | None:
         return None
     record = re.search(r"\((.*)\)", rec)
     if record is None:
-        raise ValueError(f"Given text is likely not an LLM record. It should be wrapped in parentheses.")
+        raise ValueError(f"Given text is likely not an LLM record: {rec}")
     record = record.group(1)
     parts = split_string_by_multi_markers(record, [delimiter])
-    
+
     return parts
 
 

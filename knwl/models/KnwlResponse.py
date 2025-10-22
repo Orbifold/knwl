@@ -4,7 +4,7 @@ from typing import Callable
 from pydantic import BaseModel, Field
 from rich.text import Text
 
-from knwl.models.KnwlContext import KnwlContext
+from knwl.models.KnwlGragContext import KnwlGragContext
 
 
 class KnwlResponse(BaseModel):
@@ -24,7 +24,7 @@ class KnwlResponse(BaseModel):
     
     question: str = Field(default="None supplied", description="The original question that was asked.")
     answer: str = Field(default="None supplied", description="The generated answer from the LLM.")
-    context: KnwlContext = Field(default_factory=KnwlContext, description="The context information including chunks, nodes, edges, and references.")
+    context: KnwlGragContext = Field(default_factory=KnwlGragContext, description="The context information including chunks, nodes, edges, and references.")
     
     rag_time: float = Field(default=0.0, description="Time taken for RAG operations in seconds.")
     llm_time: float = Field(default=0.0, description="Time taken for LLM processing in seconds.")

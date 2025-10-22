@@ -1,43 +1,45 @@
 from knwl.models import KnwlInput
-from knwl.models.KnwlContextEdge import KnwlContextEdge
-from knwl.models.KnwlRagReference import KnwlRagReference
-from knwl.models.KnwlContextNode import KnwlContextNode
-from knwl.models.KnwlRagChunk import KnwlRagChunk
+from knwl.models.KnwlGragEdge import KnwlGragEdge
+from knwl.models.KnwlGragInput import KnwlGragInput
+from knwl.models.KnwlGragReference import KnwlGragReference
+from knwl.models.KnwlGragNode import KnwlGragNode
 
 from pydantic import BaseModel, Field
 from typing import List
 
+from knwl.models.KnwlGragText import KnwlGragText
 
-class KnwlContext(BaseModel):
+
+class KnwlGragContext(BaseModel):
     """
     Represents the augmented context based on the knowledge graph for a given input.
     """
 
-    input: str | KnwlInput = Field(
+    input: str | KnwlGragInput = Field(
         description="The original input text or KnwlInput object."
     )
-    chunks: List[KnwlRagChunk] = Field(default_factory=list)
-    nodes: List[KnwlContextNode] = Field(default_factory=list)
-    edges: List[KnwlContextEdge] = Field(default_factory=list)
-    references: List[KnwlRagReference] = Field(default_factory=list)
+    chunks: List[KnwlGragText] = Field(default_factory=list)
+    nodes: List[KnwlGragNode] = Field(default_factory=list)
+    edges: List[KnwlGragEdge] = Field(default_factory=list)
+    references: List[KnwlGragReference] = Field(default_factory=list)
 
     model_config = {"frozen": True}
 
     def get_chunk_table(self):
         return "\n".join(
-            ["\t".join(KnwlRagChunk.get_header())]
+            ["\t".join(KnwlGragText.get_header())]
             + [chunk.to_row() for chunk in self.chunks]
         )
 
     def get_nodes_table(self):
         return "\n".join(
-            ["\t".join(KnwlContextNode.get_header())]
+            ["\t".join(KnwlGragNode.get_header())]
             + [node.to_row() for node in self.nodes]
         )
 
     def get_edges_table(self):
         return "\n".join(
-            ["\t".join(KnwlContextEdge.get_header())]
+            ["\t".join(KnwlGragEdge.get_header())]
             + [edge.to_row() for edge in self.edges]
         )
 
@@ -63,7 +65,7 @@ class KnwlContext(BaseModel):
         )
 
     @staticmethod
-    def combine(first: "KnwlContext", second: "KnwlContext") -> "KnwlContext":
+    def combine(first: "KnwlGragContext", second: "KnwlGragContext") -> "KnwlGragContext":
         chunks = [c for c in first.chunks]
         nodes = [n for n in first.nodes]
         edges = [e for e in first.edges]
@@ -90,7 +92,7 @@ class KnwlContext(BaseModel):
             if r.id not in reference_ids:
                 references.append(r)
 
-        return KnwlContext(
+        return KnwlGragContext(
             chunks=chunks, nodes=nodes, edges=edges, references=references
         )
 

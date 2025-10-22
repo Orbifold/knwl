@@ -23,7 +23,7 @@ class KnwlEdge(BaseModel):
         id (str): The unique identifier of the edge, default is a new UUID.
     """
 
-    model_config = {"frozen": True}
+    # model_config = {"frozen": True}
 
     source_id: str = Field(description="The Id of the source node.")
     target_id: str = Field(description="The Id of the target node.")
@@ -87,7 +87,7 @@ class KnwlEdge(BaseModel):
         """
 
         return self.data.get(key, None)
-    
+
     @field_validator("source_id")
     @classmethod
     def validate_source_id(cls, v):
@@ -119,6 +119,18 @@ class KnwlEdge(BaseModel):
             else:
                 object.__setattr__(self, "type", "Unknown")
         return self
+
+    @field_validator("data", mode="before")
+    @classmethod
+    def parse_data(cls, v):
+        """Parse JSON string to dict if needed."""
+        if v is not None and isinstance(v, str):
+            import json
+            try:
+                return json.loads(v)
+            except json.JSONDecodeError as e:
+                raise ValueError(f"Invalid JSON string for data field: {e}")
+        return v
 
     @staticmethod
     def other_endpoint(edge: "KnwlEdge", node_id: str) -> str:

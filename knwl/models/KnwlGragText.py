@@ -1,0 +1,30 @@
+from typing import Optional
+from pydantic import BaseModel, Field
+
+
+class KnwlGragText(BaseModel):
+    """
+    Formerly KnwlRagChunk.
+    Represents a piece of text obtained via one of the Grag strategies.
+    
+    Attributes:
+        index (str): The index identifier of the text.
+        text (str): The actual text content.
+        order (int): The order of the text in the sequence.
+        id (str): The unique identifier of the text.
+    """
+    model_config = {"frozen": True}
+    
+    index: str = Field(description="The index identifier of the text.")
+    text: Optional[str] = Field(default = "", description="The text content to use for context. If not supplied, downstream services need to fetch the text data separately using the id.")
+    order: int = Field(description="The order of the text in the sequence.")
+    id: str = Field(description="The unique identifier of the text.")
+
+    @staticmethod
+    def get_header():
+        return ["id", "content"]
+
+    def to_row(self):
+        return "\t".join(
+            [self.index, self.text]
+        )    

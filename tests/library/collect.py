@@ -156,7 +156,7 @@ async def collect_library():
                 print(e)
 
 
-async def get_random_article(category: str = None) -> str:
+async def get_random_library_article(category: str = None) -> str:
     import random
 
     if category is None:
@@ -165,14 +165,17 @@ async def get_random_article(category: str = None) -> str:
         raise ValueError(f"Category '{category}' not found in library.")
 
     article = random.choice(library[category])
+    return await get_library_article(category, article)
+
+async def get_library_article(category: str, title: str) -> str:
     current_dir = os.path.dirname(os.path.abspath(__file__))
 
-    file_path = os.path.join(current_dir, category, f"{article.replace(' ', '_')}.md")
+    file_path = os.path.join(current_dir, category, f"{title.replace(' ', '_')}.md")
     if os.path.exists(file_path):
         with open(file_path, "r", encoding="utf-8") as f:
             article = f.read()
     else:
-        article = await fetch_page_text(article)
+        article = await fetch_page_text(title)
         with open(
             file_path,
             "w",
@@ -180,7 +183,6 @@ async def get_random_article(category: str = None) -> str:
         ) as f:
             f.write(article)
     return article
-
 
 if __name__ == "__main__":
     import asyncio

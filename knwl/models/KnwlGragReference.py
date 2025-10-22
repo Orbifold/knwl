@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 
 
-class KnwlRagReference(BaseModel):
+class KnwlGragReference(BaseModel):
     """
     Represents a reference in the RAG (Retrieval-Augmented Generation) system.
     This class holds metadata about a reference, including its index, name, description,

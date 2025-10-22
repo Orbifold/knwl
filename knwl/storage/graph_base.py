@@ -33,7 +33,7 @@ class GraphStorageBase(FrameworkBase):
         ...
 
     @abstractmethod
-    async def edge_exists(self, source_or_key: Union[BaseModel,str,dict], target_node_id:  Union[BaseModel,str,dict] = None) -> bool:
+    async def edge_exists(self, source_or_key: Union[BaseModel, str, dict], target_node_id: Union[BaseModel, str, dict] = None) -> bool:
         """
         Check if an edge exists between the given source and target nodes.
 
@@ -88,12 +88,12 @@ class GraphStorageBase(FrameworkBase):
         ...
 
     @abstractmethod
-    async def edge_degree(self, source_id: str, target_id: str) -> int:
+    async def edge_degree(self, edge_or_source_id: str, target_id: str) -> int:
         """
         Retrieve the degree of an edge in the graph. The degree of an edge is defined as the number of connections it has to other edges (via its endpoints).
 
         Args:
-            source_id (str): The unique identifier of the source node.
+            edge_or_source_id (str): The unique identifier of the source node.
             target_id (str): The unique identifier of the target node.
 
         Returns:
@@ -102,9 +102,7 @@ class GraphStorageBase(FrameworkBase):
         ...
 
     @abstractmethod
-    async def get_edges  (
-        self, source_node_id_or_key: str, target_node_id: str = None, label: str = None
-    ) -> Union[list[dict], None]:
+    async def get_edges(self, source_node_id_or_key: str, target_node_id: str = None, label: str = None) -> Union[list[dict], None]:
         """
         Retrieve edges from the graph based on the endpoints and optional label.
 
@@ -166,9 +164,7 @@ class GraphStorageBase(FrameworkBase):
         ...
 
     @abstractmethod
-    async def get_semantic_endpoints(
-        self, edge_ids: list[str]
-    ) -> dict[str, tuple[str, str]]:
+    async def get_semantic_endpoints(self, edge_ids: list[str]) -> dict[str, tuple[str, str]]:
         """
         Given a list of edge Id's, the name of the source and target nodes is returned as tuple (source_name, target_name).
         The keys of the returned dictionary are the edge Id's.
@@ -202,7 +198,7 @@ class GraphStorageBase(FrameworkBase):
         ...
 
     @abstractmethod
-    async def upsert_node(self, node_id: BaseModel|str|dict, node_data=None):
+    async def upsert_node(self, node_id: BaseModel | str | dict, node_data=None):
         """
         Insert or update a node in the graph storage.
 
@@ -220,9 +216,7 @@ class GraphStorageBase(FrameworkBase):
         ...
 
     @abstractmethod
-    async def upsert_edge(
-        self, source_node_id, target_node_id,   edge_data=None
-    ):
+    async def upsert_edge(self, source_node_id, target_node_id, edge_data=None):
         """
         Upsert (insert or update) an edge in the graph.
 
@@ -296,7 +290,7 @@ class GraphStorageBase(FrameworkBase):
         ...
 
     @abstractmethod
-    async def remove_edge(self, source_node_id_or_key: str, target_node_id: str = None,type: str = None):
+    async def remove_edge(self, source_node_id_or_key: str, target_node_id: str = None, type: str = None):
         """Remove an edge from the graph.
 
         Args:
@@ -320,9 +314,7 @@ class GraphStorageBase(FrameworkBase):
         ...
 
     @abstractmethod
-    async def get_edge_weights(
-        self, source_node_id_or_key: str, target_node_id: str = None, type: str = None
-    ) -> dict[str, float]:
+    async def get_edge_weights(self, source_node_id_or_key: str, target_node_id: str = None, type: str = None) -> dict[str, float]:
         """
         Get the weights of edges between two nodes in the graph.
 

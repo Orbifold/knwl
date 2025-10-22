@@ -37,14 +37,14 @@ default_config = {
         "default": "basic",
         "basic": {
             "class": "knwl.extraction.basic_entity_extraction.BasicEntityExtraction",
-            "llm": "@/llm/openai",
+            "llm": "@/llm/ollama",
         },
     },
     "keywords_extraction": {
         "default": "basic",
         "basic": {
             "class": "knwl.extraction.basic_keywords_extraction.BasicKeywordsExtraction",
-            "llm": "@/llm/openai",
+            "llm": "@/llm/ollama",
         },
     },
     "graph_extraction": {
@@ -52,7 +52,7 @@ default_config = {
         "basic": {
             "class": "knwl.extraction.basic_graph_extraction.BasicGraphExtraction",
             "mode": "full",  # fast or full
-            "llm": "@/llm/openai",
+            "llm": "@/llm/ollama",
         },
     },
     "glean_graph_extraction": {
@@ -84,7 +84,7 @@ default_config = {
         "default": "ollama",
         "ollama": {
             "class": "knwl.llm.ollama.OllamaClient",
-            "model": "qwen2.5:14b",
+            "model": "o14",
             "caching_service": "@/llm_caching/json",
             "temperature": 0.1,
             "context_window": 32768,
@@ -190,7 +190,7 @@ default_config = {
             "blob_storage": "none",  # don't save the documents
             "chunker": "@/chunking/tiktoken",
             "graph_extractor": "@/graph_extraction/basic"
-           
+
         },
     },
 }

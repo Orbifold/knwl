@@ -7,27 +7,13 @@ providing beautiful, informative terminal representations.
 
 from typing import Any
 
-from matplotlib.pyplot import table
+from rich.console import Group
 from rich.panel import Panel
 from rich.table import Table
-from rich.tree import Tree
 from rich.text import Text
-from rich.console import Group
 
 from knwl.format.formatter_base import ModelFormatter, register_formatter
-from knwl.models import (
-    KnwlNode,
-    KnwlEdge,
-    KnwlGraph,
-    KnwlDocument,
-    KnwlChunk,
-    KnwlEntity,
-    KnwlExtraction,
-    KnwlContext,
-    KnwlResponse,
-    KnwlGragIngestion,
-    KnwlKeywords,
-)
+from knwl.models import (KnwlNode, KnwlEdge, KnwlGraph, KnwlDocument, KnwlChunk, KnwlEntity, KnwlExtraction, KnwlGragContext, KnwlResponse, KnwlGragIngestion, KnwlKeywords, )
 
 
 @register_formatter(KnwlNode, "terminal")
@@ -346,31 +332,38 @@ class KnwlExtractionTerminalFormatter(ModelFormatter):
         )
 
 
-@register_formatter(KnwlContext, "terminal")
+@register_formatter(KnwlGragContext, "terminal")
 class KnwlContextTerminalFormatter(ModelFormatter):
     """Formatter for KnwlContext models."""
 
-    def format(self, model: KnwlContext, formatter, **options) -> Panel:
+    def format(self, ctx: KnwlGragContext, formatter, **options) -> Panel:
         """Format a KnwlContext as a rich panel."""
-        show_details = options.get("show_details", False)
+        show_details = options.get("show_details", True)
+        max_entities = options.get("max_entities", 10)
+        content= []
+        content.append(Text("\n"))
+        content.append(
+            Text(f" Question: {ctx.input.text}", style=formatter.theme.SUBTITLE_STYLE)
+        )
+        if show_details:
+            content.append(Text("\n"))
+            content.append(Text(" Nodes:", style=formatter.theme.SUBTITLE_STYLE))
+            entity_table = Table(box=formatter.theme.TABLE_BOX)
+            entity_table.add_column("Name", style=formatter.theme.TYPE_STYLE)
+            entity_table.add_column("Type", style=formatter.theme.HIGHLIGHT, justify="right")
+            entity_table.add_column("Description", style=formatter.theme.VALUE_STYLE)
 
-        stats_table = Table(show_header=False, box=None, padding=(0, 1))
-        stats_table.add_column("Metric", style=formatter.theme.KEY_STYLE)
-        stats_table.add_column("Value", style=formatter.theme.HIGHLIGHT)
+            for n in ctx.nodes[:max_entities]:
+                entity_table.add_row(n.name, n.type, n.description)
 
-        # Count items in context
-        chunk_count = len(model.chunks) if hasattr(model, "chunks") else 0
-        node_count = len(model.nodes) if hasattr(model, "nodes") else 0
-        edge_count = len(model.edges) if hasattr(model, "edges") else 0
-
-        stats_table.add_row("Chunks", str(chunk_count))
-        stats_table.add_row("Nodes", str(node_count))
-        stats_table.add_row("Edges", str(edge_count))
+            content.append(entity_table)
 
         return formatter.create_panel(
-            stats_table,
+            Group(*content),
             title="🎯 Context",
-            subtitle=f"{chunk_count} chunks, {node_count} nodes, {edge_count} edges",
+            subtitle=f"{len(ctx.chunks)} chunks, {len(ctx.nodes)} nodes, {len(ctx.edges)} edges",
+            width=320,  # Set explicit width (adjust as needed)
+            expand=True,  # Or use expand=True to fill available space
         )
 
 
@@ -482,7 +475,7 @@ class KnwlKeywordsTerminalFormatter(ModelFormatter):
     def format(self, model: KnwlKeywords, formatter, **options) -> Panel:
         """Format a KnwlKeywords as a rich panel."""
         content = []
-        
+
         content.append(Text("\n"))
         content.append(
             Text("🔼 High-Level Keywords:", style=formatter.theme.SUBTITLE_STYLE)
@@ -506,6 +499,6 @@ class KnwlKeywordsTerminalFormatter(ModelFormatter):
 
         return formatter.create_panel(
             Group(*content),
-            title="🏷️ Keywords Extraction", 
+            title="🏷️ Keywords Extraction",
             subtitle="Extracted Keywords"
         )

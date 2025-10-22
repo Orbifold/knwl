@@ -1,27 +1,19 @@
 from typing import Union
+
 from knwl.di import defaults
 from knwl.logging import log
 from knwl.models import KnwlNode, KnwlEdge
 from knwl.models.KnwlGraph import KnwlGraph
 from knwl.semantic.graph.semantic_graph_base import SemanticGraphBase
-from knwl.services import Services
-from knwl.storage import NetworkXGraphStorage, ChromaStorage
 from knwl.storage.graph_base import GraphStorageBase
 from knwl.storage.vector_storage_base import VectorStorageBase
-from knwl.summarization.ollama import OllamaSummarization
 from knwl.summarization.summarization_base import SummarizationBase
 
 
 @defaults("semantic_graph")
 class SemanticGraph(SemanticGraphBase):
 
-    def __init__(
-        self,
-        graph_store: GraphStorageBase = None,
-        node_embeddings: VectorStorageBase = None,
-        edge_embeddings: VectorStorageBase = None,
-        summarization: SummarizationBase = None,
-    ):
+    def __init__(self, graph_store: GraphStorageBase = None, node_embeddings: VectorStorageBase = None, edge_embeddings: VectorStorageBase = None, summarization: SummarizationBase = None, ):
         super().__init__()
         self._graph_store = graph_store
         self.node_embeddings = node_embeddings
@@ -34,21 +26,15 @@ class SemanticGraph(SemanticGraphBase):
         if self.node_embeddings is None:
             raise ValueError("SemanticGraph: node_embeddings is required.")
         if not isinstance(self.node_embeddings, VectorStorageBase):
-            raise ValueError(
-                "SemanticGraph: node_embeddings must be a VectorStorageBase instance."
-            )
+            raise ValueError("SemanticGraph: node_embeddings must be a VectorStorageBase instance.")
         if self.edge_embeddings is None:
             raise ValueError("SemanticGraph: edge_embeddings is required.")
         if not isinstance(self.edge_embeddings, VectorStorageBase):
-            raise ValueError(
-                "SemanticGraph: edge_embeddings must be a VectorStorageBase instance."
-            )
+            raise ValueError("SemanticGraph: edge_embeddings must be a VectorStorageBase instance.")
         if self.summarization is None:
             raise ValueError("SemanticGraph: summarization is required.")
         if not isinstance(self.summarization, SummarizationBase):
-            raise ValueError(
-                "SemanticGraph: summarization must be a SummarizationBase instance."
-            )
+            raise ValueError("SemanticGraph: summarization must be a SummarizationBase instance.")
 
     @property
     def graph(self) -> GraphStorageBase:
@@ -66,27 +52,17 @@ class SemanticGraph(SemanticGraphBase):
                 raise ValueError("Edge must have an Id to be embedded.")
             if edge.source_id is None or edge.target_id is None:
                 log.error("Edge must have both source and target IDs to be embedded.")
-                raise ValueError(
-                    "Edge must have both source and target IDs to be embedded."
-                )  # check endpoints exist
+                raise ValueError("Edge must have both source and target IDs to be embedded.")  # check endpoints exist
             if not await self.node_exists(edge.source_id):
-                raise ValueError(
-                    f"Source node {edge.source_id} does not exist in the graph."
-                )
+                raise ValueError(f"Source node {edge.source_id} does not exist in the graph.")
             if not await self.node_exists(edge.target_id):
-                raise ValueError(
-                    f"Target node {edge.target_id} does not exist in the graph."
-                )
+                raise ValueError(f"Target node {edge.target_id} does not exist in the graph.")
             # merge descriptions if edge already exists
             merge_edge = await self.merge_edge_descriptions(edge)
             # add to graph store
-            await self._graph_store.upsert_edge(
-                edge.source_id, edge.target_id, merge_edge
-            )
+            await self._graph_store.upsert_edge(edge.source_id, edge.target_id, merge_edge)
             # add to embedding store
-            await self.edge_embeddings.upsert(
-                {edge.id: merge_edge.model_dump(mode="json")}
-            )
+            await self.edge_embeddings.upsert({edge.id: merge_edge.model_dump(mode="json")})
             return merge_edge
         except Exception as e:
             log(e)
@@ -123,15 +99,9 @@ class SemanticGraph(SemanticGraphBase):
         # if the node exists, we summarize the existing description with the new one
         if await self.node_exists(node):
             existing_node = await self.get_node_by_id(node.id)
-            if (
-                existing_node is not None
-                and existing_node.description is not None
-                and node.description is not None
-            ):
+            if (existing_node is not None and existing_node.description is not None and node.description is not None):
                 # summarize the two descriptions
-                summary = await self.summarization.summarize(
-                    [existing_node.description, node.description]
-                )
+                summary = await self.summarization.summarize([existing_node.description, node.description])
                 if summary is not None and len(summary.strip()) > 0:
                     node = node.update(description=summary.strip())
         return node
@@ -149,9 +119,7 @@ class SemanticGraph(SemanticGraphBase):
         if edges and len(edges) > 0:
             edges.append(edge)
             # summarize the existing descriptions with the new one
-            combined_description = await self.summarization.summarize(
-                [e.description for e in edges if e.description]
-            )
+            combined_description = await self.summarization.summarize([e.description for e in edges if e.description])
             if combined_description:
                 # note that the id of the original edge is kept
                 edge = edge.update(description=combined_description.strip())
@@ -168,6 +136,7 @@ class SemanticGraph(SemanticGraphBase):
             node = await self.merge_node_descriptions(node)
             data[node.id] = node.model_dump(mode="json")
             n = await self._graph_store.upsert_node(node)
+
             coll.append(n)
 
         # embedding of the nodes
@@ -180,6 +149,13 @@ class SemanticGraph(SemanticGraphBase):
         data = await self._graph_store.get_node_by_id(id)
         if data is None:
             return None
+        if "data" in data and isinstance(data["data"], str):
+            import json
+
+            try:
+                data["data"] = json.loads(data["data"])
+            except Exception:
+                pass
         return KnwlNode(**data)
 
     async def get_edge_by_id(self, id: str) -> KnwlEdge | None:
@@ -188,6 +164,13 @@ class SemanticGraph(SemanticGraphBase):
         data = await self._graph_store.get_edge_by_id(id)
         if data is None:
             return None
+        if "data" in data and isinstance(data["data"], str):
+            import json
+
+            try:
+                data["data"] = json.loads(data["data"])
+            except Exception:
+                pass
         return KnwlEdge(**data)
 
     async def node_exists(self, id: KnwlNode | str) -> bool:
@@ -204,12 +187,8 @@ class SemanticGraph(SemanticGraphBase):
             return False
         return await self._graph_store.edge_exists(id)
 
-    async def get_edges(
-        self, source_node_id_or_key: str, target_node_id: str = None, type: str = None
-    ) -> Union[list[KnwlEdge], None]:
-        found = await self._graph_store.get_edges(
-            source_node_id_or_key, target_node_id, type
-        )
+    async def get_edges(self, source_node_id_or_key: str, target_node_id: str = None, type: str = None) -> Union[list[KnwlEdge], None]:
+        found = await self._graph_store.get_edges(source_node_id_or_key, target_node_id, type)
         if found is None or len(found) == 0:
             return None
         edges = []
@@ -234,9 +213,7 @@ class SemanticGraph(SemanticGraphBase):
         g = KnwlGraph(nodes=ns, edges=es, keywords=graph.keywords, id=graph.id)
         return g
 
-    async def consolidate_graphs(
-        self, g1: KnwlGraph, g2: KnwlGraph
-    ) -> KnwlGraph | None:
+    async def consolidate_graphs(self, g1: KnwlGraph, g2: KnwlGraph) -> KnwlGraph | None:
         """
         Consolidate two knowledge graphs into one, merging (descriptions of) nodes and edges.
         Does not store anything, just returns the consolidated graph.
@@ -254,13 +231,9 @@ class SemanticGraph(SemanticGraphBase):
             if node.id in merged_nodes:
                 # merge descriptions
                 existing_node = merged_nodes[node.id]
-                summary = await self.summarization.summarize(
-                    [existing_node.description, node.description]
-                )
+                summary = await self.summarization.summarize([existing_node.description, node.description])
                 if summary is not None and len(summary.strip()) > 0:
-                    merged_nodes[node.id] = existing_node.update(
-                        description=summary.strip()
-                    )
+                    merged_nodes[node.id] = existing_node.update(description=summary.strip())
             else:
                 merged_nodes[node.id] = node
 
@@ -269,21 +242,13 @@ class SemanticGraph(SemanticGraphBase):
             if edge.id in merged_edges:
                 # merge descriptions
                 existing_edge = merged_edges[edge.id]
-                summary = await self.summarization.summarize(
-                    [existing_edge.description, edge.description]
-                )
+                summary = await self.summarization.summarize([existing_edge.description, edge.description])
                 if summary is not None and len(summary.strip()) > 0:
-                    merged_edges[edge.id] = existing_edge.update(
-                        description=summary.strip()
-                    )
+                    merged_edges[edge.id] = existing_edge.update(description=summary.strip())
             else:
                 merged_edges[edge.id] = edge
 
-        return KnwlGraph(
-            id=g1.id,
-            nodes=list(merged_nodes.values()),
-            edges=list(merged_edges.values()),
-        )
+        return KnwlGraph(id=g1.id, nodes=list(merged_nodes.values()), edges=list(merged_edges.values()), )
 
     async def get_similar_nodes(self, node: KnwlNode, top_k: int = 5) -> list[KnwlNode]:
         """
@@ -336,19 +301,56 @@ class SemanticGraph(SemanticGraphBase):
         await self.node_embeddings.clear()
         await self.edge_embeddings.clear()
 
-    async def nearest_nodes(self, query, top_k = 5):
-        results =  await self.node_embeddings.query(query, top_k=top_k)
+    async def nearest_nodes(self, query, top_k=5):
+        results = await self.node_embeddings.query(query, top_k=top_k)
         nodes = []
         for r in results:
-            nodes.append(KnwlNode(**r))
+            # if same vector storage for nodes and edges, filter only nodes
+            if r is not None and r["type_name"] == "KnwlNode":
+                nodes.append(KnwlNode(**r))
         return nodes
 
-    async def nearest_edges(self, query, top_k = 5):
-        results =  await self.edge_embeddings.query(query, top_k=top_k)
+    async def nearest_edges(self, query, top_k=5):
+        results = await self.edge_embeddings.query(query, top_k=top_k)
         edges = []
         for r in results:
-            edges.append(KnwlEdge(**r))
+            if r is not None and r["type_name"] == "KnwlEdge":
+                edges.append(KnwlEdge(**r))
         return edges
+
+    async def get_attached_edges(self, nodes: list[KnwlNode]) -> list[KnwlEdge]:
+        """
+        Retrieve the edges attached to the given nodes.
+
+        Args:
+            nodes (List[KnwlNode]): A list of KnwlNode objects for which to retrieve attached edges.
+
+        Returns:
+            List[KnwlEdge]: A list of KnwlEdge objects attached to the given nodes.
+        """
+        if nodes is None:
+            raise ValueError("get_attached_edges: parameter is None")
+        if not len(nodes):
+            return []
+        found = await self._graph_store.get_attached_edges(nodes)
+        return [KnwlEdge(**e) for e in found]
+
+    async def node_degree(self, node_id: str) -> int:
+        return await self.graph.node_degree(node_id)
+
+    async def edge_degree(self, edge_or_source_id: str, target_id: str = None) -> int:
+        return await self.graph.edge_degree(edge_or_source_id, target_id)
+
+    async def edge_degrees(self, edges: list[KnwlEdge]) -> list[int]:
+        coll = []
+        for e in edges:
+            degree = await self.edge_degree(e.source_id, e.target_id)
+            coll.append(degree)
+
+        return coll
+
+    async def get_semantic_endpoints(self, edge_ids: list[str]) -> dict[str, tuple[str, str]]:
+        return await self.graph.get_semantic_endpoints(edge_ids)
 
     def __repr__(self):
         return f"<SemanticGraph, graph={self._graph_store.__class__.__name__}, nodes={self.node_embeddings.__class__.__name__}, edge_embeddings={self.edge_embeddings.__class__.__name__}, summarization={self.summarization.__class__.__name__}>"

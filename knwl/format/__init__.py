@@ -210,6 +210,9 @@ def print_knwl(obj: Any, **options) -> None:
         print_knwl(edges)
         ```
     """
+    if obj is None:
+        print("print_knwl of None")
+        return
     render_knwl(obj, format_type="terminal", **options)
 
 

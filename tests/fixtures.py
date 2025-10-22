@@ -74,6 +74,6 @@ def random_edges(random_nodes):
 
 @pytest.fixture
 async def random_article():
-    from tests.library.collect import get_random_article
+    from tests.library.collect import get_random_library_article
 
-    return await get_random_article()
+    return await get_random_library_article()

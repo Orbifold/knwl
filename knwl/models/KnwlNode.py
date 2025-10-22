@@ -51,7 +51,19 @@ class KnwlNode(BaseModel):
         default_factory=dict,
         description="Additional data associated with the knowledge node.",
     )
-    model_config = {"frozen": True}
+    # model_config = {"frozen": True}
+
+    @field_validator("data", mode="before")
+    @classmethod
+    def parse_data(cls, v):
+        """Parse JSON string to dict if needed."""
+        if v is not None and isinstance(v, str):
+            import json
+            try:
+                return json.loads(v)
+            except json.JSONDecodeError as e:
+                raise ValueError(f"Invalid JSON string for data field: {e}")
+        return v
 
     def has_data(self, key: str) -> bool:
         """

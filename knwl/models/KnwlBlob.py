@@ -3,6 +3,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator, model_v
 from typing import Optional
 
 from knwl.models import KnwlDocument, KnwlInput
+from knwl.models.KnwlChunk import KnwlChunk
 from knwl.utils import get_full_path, hash_with_prefix
 
 
@@ -27,6 +28,7 @@ class KnwlBlob(BaseModel):
         default_factory=lambda: datetime.now().isoformat(),
         description="Creation timestamp",
     )
+    metadata: dict = Field(default_factory=dict, description="BLOB metadata")
     description: str = Field(default="", description="BLOB description")
     name: str = Field(default="", description="BLOB name")
     type_name: str = Field(
@@ -60,7 +62,7 @@ class KnwlBlob(BaseModel):
 
     async def save_to_file(self, path: str):
         """
-        Save the BLOB data to a file.
+        Save the BLOB data to a file. Note that the metadata is not saved.
 
         Args:
             path (str): The file path where the BLOB data should be saved.
@@ -90,7 +92,7 @@ class KnwlBlob(BaseModel):
         return KnwlBlob(data=data, name=name, description=description)
 
     @staticmethod
-    async def rom_bytes(
+    async def from_bytes(
         data: bytes, name: str = None, description: str = None
     ) -> "KnwlBlob":
         """
@@ -139,4 +141,25 @@ class KnwlBlob(BaseModel):
             data=document.content.encode("utf-8"),
             name=document.name,
             description=document.description,
+        )
+
+    @staticmethod
+    def from_chunk(chunk: "KnwlChunk"):
+        """
+        Create a KnwlBlob instance from a KnwlChunk.
+
+        This class method converts a KnwlChunk into a KnwlBlob by encoding the chunk's
+        text as UTF-8 bytes and transferring the name and description properties.
+
+        Args:
+            chunk (KnwlChunk): The source chunk to convert. Must have text, name, and description attributes.
+        Returns:
+            KnwlBlob: A new KnwlBlob instance with the chunk's text encoded as
+                UTF-8 bytes, and the same name and description as the source chunk.
+        """
+        return KnwlBlob(
+            id=chunk.id,
+            data=chunk.text.encode("utf-8"),
+            name=chunk.name,
+            description=chunk.description,
         )
