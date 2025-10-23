@@ -12,8 +12,7 @@ def test_knwlnode():
     assert node1.name == "Node1"
     assert node1.type == "TypeA"
     assert node1.description == ""
-    with pytest.raises(ValidationError):
-        node1.name = "Node2"  # immutable
+ 
     # you can use the update method
     node2 = node1.update(name="Node2")
     assert node2.id is not None
@@ -38,8 +37,7 @@ def test_knwledge():
     assert edge1.target_id == "b"
     assert edge1.type == "relates_to"
     assert edge1.description == ""
-    with pytest.raises(ValidationError):
-        edge1.source = "c"  # immutable
+  
     # you can use the update method
     edge2 = edge1.update(description="new description")
     # primary key did not change

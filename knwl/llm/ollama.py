@@ -4,7 +4,7 @@ from knwl.llm.llm_cache_base import LLMCacheBase
 import ollama
 
 from knwl.llm.llm_base import LLMBase
-from knwl.models import KnwlLLMAnswer
+from knwl.models import KnwlAnswer
 from knwl.di import service, inject_config, defaults
 from knwl.logging import log
 
@@ -47,13 +47,15 @@ class OllamaClient(LLMBase):
         extra_messages: list[dict] = None,
         key: str = None,
         category: str = None,
-    ) -> KnwlLLMAnswer:
+    ) -> KnwlAnswer:
+        if not question:
+            log.warn("OllamaClient: ask called with empty question.")
+            return None
         messages = self.assemble_messages(question, system_message, extra_messages)
         if isinstance(messages, str):
             messages = [{"role": "user", "content": messages}]
         # Check cache first
         if self._caching_service is not None:
-            print(self._caching_service)
             cached = await self._caching_service.get(messages, "ollama", self._model)
             if cached is not None:
                 return cached
@@ -65,7 +67,7 @@ class OllamaClient(LLMBase):
         )
         end_time = time.time()
         content = response["message"]["content"]
-        answer = KnwlLLMAnswer(
+        answer = KnwlAnswer(
             question=question,
             answer=content,
             messages=messages,

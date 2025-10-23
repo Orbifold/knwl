@@ -2,7 +2,7 @@ import asyncio
 import os
 
 import pytest
-
+import random
 from knwl.models.KnwlDocument import KnwlDocument
 from knwl.storage.json_storage import JsonStorage
 from knwl.utils import random_name, load_json
@@ -14,6 +14,8 @@ fake = Faker()
 @pytest.fixture
 def test_store():
     return JsonStorage("memory")
+
+
 @pytest.mark.asyncio
 async def test_delete(test_store):
     await test_store.upsert({"key1": {"value": "data1"}})
@@ -21,11 +23,13 @@ async def test_delete(test_store):
     data = await test_store.get_by_id("key1")
     assert data is None
 
+
 @pytest.mark.asyncio
 async def test_all_keys(test_store):
     assert test_store.save_to_disk is False
     await test_store.clear()
-    await test_store.upsert({"key1": {"value": "data1"}, "key2": {"value": "data2"}})
+    await test_store.upsert({"key1": {"value": "data1"}})
+    await test_store.upsert({"key2": {"value": "data2"}})
     keys = await test_store.get_all_ids()
     assert set(keys) == {"key1", "key2"}
 
@@ -52,13 +56,14 @@ async def test_get_by_id(test_store):
 
 @pytest.mark.asyncio
 async def test_get_by_ids(test_store):
-    await test_store.upsert({"key1": {"value": "data1"}, "key2": {"value": "data2"}})
+    await test_store.upsert({"key1": {"value": "data1"}})
+    await test_store.upsert({"key2": {"value": "data2"}})
     data = await test_store.get_by_ids(["key1", "key2"])
     assert data == [{"value": "data1"}, {"value": "data2"}]
 
 
 @pytest.mark.asyncio
-async def test_filter_keys(test_store):  
+async def test_filter_keys(test_store):
     k1 = fake.word()
     k2 = fake.word()
     await test_store.upsert({k1: {"value": "data1"}})
@@ -125,3 +130,16 @@ async def test_memory_only():
     found = await store.get_by_id("key1")
     assert found == {"value": "data1"}
     await store.clear_cache()
+
+
+@pytest.mark.asyncio
+async def test_polymorphic(test_store):
+    id = await test_store.upsert("simple string data")
+    assert test_store.exists(id)
+    found = await test_store.get_by_id(id)
+    assert found == "simple string data"
+    val = random.random()
+    id2 = await test_store.upsert(val)
+    assert test_store.exists(id2)
+    found2 = await test_store.get_by_id(id2)
+    assert found2 == val

@@ -24,9 +24,9 @@ async def test_summarization():
     initial_count = await summ.chunker.count_tokens(" ".join(descriptions))
     # assert summary_count <  summ.max_tokens
     assert summary_count < initial_count
-    print("------------------Generic------------------")
+    print("\n------------------Generic------------------")
     print(result)
 
     result = await summ.summarize(descriptions, entity_or_relation_name="Mammals")
-    print("------------------Mammals------------------")
+    print("\n------------------Mammals------------------")
     print(result)

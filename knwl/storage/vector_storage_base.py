@@ -15,7 +15,7 @@ class VectorStorageBase(StorageBase, ABC):
 
         Args:
             query (str): The search query string to find similar vectors for.
-            top_k (int, optional): Maximum number of most similar results to return. 
+            top_k (int, optional): Maximum number of most similar results to return.
                 Defaults to 1.
 
         Returns:
@@ -23,7 +23,7 @@ class VectorStorageBase(StorageBase, ABC):
                 ordered by similarity score (highest first). Each dictionary typically
                 contains metadata and similarity scores for the matching items.
         """
-        pass
+        ...
 
     @abstractmethod
     async def upsert(self, data: dict[str, dict]):
@@ -54,24 +54,25 @@ class VectorStorageBase(StorageBase, ABC):
             This is an abstract method that should be implemented by concrete vector storage classes.
             The specific behavior may vary depending on the underlying storage implementation.
         """
-        pass
+        ...
 
     @abstractmethod
-    async def clear(self):
-        pass
+    async def clear(self): ...
 
     @abstractmethod
-    async def count(self):
-        pass
+    async def count(self): ...
 
     @abstractmethod
-    async def get_ids(self):
-        pass
+    async def get_ids(self): ...
 
     @abstractmethod
-    async def save(self):
-        pass
+    async def save(self): ...
 
     @abstractmethod
-    async def get_by_id(self, id: str):
-        pass
+    async def get_by_id(self, id: str): ...
+
+    @abstractmethod
+    async def delete_by_id(self, id: str): ...
+
+    @abstractmethod
+    async def exists(self, id: str) -> bool: ...

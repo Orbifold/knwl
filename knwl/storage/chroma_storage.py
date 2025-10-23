@@ -106,7 +106,7 @@ class ChromaStorage(VectorStorageBase):
                 embedding = value["embeddings"]
             self.collection = self.client.get_or_create_collection(
                 name=self._collection_name
-            ) # hack: on `clear` seems to cause issues
+            )  # hack: on `clear` seems to cause issues
             if len(self._metadata) > 0:
                 metadata = {k: value.get(k, None) for k in self._metadata}
                 self.collection.upsert(
@@ -159,3 +159,12 @@ class ChromaStorage(VectorStorageBase):
 
     def __repr__(self):
         return f"ChromaStorage, collection={self._collection_name}, path={self._path}, memory={self._in_memory}, metadata={self._metadata})"
+
+    def __str__(self):
+        return self.__repr__()
+
+    async def delete_by_id(self, id: str):
+        self.collection.delete(ids=[id])
+    async def exists(self, id: str) -> bool:
+        result = self.collection.get(ids=[id], include=["documents"])
+        return len(result["documents"]) > 0

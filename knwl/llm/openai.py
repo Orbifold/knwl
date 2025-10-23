@@ -6,7 +6,7 @@ import openai
 from knwl.di import defaults
 from knwl.llm import LLMBase, LLMCacheBase
 from knwl.logging import log
-from knwl.models import KnwlLLMAnswer
+from knwl.models import KnwlAnswer
  
 @defaults("llm", "openai")
 class OpenAIClient(LLMBase):
@@ -63,7 +63,7 @@ class OpenAIClient(LLMBase):
         extra_messages: list[dict] = None,
         key: str = None,
         category: str = None,
-    ) -> KnwlLLMAnswer:
+    ) -> KnwlAnswer:
         messages = self.assemble_messages(question, system_message, extra_messages)
         if isinstance(messages, str):
             messages = [{"role": "user", "content": messages}]
@@ -78,7 +78,7 @@ class OpenAIClient(LLMBase):
         )
         end_time = time.time()
         content = found.choices[0].message.content
-        answer = KnwlLLMAnswer(
+        answer = KnwlAnswer(
             answer=content,
             messages=messages,
             timing=round(end_time - start_time, 2),

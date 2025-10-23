@@ -3,7 +3,7 @@ from typing import List
 
 from knwl.framework_base import FrameworkBase
 from knwl.llm.llm_cache_base import LLMCacheBase
-from knwl.models.KnwlLLMAnswer import KnwlLLMAnswer
+from knwl.models.KnwlAnswer import KnwlAnswer
 from knwl.services import services
 
 
@@ -17,7 +17,7 @@ class LLMBase(FrameworkBase, ABC):
         extra_messages: list[dict] = None,
         key: str = None,
         category: str = None
-    ) -> KnwlLLMAnswer:
+    ) -> KnwlAnswer:
         """
         Asynchronously sends a question to the LLM and returns the response.
 

@@ -1,9 +1,10 @@
 import pytest
 from faker import Faker
 import os
+from knwl.format import print_knwl
 from knwl.services import services
 from knwl.llm.ollama import OllamaClient
-from knwl.models.KnwlLLMAnswer import KnwlLLMAnswer
+from knwl.models.KnwlAnswer import KnwlAnswer
 from knwl.utils import get_full_path
 
 pytestmark = pytest.mark.llm
@@ -41,7 +42,7 @@ async def test_basic_ask():
     llm = services.get_service("llm", "ollama", override=config)
     resp = await llm.ask("Hello")
     assert resp is not None
-    assert isinstance(resp, KnwlLLMAnswer)
+    assert isinstance(resp, KnwlAnswer)
 
     assert await llm.is_cached("Hello") is True
     file_path = get_full_path(f"$test/{file_name}.json")
@@ -84,7 +85,7 @@ async def test_override_caching():
         "llm": {"ollama": {"caching_service": "@/llm_caching/special"}},
         "llm_caching": {"special": {"class": SpecialClass()}},
     }
-    llm =services.get_service("llm", "ollama", override=config)
+    llm = services.get_service("llm", "ollama", override=config)
     assert llm.caching_service is not None
     assert llm.caching_service.name == "Swa"
     assert await llm.is_cached("Anything") is True
@@ -102,3 +103,9 @@ async def test_no_cache():
     llm = services.get_service("llm", "ollama", override=config)
     await llm.ask("Hello")
     assert await llm.is_cached("Hello") is False
+
+    a = await llm.ask(None)
+    assert a is None
+    a = await llm.ask("")
+    assert a is None
+    

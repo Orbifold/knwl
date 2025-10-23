@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Any
 
 from knwl.storage.storage_base import StorageBase
 
@@ -36,7 +37,7 @@ class KeyValueStorageBase(StorageBase, ABC):
         pass
 
     @abstractmethod
-    async def upsert(self, data: dict[str, object]):
+    async def upsert(self, obj: Any):
         pass
 
     @abstractmethod
@@ -49,4 +50,7 @@ class KeyValueStorageBase(StorageBase, ABC):
 
     @abstractmethod
     async def delete_by_id(self, id: str):
+        pass
+    @abstractmethod
+    async def exists(self, id: str) -> bool:
         pass

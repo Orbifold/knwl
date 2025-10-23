@@ -96,7 +96,7 @@ def test_service_instantiation():
     llm_service = services.instantiate_service("llm")
     assert llm_service is not None
     assert llm_service.__class__.__name__ == "OllamaClient"
-    assert llm_service.model == "qwen2.5:14b"
+    assert llm_service.model == get_config("llm", "ollama", "model")
     assert llm_service.temperature == 0.1
     assert llm_service.context_window == 32768
 

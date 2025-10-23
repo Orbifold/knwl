@@ -4,6 +4,7 @@ from knwl.di import defaults
 from knwl.semantic.rag.rag_base import RagBase
 from knwl.storage.storage_base import StorageBase
 
+
 @defaults("rag_store")
 class RagStore(RagBase):
     """
@@ -16,13 +17,7 @@ class RagStore(RagBase):
         auto_chunk (bool): Whether to automatically chunk documents on upsert.
     """
 
-    def __init__(
-        self,
-        document_storage: StorageBase | None = None,
-        chunk_storage: StorageBase | None = None,
-        chunker: ChunkingBase | None = None,
-        auto_chunk: bool = True,
-    ):
+    def __init__(self, document_storage: StorageBase | None = None, chunk_storage: StorageBase | None = None, chunker: ChunkingBase | None = None, auto_chunk: bool = True, ):
         super().__init__()
         self.document_storage: StorageBase = document_storage
         self.chunk_storage: StorageBase = chunk_storage

@@ -1,7 +1,7 @@
 from typing import List
 
 from knwl.llm.llm_cache_base import LLMCacheBase
-from knwl.models import KnwlLLMAnswer
+from knwl.models import KnwlAnswer
 from knwl.storage.json_storage import JsonStorage
 from knwl.di import defaults
 
@@ -35,7 +35,7 @@ class JsonLLMCache(LLMCacheBase):
 
     async def get(
         self, messages: str | List[str | List[dict]], llm_service: str, llm_model: str
-    ) -> KnwlLLMAnswer | None:
+    ) -> KnwlAnswer | None:
         if isinstance(messages, str):
             messages = [{"role": "user", "content": messages}]
         if isinstance(messages, list):
@@ -45,7 +45,7 @@ class JsonLLMCache(LLMCacheBase):
             ]
         if not messages or len(messages) == 0:
             return None
-        key = KnwlLLMAnswer.hash_keys(messages, llm_service, llm_model)
+        key = KnwlAnswer.hash_keys(messages, llm_service, llm_model)
         return await self.get_by_id(key)
 
     async def get_all_ids(self) -> list[str]:
@@ -62,7 +62,7 @@ class JsonLLMCache(LLMCacheBase):
         d = await self.storage.get_by_id(id)
         if d is None:
             return None
-        return KnwlLLMAnswer(**d)
+        return KnwlAnswer(**d)
 
     async def get_by_ids(self, ids, fields=None):
         return await self.storage.get_by_ids(ids, fields=fields)
@@ -70,9 +70,11 @@ class JsonLLMCache(LLMCacheBase):
     async def filter_new_ids(self, data: list[str]) -> set[str]:
         return await self.storage.filter_new_ids(data)
 
-    async def upsert(self, a: KnwlLLMAnswer):
+    async def upsert(self, a: KnwlAnswer):
         if a is None:
-            raise ValueError("Cannot upsert None in LLMCache.")
+            raise ValueError("JsonLLMCache: cannot upsert None in LLMCache.")
+        if not isinstance(a, KnwlAnswer):
+            raise ValueError("JsonLLMCache: can only upsert KnwlAnswer instances in LLMCache.")
         data = a.model_dump(mode="json")
         data["from_cache"] = True
         blob = {}
@@ -85,7 +87,7 @@ class JsonLLMCache(LLMCacheBase):
         await self.storage.delete_by_id(id)
         await self.save()
 
-    async def delete(self, a: KnwlLLMAnswer):
+    async def delete(self, a: KnwlAnswer):
         await self.storage.delete_by_id(a.id)
         await self.save()
 

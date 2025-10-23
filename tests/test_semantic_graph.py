@@ -28,7 +28,6 @@ async def test_embed_with_data():
     print(n1_retrieved)
 
 
-
 @pytest.mark.asyncio
 async def test_merge_node_descriptions():
     g = SemanticGraph()
@@ -65,7 +64,9 @@ async def test_merge_node_descriptions():
 
 @pytest.mark.asyncio
 async def test_merge_node():
-    g = get_service("semantic_graph", "memory")
+    # Using `create_service` instead of `get_service` to ensure a fresh instance.
+    # Running all tests in the same session may share state otherwise.
+    g = create_service("semantic_graph", "memory")
     n1 = KnwlNode(name="n1", description="Delicious oranges from Spain.", type="Fruit")
     n2 = KnwlNode(name="n2", description="Oranges are rich in vitamin C.", type="Fruit")
     await g.embed_node(n1)

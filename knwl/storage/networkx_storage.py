@@ -670,11 +670,13 @@ class NetworkXGraphStorage(GraphStorageBase):
 
             elif isinstance(node_id, dict):
                 # Case 2: node_id is a dict
+                if node_data is not None:
+                    raise ValueError("NetworkXStorage: when providing a dict as node_id, do not provide a second node_data parameter.")
                 node_data = cast(dict, node_id)
                 id = node_data.get("id")
                 if id is None:
                     raise ValueError("NetworkXStorage: dict must contain an 'id' key")
-
+                
             elif isinstance(node_id, BaseModel):
                 # Case 3: node_id is a BaseModel
                 node_data = cast(BaseModel, node_id).model_dump(mode="json")

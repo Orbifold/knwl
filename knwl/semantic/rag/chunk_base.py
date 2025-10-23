@@ -7,22 +7,11 @@ from knwl.models.KnwlChunk import KnwlChunk
 from knwl.storage.storage_base import StorageBase
 from knwl.storage.vector_storage_base import VectorStorageBase
 
-
 class ChunkBase(FrameworkBase, ABC):
     """
     Base class for creating and managing text chunks.
     """
 
-    def __init__(
-        self,
-        chunker: Optional[ChunkingBase] = None,
-        chunk_embeddings: Optional[VectorStorageBase] = None,
-        chunk_storage: Optional[StorageBase] = None,
-    ):
-        super().__init__()
-        self.chunker: ChunkingBase = chunker
-        self.chunk_embeddings: VectorStorageBase = chunk_embeddings
-        self.chunk_storage: StorageBase = chunk_storage
 
     @abstractmethod
     async def upsert(self, obj: str | KnwlChunk) -> str:
@@ -49,3 +38,22 @@ class ChunkBase(FrameworkBase, ABC):
         """
         ...
 
+    @abstractmethod
+    async def delete_by_id(self, chunk_id: str) -> None:
+        """
+        Deletes a text chunk by its unique identifier.
+
+        Args:
+            chunk_id (str): The unique identifier of the chunk to be deleted.
+        """
+        ...
+
+    @abstractmethod
+    async def exists(self, chunk_id: str) -> bool:
+        """
+        Checks if a text chunk exists by its unique identifier.
+
+        Args:
+            chunk_id (str): The unique identifier of the chunk.
+        """
+        ...

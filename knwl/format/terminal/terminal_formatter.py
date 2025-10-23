@@ -5,5 +5,5 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 
-from knwl.models import KnwlResponse, KnwlLLMAnswer
+from knwl.models import KnwlResponse, KnwlAnswer
 

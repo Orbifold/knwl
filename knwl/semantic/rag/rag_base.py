@@ -23,6 +23,7 @@ class RagBase(FrameworkBase, ABC):
             str: The ID of the upserted document.
         """
         ...
+
     @abstractmethod
     async def get_document_by_id(self, document_id: str) -> KnwlDocument | None:
         """
@@ -95,4 +96,8 @@ class RagBase(FrameworkBase, ABC):
         Returns:
             List[KnwlChunk]: A list of the nearest chunks.
         """
+        ...
+
+    @abstractmethod
+    async def chunk(self, document: KnwlDocument) -> list[KnwlChunk]:
         ...

@@ -10,6 +10,7 @@ async def test_basic():
     extractor = BasicKeywordsExtraction()
     keywords = await extractor.extract(input)
     assert keywords is not None
-    # assert "mathematics" in keywords.low_level_keywords
-    # assert "Gauss" in keywords.high_level_keywords
+    # assert "Gauss" in keywords.low_level_keywords
+    # assert "Education" in keywords.high_level_keywords
+    print("Have not figured out how to unit test terminal visualization yet.")
     print_knwl(keywords)

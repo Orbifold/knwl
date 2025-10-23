@@ -1,5 +1,5 @@
 from typing import Any
-from knwl.models import KnwlDocument, KnwlEdge, KnwlGraph, KnwlNode
+import uuid
 from knwl.storage.blob_storage_base import BlobStorageBase
 from knwl.storage.graph_base import GraphStorageBase
 from knwl.storage.kv_storage_base import KeyValueStorageBase
@@ -15,7 +15,7 @@ class StorageAdapter:
     """
 
     @staticmethod
-    async def upsert(obj: Any, storage: StorageBase | list[StorageBase]):
+    async def upsert(obj: Any, storage: StorageBase | list[StorageBase]) -> str:
         """
         Upserts an object into the given storage backend(s).
         """
@@ -26,7 +26,7 @@ class StorageAdapter:
 
         for store in storage:
             if isinstance(store, KeyValueStorageBase):
-                pass
+                return await store.upsert(StorageAdapter.to_key_value(obj))
             elif isinstance(store, BlobStorageBase):
                 pass
             elif isinstance(store, VectorStorageBase):
@@ -37,3 +37,32 @@ class StorageAdapter:
                 raise ValueError(
                     f"StorageAdapter: unsupported upsert storage type: {type(store)}"
                 )
+
+    @staticmethod
+    def to_key_value(obj: Any) -> dict[str, Any]:
+        """
+        Converts an object to a key-value representation for key-value storage.
+        """
+        if obj is None:
+            return None
+        if isinstance(obj, dict):
+            return obj
+
+        elif hasattr(obj, "id"):
+            # single object with id attribute
+            return {str(obj.id): obj.model_dump(mode="json")}
+        elif hasattr(obj, "model_dump"):
+            # single object with model_dump method
+            return {
+                str(getattr(obj, "id", str(uuid.uuid4()))): obj.model_dump(mode="json")
+            }
+        elif hasattr(obj, "dict"):
+            # single object with dict method
+            return {str(getattr(obj, "id", str(uuid.uuid4()))): obj.dict()}
+
+        elif isinstance(obj, (float, int, bool, str, bytes)):
+            return {str(uuid.uuid4()): obj}
+        else:
+            raise ValueError(
+                f"StorageAdapter: cannot convert object of type {type(obj)} to dict"
+            )

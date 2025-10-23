@@ -1,10 +1,12 @@
 import os
-from typing import cast
+from typing import Any, cast
 from knwl.logging import log
 from knwl.storage.kv_storage_base import KeyValueStorageBase
+from knwl.storage.storage_adapter import StorageAdapter
 from knwl.utils import load_json, write_json, get_full_path
 from knwl.di import defaults
 from pydantic import BaseModel
+
 
 @defaults("json")
 class JsonStorage(KeyValueStorageBase):
@@ -133,22 +135,26 @@ class JsonStorage(KeyValueStorageBase):
         """
         return set([s for s in data if s not in self.data])
 
-    async def upsert(self, data: dict[str, object]):
+    async def upsert(self, obj: Any) -> str:
         """
         Upsert data into the JSON storage.
 
         This method updates existing data or inserts new data into the storage.
 
         Args:
-            data (dict[str, object]): Dictionary containing key-value pairs to upsert.
-                                     Values can be KnwlChunk, KnwlDocument, Pydantic models,
-                                     or regular dictionaries.
+            data (Any): Preferably a dictionary containing a key-value pairs to upsert, but it tries hard to accept anything.
 
-        Returns:
-            dict: Dictionary containing only the newly added data items that were
-                  not previously present in storage.
         """
-        left_data = {k: v for k, v in data.items() if k not in self.data}
+        if obj is None:
+            raise ValueError("JsonStorage: cannot upsert None object")
+        item = StorageAdapter.to_key_value(obj)
+        if len(item.keys()) > 1:
+            raise ValueError(
+                "JsonStorage: can only upsert single items with unique ids"
+            )
+        if item is None:
+            raise ValueError("JsonStorage: cannot upsert None item after conversion")
+        left_data = {k: v for k, v in item.items() if k not in self.data}
         for k in left_data:
             if isinstance(left_data[k], BaseModel):
                 left_data[k] = left_data[k].model_dump(mode="json")
@@ -158,8 +164,8 @@ class JsonStorage(KeyValueStorageBase):
             else:
                 left_data[k] = cast(dict, left_data[k])
             self.data.update(left_data)
-            await self.save()
-            return left_data
+        await self.save()
+        return k  # the last one is the only one
 
     async def clear(self):
         """
@@ -188,3 +194,6 @@ class JsonStorage(KeyValueStorageBase):
             await self.save()
             return True
         return False
+
+    async def exists(self, id: str) -> bool:
+        return id in self.data

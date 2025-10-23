@@ -3,7 +3,7 @@ from faker import Faker
 
 
 from knwl.llm.openai import OpenAIClient
-from knwl.models.KnwlLLMAnswer import KnwlLLMAnswer
+from knwl.models.KnwlAnswer import KnwlAnswer
 from knwl.utils import get_full_path
 from knwl.services import services
 pytestmark = pytest.mark.llm
@@ -12,19 +12,7 @@ fake = Faker()
 
 @pytest.mark.asyncio
 async def test_basic_ask():
-    """
-    Test basic functionality of OpenAIClient.
-
-    Tests the following:
-    - Default model and temperature initialization
-    - Custom model and temperature initialization
-    - Basic ask functionality with response validation
-    - Caching behavior after making a request
-
-    The test verifies that the OpenAIClient properly initializes with both
-    default and custom parameters, successfully processes a simple query,
-    returns a valid KnwlLLMAnswer response, and correctly caches the query.
-    """
+   
     llm = OpenAIClient()
     assert llm.model == "gpt-4o-mini"
     assert llm.temperature == 0.1
@@ -42,7 +30,7 @@ async def test_basic_ask():
     assert llm.caching_service.path == get_full_path(f"$test/{file_name}.json")
     resp = await llm.ask("Hello")
     assert resp is not None
-    assert isinstance(resp, KnwlLLMAnswer)
+    assert isinstance(resp, KnwlAnswer)
 
     assert await llm.is_cached("Hello") is True
     file_path = get_full_path(f"$test/{file_name}.json")
@@ -54,20 +42,7 @@ async def test_basic_ask():
 
 
 @pytest.mark.asyncio
-async def test_override_caching():
-    """
-    Test that OpenAIClient correctly overrides the default caching service with a custom one.
-
-    This test verifies that:
-    1. A custom caching class can be dynamically created and configured
-    2. The OpenAIClient accepts the custom caching configuration through override parameter
-    3. The custom caching service is properly instantiated and accessible
-    4. Custom caching methods are correctly called when cache operations are performed
-    5. The caching service maintains its custom attributes (like 'name')
-
-    The test creates a mock caching class with a custom 'is_in_cache' method that sets a flag
-    when called, allowing verification that the custom caching logic is actually being used.
-    """
+async def test_override_caching():   
 
     def create_class_from_dict(name, data):
         return type(name, (), data)

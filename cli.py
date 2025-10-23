@@ -1,127 +1,177 @@
-import click
-from rich.console import Console
-from rich.text import Text
-
-from knwl.entities import fast_entity_extraction_from_text
-from knwl.knwl import Knwl
-from knwl.utils import get_project_info
+"""
+Knwl Chat Application - Interactive command-line interface for querying the knowledge graph.
+"""
 import asyncio
-C = Console()
 
-state = {"knwl": None, "input": []}
+import typer
+from rich.console import Console
+from rich.markdown import Markdown
+from rich.panel import Panel
+from rich.prompt import Prompt
 
+from knwl import services
 
-@click.group()
-def cli():
-    """KNWL CLI tool"""
-    pass
-
-
-@cli.command()
-def version():
-    """Show the version of KNWL"""
-    info = get_project_info()
-    C.print(
-        Text(
-            f"KNWL version {info['version']}. {info['description']}", style="bold green"
-        )
-    )
+# Initialize Typer app and Rich console
+app = typer.Typer(name="knwl-chat", help="Interactive chat interface for querying Knwl knowledge graph", add_completion=False, )
+console = Console()
+llm = None
 
 
-@cli.command()
-def info():
-    """Show information about KNWL"""
-    info = get_project_info()
-    C.print(
-        Text(
-            f"KNWL version {info['version']}. {info['description']}", style="bold green"
-        )
-    )
+def get_llm():
+    global llm
+    if llm is None:
+        console.print("[cyan]Initializing Knwl...[/cyan]")
+        llm = services.get_service("llm")
+        console.print("[green]✓ Knwl initialized![/green]\n")
+    return llm
 
 
-@cli.command()
-@click.option(
-    "-n",
-    "--no-storage",
-    is_flag=True,
-    default=True,
-    help="Do not store the extracted info into a workspace.",
-)
-@click.argument("text", nargs=-1)
-def extract(no_storage, text):
+def print_welcome():
+    """Display welcome message."""
+    welcome_text = """
+# 🧠 Knwl Chat
+
+Welcome to the Knwl interactive chat interface!
+
+**Available commands:**
+- Type your question to query the knowledge graph
+- `/mode <local|global|naive|hybrid>` - Change query mode (default: local)
+- `/help` - Show help information
+- `/exit` or `/quit` - Exit the chat
+- `Ctrl+C` - Exit the chat
+
+**Query modes:**
+- **local**: Searches node neighborhoods using keywords
+- **global**: Searches edge relationships
+- **naive**: Direct chunk retrieval without graph
+- **hybrid**: Combines local and global strategies
     """
-    Extract information from the given input.
-    This is the same as `knwl add` but it returns the gained information.
+    console.print(Panel(Markdown(welcome_text), border_style="cyan"))
+
+
+def print_help():
+    """Display help information."""
+    help_text = """
+## Commands
+
+- `/mode <mode>` - Switch between query modes:
+  - `local` - Node-based neighborhood search (default)
+  - `global` - Edge-based relationship search
+  - `naive` - Simple chunk retrieval
+  - `hybrid` - Combined local + global search
+- `/help` - Show this help message
+- `/exit` or `/quit` - Exit the application
+
+## Tips
+
+- Ask questions naturally about topics in your knowledge graph
+- Use different modes to explore various aspects of the data
+- The system will provide context and references with each answer
     """
-
-    if no_storage:
-        nodes = asyncio.run(fast_entity_extraction_from_text(" ".join(text)))
-        
-        C.print("Extracted entities:", style="bold green")
-        for node in nodes:
-            C.print(f" - [bold green]{node.name}[/bold green] [bold blue]{node.type.upper()}[/bold blue] {node.description}")
-    else:
-        C.print("Extracted information will be stored in the workspace.", style="bold green")
-
-@cli.command()
-def query():
-    """Run a query against KNWL"""
-    if len(state["input"]) == 0:
-        C.print(
-            "No knowledge provided yet, use 'knwl add' to add knowledge.",
-            style="bold red",
-        )
-        return
-    if not state["knwl"]:
-        state["knwl"] = Knwl()
+    console.print(Panel(Markdown(help_text), border_style="blue"))
 
 
-@cli.command()
-@click.option(
-    "-m", "--many", type=bool, default=False, help="Add multiple knowledge items."
-)
-@click.argument("text", nargs=-1)
-def add(many, text):
-    """Add knowledge to KNWL"""
-    if many:
+async def process_query(query: str, mode: str) -> None:
+    """Process a user query and display the response."""
+    llm = get_llm()
+    a = await llm.ask(query)
+    console.print(f"\n[bold green]{str(a.answer)}[/bold green]")
+
+
+@app.command()
+def chat(mode: str = typer.Option("local", "--mode", "-m", help="Query mode: local, global, naive, or hybrid"), ):
+    """
+    Start an interactive chat session with the Knwl knowledge graph.
+
+    The chat interface allows you to query your knowledge graph using natural language
+    and switch between different query strategies on the fly.
+    """
+    # Validate mode
+    valid_modes = ["local", "global", "naive", "hybrid"]
+    if mode not in valid_modes:
+        console.print(f"[red]Invalid mode: {mode}[/red]")
+        console.print(f"Valid modes: {', '.join(valid_modes)}")
+        raise typer.Exit(1)
+
+    current_mode = mode
+    print_welcome()
+
+    # Main chat loop
+    try:
         while True:
-            knowledge = click.prompt(
-                "Enter knowledge to add (type 'escape' to finish)", type=str
-            )
-            if knowledge.lower() == "escape":
-                break
-            state["input"].append(knowledge)
-    else:
-        state["input"].append(" ".join(text))
-    C.print(f"Added {len(state['input'])} knowledge items.", style="bold green")
+            # Get user input
+            user_input = Prompt.ask(f"\n[bold cyan]You[/bold cyan] ({current_mode})", default="").strip()
+
+            if not user_input:
+                continue
+
+            # Handle commands
+            if user_input.startswith("/"):
+                cmd_parts = user_input.split(maxsplit=1)
+                cmd = cmd_parts[0].lower()
+
+                if cmd in ["/exit", "/quit"]:
+                    console.print("\n[cyan]👋 Goodbye![/cyan]")
+                    break
+
+                elif cmd == "/help":
+                    print_help()
+                    continue
+
+                elif cmd == "/mode":
+                    if len(cmd_parts) < 2:
+                        console.print(f"[yellow]Current mode: {current_mode}[/yellow]")
+                        console.print(f"[yellow]Available modes: {', '.join(valid_modes)}[/yellow]")
+                    else:
+                        new_mode = cmd_parts[1].strip().lower()
+                        if new_mode in valid_modes:
+                            current_mode = new_mode
+                            console.print(f"[green]✓ Switched to {current_mode} mode[/green]")
+                        else:
+                            console.print(f"[red]Invalid mode: {new_mode}[/red]")
+                            console.print(f"[yellow]Available modes: {', '.join(valid_modes)}[/yellow]")
+                    continue
+
+                else:
+                    console.print(f"[red]Unknown command: {cmd}[/red]")
+                    console.print("[yellow]Type /help for available commands[/yellow]")
+                    continue
+
+            # Process the query
+            asyncio.run(process_query(user_input, current_mode))
+
+    except KeyboardInterrupt:
+        console.print("\n\n[cyan]👋 Goodbye![/cyan]")
+    except Exception as e:
+        console.print(f"\n[bold red]Fatal error:[/bold red] {str(e)}")
+        raise typer.Exit(1)
 
 
-@cli.command()
-def what():
-    """Show what KNWL knows"""
-    if not state["input"]:
-        C.print(
-            "No knowledge added yet. Add knowledge via 'knwl add'", style="bold red"
-        )
-        return
-    C.print("KNWL knows:", style="bold green")
-    for item in state["input"]:
-        C.print(f" - {item}", style="bold blue")
+@app.command()
+def query(question: str = typer.Argument(..., help="The question to query"), mode: str = typer.Option("local", "--mode", "-m", help="Query mode: local, global, naive, or hybrid"), ):
+    """
+    Execute a single query against the knowledge graph.
+
+    This is useful for scripting or one-off queries without entering interactive mode.
+
+    Example:
+        knwl-chat query "What is machine learning?" --mode local
+    """
+    valid_modes = ["local", "global", "naive", "hybrid"]
+    if mode not in valid_modes:
+        console.print(f"[red]Invalid mode: {mode}[/red]")
+        console.print(f"Valid modes: {', '.join(valid_modes)}")
+        raise typer.Exit(1)
+
+    # Process the query
+    asyncio.run(process_query(question, mode))
 
 
-@cli.command()
-@click.option("--input", type=click.Path(exists=True), help="Path to the input file")
-@click.option("--output", type=click.Path(), help="Path to the output file")
-@click.option("--verbose", is_flag=True, help="Enable verbose mode")
-def process(input, output, verbose):
-    """Process input and output files"""
-    if verbose:
-        C.print("Verbose mode enabled", style="bold yellow")
-    if input:
-        C.print(f"Input file: {input}", style="bold blue")
-    if output:
-        C.print(f"Output file: {output}", style="bold blue")
+@app.command()
+def version():
+    """Display the Knwl version."""
+    console.print("[cyan]Knwl Chat v0.7.4[/cyan]")
 
 
 if __name__ == "__main__":
-    cli()
+    app()

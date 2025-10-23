@@ -116,8 +116,6 @@ async def test_chroma_memory_service():
     found = await chroma.get_by_id("m2")
     assert found is not None
 
-@pytest.mark.asyncio
-async def test_nearest_nodes():
-    chroma = services.create_service("vector", "memory")
+
 
     

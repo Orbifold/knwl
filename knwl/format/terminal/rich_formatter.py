@@ -63,7 +63,7 @@ class RichFormatter(FormatterBase):
         Args:
             console: Optional Rich Console instance. If not provided, creates a new one.
         """
-        self.console = console or Console(width=200)
+        self.console = console or Console(width=80)
         self.theme = RichTheme()
         self._registry = get_registry()
     

@@ -10,7 +10,7 @@ default_config = {
         "host": "0.0.0.0",
         "port": 9000,
     },
-    "logging": {"enabled": True, "level": "INFO", "path": "$root/knwl.log"},
+    "logging": {"enabled": True, "level": "ERROR", "path": "$root/knwl.log"},
     "chunking": {
         "default": "tiktoken",
         "tiktoken": {
@@ -18,6 +18,15 @@ default_config = {
             "model": "gpt-4o-mini",
             "chunk_size": 1024,
             "chunk_overlap": 128,
+        },
+    },
+    "chunk_store": {
+        "default": "basic",
+        "basic": {
+            "class": "knwl.semantic.rag.chunk_store.ChunkStore",
+            "chunker": "@/chunking/tiktoken",
+            "chunk_embeddings": "@/vector/chunks",
+            "chunk_storage": "@/json/chunk_store",
         },
     },
     "summarization": {
@@ -37,7 +46,7 @@ default_config = {
         "default": "basic",
         "basic": {
             "class": "knwl.extraction.basic_entity_extraction.BasicEntityExtraction",
-            "llm": "@/llm/ollama",
+            "llm": "@/llm/openai",
         },
     },
     "keywords_extraction": {
@@ -137,6 +146,11 @@ default_config = {
             "memory": True,
             "collection_name": "default",
         },
+        "chunks": {
+            "class": "knwl.storage.chroma_storage.ChromaStorage",
+            "memory": True,
+            "collection_name": "chunks",
+        },
     },
     "graph": {
         "default": "nx",
@@ -158,19 +172,19 @@ default_config = {
             "class": "knwl.storage.json_storage.JsonStorage",
             "path": "$data/data.json",
         },
-        "node-store": {
+        "node_store": {
             "class": "knwl.storage.json_storage.JsonStorage",
             "path": "$test/graphrag/node_store.json",
         },
-        "edge-store": {
+        "edge_store": {
             "class": "knwl.storage.json_storage.JsonStorage",
             "path": "$test/graphrag/edge_store.json",
         },
-        "document-store": {
+        "document_store": {
             "class": "knwl.storage.json_storage.JsonStorage",
             "path": "$test/graphrag/document_store.json",
         },
-        "chunk-store": {
+        "chunk_store": {
             "class": "knwl.storage.json_storage.JsonStorage",
             "path": "$test/graphrag/chunk_store.json",
         },
@@ -189,16 +203,15 @@ default_config = {
             "semantic_graph": "@/semantic_graph/memory",
             "blob_storage": "none",  # don't save the documents
             "chunker": "@/chunking/tiktoken",
-            "graph_extractor": "@/graph_extraction/basic"
-
+            "graph_extractor": "@/graph_extraction/basic",
         },
     },
     "rag_store": {
         "default": "basic",
         "basic": {
             "class": "knwl.semantic.rag.rag_store.RagStore",
-            "document_storage": "@/json/document-store",
-            "chunk_storage": "@/json/chunk-store",
+            "document_storage": "@/json/document_store",
+            "chunk_storage": "@/json/chunk_store",
             "chunker": "@/chunking/tiktoken",
             "auto_chunk": True,
         },
@@ -206,15 +219,71 @@ default_config = {
 }
 
 
-def merge_configs(source: dict, destination: dict) -> dict:
-    for key, value in source.items():
+def merge_configs(override: dict, default_config: dict) -> dict:
+    """
+    Recursively merge two configuration dictionaries.
+
+    This function merges an override configuration dictionary into a default configuration
+    dictionary. For nested dictionaries, the merge is performed recursively. Non-dictionary
+    values in the override will replace corresponding values in the default configuration.
+
+    Args:
+        override (dict): The configuration dictionary containing values to override defaults.
+            Can be None or empty, in which case the default_config is returned unchanged.
+        default_config (dict): The base configuration dictionary that will be updated with
+            override values. This dictionary is modified in place.
+
+    Returns:
+        dict: The merged configuration dictionary (same object as default_config after modification).
+
+    Raises:
+        ValueError: If override is not None and not a dictionary.
+        ValueError: If default_config is not None and not a dictionary.
+
+    Examples:
+        ```python
+        default = {
+            "a": 1,
+            "b": {
+                "c": 2,
+                "d": 3
+            }
+        }
+        override = {
+            "b": {
+                "c": 20
+            },
+            "e": 4
+        }
+        merged = merge_configs(override, default)
+        # merged is now:
+        # {
+        #     "a": 1,
+        #     "b": {
+        #         "c": 20,
+        #         "d": 3
+        #     },
+        #     "e": 4
+        # }
+        ```
+    """
+    if override is None:
+        return default_config
+    if not isinstance(override, dict):
+        raise ValueError("merge_configs: override must be a dictionary")
+    if default_config is None:
+        return override
+    if not isinstance(default_config, dict):
+        raise ValueError("merge_configs: default_config must be a dictionary")
+
+    for key, value in override.items():
         if isinstance(value, dict):
             # get node or create one
-            node = destination.setdefault(key, {})
+            node = default_config.setdefault(key, {})
             merge_configs(value, node)
         else:
-            destination[key] = value
-    return destination
+            default_config[key] = value
+    return default_config
 
 
 def get_config(*keys, default=None, config=None, override=None):
@@ -225,13 +294,12 @@ def get_config(*keys, default=None, config=None, override=None):
         default: The default value to return if the specified key path does not exist. Defaults to None.
         config: The configuration dictionary to use. If None, the global config will be used. Defaults to None.
         override: An optional dictionary to override the default config for this lookup. Defaults to None.
-    @example:
 
-    >>> get_config("llm", "model")
-    'gemma3:4b'
-
-    >>> get_config("llm", "non_existent_key", default="default_value")
-    'default_value'
+    Examples:
+        ```python
+        get_config("llm", "model")
+        get_config("llm", "non_existent_key", default="default_value")
+        ```
     """
     # the config should not be changed outside
     cloned_config = copy.deepcopy(config or default_config)

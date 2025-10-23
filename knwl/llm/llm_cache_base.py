@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import List
 
 from knwl.framework_base import FrameworkBase
-from knwl.models import KnwlLLMAnswer
+from knwl.models import KnwlAnswer
 
 
 class LLMCacheBase(FrameworkBase):
@@ -16,7 +16,7 @@ class LLMCacheBase(FrameworkBase):
         pass
 
     @abstractmethod
-    async def get(self, messages: str | List[str | List[dict]], llm_service: str, llm_model: str) -> KnwlLLMAnswer | None:
+    async def get(self, messages: str | List[str | List[dict]], llm_service: str, llm_model: str) -> KnwlAnswer | None:
         """Retrieve cached LLM answer for the given messages, service, and model."""
         pass
 
@@ -36,7 +36,7 @@ class LLMCacheBase(FrameworkBase):
         pass
 
     @abstractmethod
-    async def get_by_id(self, id: str) -> KnwlLLMAnswer | None:
+    async def get_by_id(self, id: str) -> KnwlAnswer | None:
         """Retrieve cached item by its ID."""
         pass
 
@@ -51,7 +51,7 @@ class LLMCacheBase(FrameworkBase):
         pass
 
     @abstractmethod
-    async def upsert(self, a: KnwlLLMAnswer) -> str:
+    async def upsert(self, a: KnwlAnswer) -> str:
         """Insert or update a cached LLM answer."""
         pass
 
@@ -61,6 +61,6 @@ class LLMCacheBase(FrameworkBase):
         pass
 
     @abstractmethod
-    async def delete(self, a: KnwlLLMAnswer):
+    async def delete(self, a: KnwlAnswer):
         """Delete cached LLM answer."""
         pass

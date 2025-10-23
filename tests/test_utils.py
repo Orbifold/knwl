@@ -8,7 +8,7 @@ from unittest.mock import patch, MagicMock
 import pytest
 from pydantic import ValidationError
 
-from knwl.models import KnwlLLMAnswer
+from knwl.models import KnwlAnswer
 from knwl.models.KnwlChunk import KnwlChunk
 from knwl.models.KnwlDocument import KnwlDocument
 from knwl.models.KnwlEdge import KnwlEdge
@@ -308,7 +308,7 @@ def test_document_class():
 
     c = KnwlDocument(content="Hello")
     # id is assigned based on the content
-    assert "doc-" in c.id
+    assert "doc|>" in c.id
     assert c.id == KnwlDocument.hash_keys("Hello")
 
 
@@ -333,7 +333,7 @@ def test_edge_class():
 
 
 def test_args_hash():
-    a = KnwlLLMAnswer(
+    a = KnwlAnswer(
         messages=[{"content": "Hello"}], llm_service="ollama", llm_model="qwen2.5:14b"
     )
     print(a.model_dump_json())

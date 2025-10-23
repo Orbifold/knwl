@@ -106,3 +106,10 @@ classDiagram
     StorageBase <|-- SqlStorageBase
     SqlStorageBase <|-- SqliteStorage
 ```
+
+## LLM Cache
+
+The LLM Cache is a specialized storage system designed to cache responses from large language models (LLMs). It helps improve performance and reduce costs by storing previously generated responses, allowing for quick retrieval of these responses when the same or similar queries are made in the future.
+The base class `LLMCacheBase` has a default implementation using JSON files called `JsonLLMCache`. This implementation stores cached responses in a structured JSON format, making it easy to read and write data. This is great for development and testing purposes. For production use, more robust storage solutions like databases or distributed caches are recommended.
+
+

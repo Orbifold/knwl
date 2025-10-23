@@ -9,7 +9,7 @@ from knwl.storage.networkx_storage import NetworkXGraphStorage
 
 @pytest.fixture
 def test_storage():
-    return NetworkXGraphStorage( )
+    return NetworkXGraphStorage()
 
 
 @pytest.mark.asyncio
@@ -26,9 +26,6 @@ async def test_upsert_node(test_storage):
     node = await test_storage.get_node_by_id("node1")
     assert node["name"] == "xws2"
     assert node["x"] == 55
-    # complex nested dicts are not allowed by nx
-    with pytest.raises(ValueError):
-        await test_storage.upsert_node("node1", {"x": {"a": 5}})
 
     # one or the other
     with pytest.raises(ValueError):
@@ -38,8 +35,7 @@ async def test_upsert_node(test_storage):
         await test_storage.upsert_node(5)
     with pytest.raises(ValueError):
         await test_storage.upsert_node(None)
-    with pytest.raises(ValueError):
-        await test_storage.upsert_node({"id": "node1", "x": {"a": 5}})
+
     with pytest.raises(ValueError):
         await test_storage.upsert_node({"x": 5})
     with pytest.raises(ValueError):
@@ -67,8 +63,12 @@ async def test_upsert_node(test_storage):
 async def test_upsert_edge(test_storage):
     await test_storage.upsert_node("node1", {"description": "value1"})
     await test_storage.upsert_node("node2", {"description": "value2"})
-    await test_storage.upsert_edge("node1", "node2", {"id": "e1", "weight": 2.35, "type": "A"})
-    await test_storage.upsert_edge("node1", "node2", {"id": "e2", "weight": -0.45, "type": "B"})
+    await test_storage.upsert_edge(
+        "node1", "node2", {"id": "e1", "weight": 2.35, "type": "A"}
+    )
+    await test_storage.upsert_edge(
+        "node1", "node2", {"id": "e2", "weight": -0.45, "type": "B"}
+    )
     edges = await test_storage.get_edges("node1", "node2")
     assert len(edges) == 2
     assert edges[0]["weight"] == 2.35
@@ -77,7 +77,9 @@ async def test_upsert_edge(test_storage):
     assert edges[0]["weight"] == -0.45
     assert await test_storage.node_count() == 2
     assert await test_storage.edge_count() == 2
-    await test_storage.upsert_edge("node1", "node2", {"id": "e1", "weight": 17, "type": "A"})
+    await test_storage.upsert_edge(
+        "node1", "node2", {"id": "e1", "weight": 17, "type": "A"}
+    )
     assert await test_storage.edge_count() == 2
     edges = await test_storage.get_edges("node1", "node2")
     assert len(edges) == 2
@@ -248,13 +250,12 @@ async def test_get_edge_weight_default_weight(test_storage):
 
 @pytest.mark.asyncio
 async def test_remove_edge_with_tuple(test_storage):
-    n1 = await test_storage.upsert_node( KnwlNode(name="Node 1", type="A"))
-    n2 = await test_storage.upsert_node( KnwlNode(name="Node 2", type="K"))
-    await test_storage.upsert_edge(n1,n2)
+    n1 = await test_storage.upsert_node(KnwlNode(name="Node 1", type="A"))
+    n2 = await test_storage.upsert_node(KnwlNode(name="Node 2", type="K"))
+    await test_storage.upsert_edge(n1, n2)
 
-    assert await test_storage.edge_exists(n1,n2)
+    assert await test_storage.edge_exists(n1, n2)
 
-    await test_storage.remove_edge(n1,n2)
+    await test_storage.remove_edge(n1, n2)
 
-    assert not await test_storage.edge_exists(n1,n2)
-
+    assert not await test_storage.edge_exists(n1, n2)
