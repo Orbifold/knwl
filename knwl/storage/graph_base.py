@@ -1,12 +1,13 @@
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from typing import Union
 
 from pydantic import BaseModel
 
 from knwl.framework_base import FrameworkBase
+from knwl.storage.storage_base import StorageBase
 
 
-class GraphStorageBase(FrameworkBase):
+class GraphStorageBase(StorageBase, ABC):
     """
     Base class for graph storage implementations.
     Strictly speaking, the graph is a directed multigraph, meaning multiple edges can exist between the same pair of nodes.

@@ -193,6 +193,16 @@ default_config = {
 
         },
     },
+    "rag_store": {
+        "default": "basic",
+        "basic": {
+            "class": "knwl.semantic.rag.rag_store.RagStore",
+            "document_storage": "@/json/document-store",
+            "chunk_storage": "@/json/chunk-store",
+            "chunker": "@/chunking/tiktoken",
+            "auto_chunk": True,
+        },
+    },
 }
 
 
