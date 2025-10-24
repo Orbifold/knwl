@@ -29,6 +29,13 @@ default_config = {
             "chunk_storage": "@/json/chunk_store",
         },
     },
+    "document_store": {
+        "default": "basic",
+        "basic": {
+            "class": "knwl.semantic.rag.document_store.DocumentStore",
+            "document_storage": "@/json/document_store",
+        },
+    },
     "summarization": {
         "default": "ollama",
         "concat": {

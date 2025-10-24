@@ -143,3 +143,15 @@ async def test_polymorphic(test_store):
     assert test_store.exists(id2)
     found2 = await test_store.get_by_id(id2)
     assert found2 == val
+
+
+@pytest.mark.asyncio
+async def test_get_by_metadata(test_store):
+    await test_store.upsert({"key1": {"value": "data1", "meta": "a"}})
+    await test_store.upsert({"key2": {"value": "data2", "meta": "b"}})
+    await test_store.upsert({"key3": {"value": "data3", "meta": "a"}})
+    found = await test_store.get_by_metadata(meta="a")
+    assert len(found) == 2
+    values = [item["value"] for item in found]
+    assert "data1" in values
+    assert "data3" in values

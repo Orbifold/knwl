@@ -1,11 +1,14 @@
 import os
 from typing import Any, cast
+
+from pydantic import BaseModel
+
+from knwl import KnwlModel
+from knwl.di import defaults
 from knwl.logging import log
 from knwl.storage.kv_storage_base import KeyValueStorageBase
 from knwl.storage.storage_adapter import StorageAdapter
 from knwl.utils import load_json, write_json, get_full_path
-from knwl.di import defaults
-from pydantic import BaseModel
 
 
 @defaults("json")
@@ -155,6 +158,7 @@ class JsonStorage(KeyValueStorageBase):
         if item is None:
             raise ValueError("JsonStorage: cannot upsert None item after conversion")
         left_data = {k: v for k, v in item.items() if k not in self.data}
+        k = None
         for k in left_data:
             if isinstance(left_data[k], BaseModel):
                 left_data[k] = left_data[k].model_dump(mode="json")
@@ -197,3 +201,28 @@ class JsonStorage(KeyValueStorageBase):
 
     async def exists(self, id: str) -> bool:
         return id in self.data
+
+    async def get_by_metadata(self, **metadata) -> list[Any]:
+        """
+        Get items by metadata key-value pairs.
+
+        Args:
+            **metadata: Arbitrary keyword arguments representing metadata key-value pairs to filter items.
+
+        Returns:
+            A list of items that match the provided metadata key-value pairs.
+        """
+        results = []
+        for item in self.data.values():
+            if all(item.get(k) == v for k, v in metadata.items()):
+                results.append(item)
+        return results
+
+    async def nearest(self, query: str, top_k: int = 5) -> list[KnwlModel]:
+        raise NotImplemented("JsonStorage: semantic search is not available.")
+
+    def __repr__(self):
+        return f"<JsonStorage,path={self._path}, save_to_disk={self._save_to_disk}, items={len(self.data)}>"
+
+    def __str__(self):
+        return self.__repr__()

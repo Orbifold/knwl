@@ -4,6 +4,7 @@ from typing import Optional
 
 from knwl.models import KnwlDocument, KnwlInput
 from knwl.models.KnwlChunk import KnwlChunk
+from knwl.models.KnwlModel import KnwlModel
 from knwl.utils import get_full_path, hash_with_prefix
 
 

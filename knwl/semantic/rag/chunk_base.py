@@ -57,3 +57,24 @@ class ChunkBase(FrameworkBase, ABC):
             chunk_id (str): The unique identifier of the chunk.
         """
         ...
+    @abstractmethod
+    async def delete_source(self, source_key: str) -> None:
+        """
+        Deletes all chunks associated with a given source key.
+
+        Args:
+            source_key (str): The source key whose associated chunks are to be deleted.
+        """
+        ...
+    @abstractmethod
+    async def get_source_chunks(self, source_key: str) -> list[KnwlChunk]:
+        """
+        Retrieves all chunks associated with a given source key.
+
+        Args:
+            source_key (str): The source key whose associated chunks are to be retrieved.
+
+        Returns:
+            list[KnwlChunk]: A list of KnwlChunk objects associated with the source key.
+        """
+        ...

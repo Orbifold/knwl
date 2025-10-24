@@ -7,7 +7,7 @@ from knwl.models import GragParams, KnwlDocument, KnwlGragContext, KnwlGragInput
 from knwl.semantic.graph_rag.graph_rag import GraphRAG
 from knwl.utils import get_full_path
 import os
-from tests.fixtures import random_article
+
 from tests.library.collect import get_library_article
 
 

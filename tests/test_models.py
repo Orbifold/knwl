@@ -2,7 +2,7 @@ import pytest
 from pydantic import ValidationError
 
 from knwl.format import render_mermaid
-from knwl.models import KnwlEdge, KnwlGraph, KnwlNode, KnwlInput, KnwlDocument
+from knwl.models import KnwlEdge, KnwlGraph, KnwlModel, KnwlNode, KnwlInput, KnwlDocument
 
 
 def test_knwlnode():
@@ -28,6 +28,8 @@ def test_knwlnode():
     # deserialization
     node3 = KnwlNode(**node1.model_dump(mode="json"))
     assert node3.id == node1.id
+
+    assert isinstance(node1, KnwlModel)
 
 
 def test_knwledge():

@@ -10,6 +10,12 @@ from knwl.storage.vector_storage_base import VectorStorageBase
 
 @defaults("chunk_store")
 class ChunkStore(ChunkBase):
+    """
+    Default implementation of ChunkBase.
+    This only CRUDs chunks to/from storage and embeddings.
+    This only CRUDs documents to/from storage, if you want auto-chunking and embeddings,
+    use the `RagStore` instead.
+    """
 
     def __init__(
         self,
@@ -33,7 +39,7 @@ class ChunkStore(ChunkBase):
             str: The unique identifier of the upserted chunk.
         """
         if isinstance(obj, str):
-            chunk = KnwlChunk(content=str(obj).strip())
+            chunk = KnwlChunk(content=str(obj).strip(), origin_id=None)
         else:
             chunk = obj
 
@@ -80,3 +86,26 @@ class ChunkStore(ChunkBase):
             chunk_id (str): The unique identifier of the chunk.
         """
         return await self.chunk_storage.exists(chunk_id)
+
+    async def delete_source(self, source_key: str) -> None:
+        """
+        Deletes all chunks associated with a given source key.
+
+        Args:
+            source_key (str): The source key whose associated chunks are to be deleted.
+        """
+        chunks = await self.get_source_chunks(source_key)
+        for chunk in chunks:
+            await self.delete_by_id(chunk.id)
+
+    async def get_source_chunks(self, source_id: str) -> list[KnwlChunk]:
+        """
+        Retrieves all chunks associated with a given source key.
+
+        Args:
+            source_key (str): The source key whose associated chunks are to be retrieved.
+
+        Returns:
+            list[KnwlChunk]: A list of KnwlChunk objects associated with the source key.
+        """
+        return await self.chunk_storage.get_by_metadata(source_id=source_id)

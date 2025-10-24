@@ -196,7 +196,7 @@ class DIContainer:
                                 override=service_info["override"],
                             )
                         bound_args.arguments[param_name] = service_instance
-                        log(
+                        log.debug(
                             f"Injected service '{service_info['service_name']}' as '{param_name}' into {func.__name__}"
                         )
                     except Exception as e:
@@ -225,7 +225,7 @@ class DIContainer:
                             )
                             if override_value is not None:
                                 config_value = override_value
-                                log(
+                                log.debug(
                                     f"Using override value for config '{config_key}' as '{param_name}' into {func.__name__}"
                                 )
                             else:
@@ -236,7 +236,7 @@ class DIContainer:
 
                             bound_args.arguments[param_name] = config_value
                         except Exception as e:
-                            log(f"Failed to inject config '{config_key}': {e}")
+                            log.error(f"Failed to inject config '{config_key}': {e}")
                             raise
             else:
                 # Legacy format: list of config keys
@@ -269,18 +269,18 @@ class DIContainer:
                             )
                             if override_value is not None:
                                 config_value = override_value
-                                log(
+                                log.debug(
                                     f"Using override value for config '{config_key}' as '{param_name}' into {func.__name__}"
                                 )
                             else:
                                 config_value = get_config(*config_key.split("."))
-                                log(
+                                log.debug(
                                     f"Injected config '{config_key}' as '{param_name}' into {func.__name__}"
                                 )
 
                             bound_args.arguments[param_name] = config_value
                         except Exception as e:
-                            log(f"Failed to inject config '{config_key}': {e}")
+                            log.error(f"Failed to inject config '{config_key}': {e}")
                             raise
 
         # Inject defaults from service configuration
@@ -294,7 +294,7 @@ class DIContainer:
             if variant_name is None:
                 variant_name = get_config(service_name, "default", override=override)
                 if variant_name is None:
-                    log(
+                    log.debug(
                         f"No default variant found for service '{service_name}', skipping defaults injection"
                     )
                     return bound_args.arguments
@@ -304,7 +304,7 @@ class DIContainer:
                 service_name, variant_name, default=None, override=override
             )
             if service_config is None:
-                log(
+                (
                     f"No configuration found for service '{service_name}/{variant_name}', skipping defaults injection"
                 )
                 return bound_args.arguments
@@ -364,17 +364,17 @@ class DIContainer:
                                     override=override,
                                 )
                                 bound_args.arguments[param_name] = service_instance
-                                log(
+                                (
                                     f"Injected service reference '{param_value}' as '{param_name}' into {func.__name__}"
                                 )
                         else:
                             # Direct value injection
                             bound_args.arguments[param_name] = param_value
-                            log(
+                            log.debug(
                                 f"Injected default '{param_name}' = '{param_value}' into {func.__name__}"
                             )
                     except Exception as e:
-                        log(
+                        log.error(
                             f"Failed to inject default '{param_name}' from service '{service_name}/{variant_name}': {e}"
                         )
                         raise

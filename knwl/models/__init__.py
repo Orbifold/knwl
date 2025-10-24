@@ -19,5 +19,6 @@ from .KnwlGragText import KnwlGragText
 from .KnwlGragEdge import KnwlGragEdge
 from .KnwlGragNode import KnwlGragNode
 from .KnwlGragReference import KnwlGragReference
+from .KnwlModel import KnwlModel
 
-__all__ = ["KnwlNode", "KnwlEdge", "KnwlGraph", "KnwlExtraction", "KnwlDocument", "KnwlChunk", "KnwlInput", "KnwlGragInput", "KnwlGragContext", "KnwlAnswer", "KnwlEntity", "KnwlBlob", "KnwlGragIngestion", "GragParams", "KnwlKeywords", "KnwlGragContext", "KnwlGragInput", "KnwlGragText", ]
+__all__ = ["KnwlNode", "KnwlEdge", "KnwlGraph", "KnwlExtraction", "KnwlDocument", "KnwlChunk", "KnwlInput", "KnwlGragInput", "KnwlGragContext", "KnwlAnswer", "KnwlEntity", "KnwlBlob", "KnwlGragIngestion", "GragParams", "KnwlKeywords", "KnwlGragContext", "KnwlGragInput", "KnwlGragText", "KnwlGragNode", "KnwlGragReference", "KnwlModel"]
