@@ -7,6 +7,7 @@ from unittest.mock import patch, MagicMock
 
 import pytest
 from pydantic import ValidationError
+pytestmark = pytest.mark.basic
 
 from knwl.models import KnwlAnswer
 from knwl.models.KnwlChunk import KnwlChunk

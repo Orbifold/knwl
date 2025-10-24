@@ -1,5 +1,7 @@
+import pytest
 from knwl.prompts.prompts import prompts
-
+pytestmark = pytest.mark.basic
+    
 
 def test_summarization():
     prompt = prompts.summarization.summarize("ABC")

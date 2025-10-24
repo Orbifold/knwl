@@ -28,7 +28,7 @@ async def test_basic_ask():
     returns a valid KnwlLLMAnswer response, and correctly caches the query.
     """
     llm = OllamaClient()
-    assert llm.model == "qwen2.5:14b"
+    assert llm.model == "o14"
     assert llm.temperature == 0.1
 
     llm = OllamaClient(model="gemma3:4b", temperature=0.5)
@@ -108,4 +108,4 @@ async def test_no_cache():
     assert a is None
     a = await llm.ask("")
     assert a is None
-    
+

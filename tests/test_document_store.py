@@ -8,6 +8,8 @@ from tests.library.collect import get_random_library_article
 async def test_document_crud():
     store = DocumentStore()
     article = await get_random_library_article()
+    if not article:
+        pytest.fail("No random article returned.")
     id = await store.upsert(article)
     assert await store.exists(id) is True
     found = await store.get_by_id(id)

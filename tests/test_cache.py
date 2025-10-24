@@ -2,7 +2,7 @@ import pytest
 
 from knwl.llm.json_llm_cache import JsonLLMCache
 from knwl.models import KnwlAnswer
-
+pytestmark = pytest.mark.basic
 cache = JsonLLMCache()
 
 

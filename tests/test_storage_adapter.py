@@ -1,6 +1,8 @@
+import pytest
 from knwl.storage.storage_adapter import StorageAdapter
 from tests.fixtures import random_node
-
+pytestmark = pytest.mark.basic
+    
 
 def test_key_value(random_node):
     u = {"a": 1, "b": 2}

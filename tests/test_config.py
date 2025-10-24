@@ -1,6 +1,8 @@
 import pytest
 from knwl.config import get_config, merge_configs
 
+pytestmark = pytest.mark.basic
+
 
 def test_config_get():
     config = {"a": {"b": {"c": 1}}}
@@ -15,7 +17,7 @@ def test_config_get():
         get_config("nonexistent", default="default_value", config=config)
         == "default_value"
     )
-    assert get_config("llm", "ollama", "model") == "qwen2.5:14b"
+    assert get_config("llm", "ollama", "model") == "o14"
     assert get_config("llm", "ollama", "temperature") == 0.1
     assert get_config("llm", "ollama", "context_window") == 32768
     assert get_config("llm", "ollama", "caching_service") == "@/llm_caching/json"
@@ -45,9 +47,11 @@ def test_config_get():
         )
         == 0.56
     )
-    assert get_config("@/llm/ollama/model") == "qwen2.5:14b"
+    assert get_config("@/llm/ollama/model") == "o14"
     assert get_config("@/a/b", override=config) == {"c": 1}
     assert get_config("@/a/b/", override=config) == {"c": 1}
+    # should fetch the default if the reference is only the service name
+    assert "class" in get_config("@/rag_store")
 
 
 def test_config_merge():
@@ -76,10 +80,9 @@ def test_config_merge():
     with pytest.raises(ValueError):
         merge_configs(override, "not_a_dict")
 
-    
     config = {
         "llm": {"openai": {"caching_service": "@/llm_caching/special"}},
         "llm_caching": {"special": {"class": "A"}},
     }
-    result  = get_config("llm", "openai", "caching_service", override=config)
+    result = get_config("llm", "openai", "caching_service", override=config)
     assert result == "@/llm_caching/special"

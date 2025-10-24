@@ -7,6 +7,7 @@ from knwl.models.KnwlDocument import KnwlDocument
 from knwl.storage.json_storage import JsonStorage
 from knwl.utils import random_name, load_json
 from faker import Faker
+pytestmark = pytest.mark.basic
 
 fake = Faker()
 

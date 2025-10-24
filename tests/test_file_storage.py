@@ -4,6 +4,7 @@ from knwl.storage.file_storage import FileStorage
 from knwl.models import KnwlBlob
 import os
 import shutil
+pytestmark = pytest.mark.basic
 
 
 @pytest.mark.asyncio

@@ -5,6 +5,7 @@ import pytest
 
 from knwl.models.KnwlNode import KnwlNode
 from knwl.storage.networkx_storage import NetworkXGraphStorage
+pytestmark = pytest.mark.basic
 
 
 @pytest.fixture

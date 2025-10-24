@@ -208,8 +208,7 @@ default_config = {
         "local": {
             "class": "knwl.semantic.graph_rag.graph_rag.GraphRAG",
             "semantic_graph": "@/semantic_graph/memory",
-            "blob_storage": "none",  # don't save the documents
-            "chunker": "@/chunking/tiktoken",
+            "ragger": "@/rag_store",
             "graph_extractor": "@/graph_extraction/basic",
         },
     },
@@ -318,6 +317,17 @@ def get_config(*keys, default=None, config=None, override=None):
         # if starts with @/, it's a reference to another config value
         if isinstance(keys[0], str) and keys[0].startswith("@/"):
             ref_keys = [u for u in keys[0][2:].split("/") if u]
+            if len(ref_keys) == 1:
+                # fetch the default variant if only the service name is given
+                default_variant = cloned_config.get(ref_keys[0], {}).get(
+                    "default", None
+                )
+                if default_variant is not None:
+                    ref_keys.append(default_variant)
+                else:
+                    raise ValueError(
+                        f"get_config: No default variant found for {ref_keys[0]}"
+                    )
             return get_config(*ref_keys, default=default, config=cloned_config)
         else:
             return cloned_config.get(keys[0], default)

@@ -3,6 +3,7 @@ from pydantic import ValidationError
 
 from knwl.format import render_mermaid
 from knwl.models import KnwlEdge, KnwlGraph, KnwlModel, KnwlNode, KnwlInput, KnwlDocument
+pytestmark = pytest.mark.basic
 
 
 def test_knwlnode():

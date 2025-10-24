@@ -1,10 +1,10 @@
 [project]
 name = "knwl"
 license = "MIT"
-version = "0.7.6"
+version = "0.7.7"
 description = "Graph RAG"
 authors = [
-    {name = "Swa", email = "swa@orbifold.net"}
+    { name = "Swa", email = "swa@orbifold.net" }
 ]
 readme = "README.md"
 requires-python = ">=3.10,<3.13"
@@ -37,9 +37,7 @@ dev = [
     "pytest-mock>=3.14.0",
     "pytest-asyncio>=0.24.0",
     "pytest>=8.3.3",
-    "aiohttp>=3.13.1",
     "beautifulsoup4>=4.14.2",
-    "markdownify>=1.2.0",
 ]
 
 

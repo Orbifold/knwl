@@ -14,6 +14,7 @@ from knwl.di import (
     ServiceProvider,
     container,
 )
+pytestmark = pytest.mark.basic
 
 
 class TestDependencyInjection:
