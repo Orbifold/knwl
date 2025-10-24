@@ -6,7 +6,7 @@ from knwl.semantic.rag.chunk_base import ChunkBase
 from knwl.storage.storage_adapter import StorageAdapter
 from knwl.storage.storage_base import StorageBase
 from knwl.storage.vector_storage_base import VectorStorageBase
-
+from knwl.logging import log
 
 @defaults("chunk_store")
 class ChunkStore(ChunkBase):
@@ -109,3 +109,26 @@ class ChunkStore(ChunkBase):
             list[KnwlChunk]: A list of KnwlChunk objects associated with the source key.
         """
         return await self.chunk_storage.get_by_metadata(source_id=source_id)
+
+    async def nearest(self, query: str, top_k: int = 5) -> list[KnwlChunk]:
+        """
+        Finds the nearest chunks to the given query.
+
+        Args:
+            query (str): The query string to find nearest chunks for.
+            top_k (int): The number of nearest chunks to retrieve.
+
+        Returns:
+            list[KnwlChunk]: A list of the nearest KnwlChunk objects.
+        """
+        results = await self.chunk_embeddings.nearest(query, top_k)
+        log.debug(f"ChunkStore: nearest search for query '{query}' returned {len(results)} results.")
+        chunks = []
+        for result in results:
+            found = await self.get_by_id(result["id"])
+            if found is not None:
+                if isinstance(found, KnwlChunk):
+                    chunks.append(found)
+                else:
+                    chunks.append(KnwlChunk.model_validate(found))
+        return chunks

@@ -9,7 +9,7 @@ class VectorStorageBase(StorageBase, ABC):
     """
 
     @abstractmethod
-    async def query(self, query: str, top_k: int = 1) -> list[dict]:
+    async def nearest(self, query: str, top_k: int = 1) -> list[dict]:
         """
         Execute a vector similarity search query against the storage.
 

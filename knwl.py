@@ -640,7 +640,7 @@ class Knwl:
                                          otherwise None.
         """
         # node rag: get top-k nodes
-        found = await self.node_vectors.query(query, top_k=query_param.top_k)
+        found = await self.node_vectors.nearest(query, top_k=query_param.top_k)
         if not len(found):
             return None
         # todo: translation from vector to node not necessary if the vector storage contains the data as well
@@ -848,7 +848,7 @@ class Knwl:
     async def get_global_query_context(self, keywords, query_param: GragParams):
 
         # ====================== Primary Edge ======================================
-        primary_edges = await self.edge_vectors.query(keywords, top_k=query_param.top_k)
+        primary_edges = await self.edge_vectors.nearest(keywords, top_k=query_param.top_k)
         primary_edges = [KnwlEdge(**r) for r in primary_edges]
 
         if not len(primary_edges):
@@ -909,7 +909,7 @@ class Knwl:
         """
         # =========================Standard RAG ===================================
         start_time = time.time()
-        rag_chunks = await self.chunk_vectors.query(query, top_k=query_param.top_k)
+        rag_chunks = await self.chunk_vectors.nearest(query, top_k=query_param.top_k)
 
         if not len(rag_chunks):
             return KnwlResponse(answer="No vectors found to answer the question.", context=None)

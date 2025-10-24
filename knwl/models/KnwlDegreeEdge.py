@@ -1,8 +1,9 @@
+from warnings import deprecated
 from pydantic import Field
 
 from knwl.models.KnwlEdge import KnwlEdge
 
-
+@deprecated("V1 remnant - use KnwlEdge instead.")
 class KnwlDegreeEdge(KnwlEdge):
     """
     Represents a knowledge edge in a graph with a degree.

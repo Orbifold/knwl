@@ -1,12 +1,11 @@
 from datetime import datetime
 from typing import Callable
-
 from pydantic import BaseModel, Field
 from rich.text import Text
 
 from knwl.models.KnwlGragContext import KnwlGragContext
 
-
+# @deprecated("V1 remnant - use KnwlAnswer instead.")  # requires Python 3.13+
 class KnwlResponse(BaseModel):
     """
     Represents a response from the KNWL system containing the answer, context, and performance metrics.

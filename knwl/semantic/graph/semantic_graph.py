@@ -272,7 +272,7 @@ class SemanticGraph(SemanticGraphBase):
         """
         if node is None or node.id is None:
             return []
-        results = await self.node_embeddings.query(node.model_dump_json(), top_k=top_k)
+        results = await self.node_embeddings.nearest(node.model_dump_json(), top_k=top_k)
         nodes = []
         for r in results:
             nodes.append(KnwlNode(**r))
@@ -281,7 +281,7 @@ class SemanticGraph(SemanticGraphBase):
     async def get_similar_edges(self, edge: KnwlEdge, top_k: int = 5) -> list[KnwlEdge]:
         if edge is None or edge.id is None:
             return []
-        results = await self.edge_embeddings.query(edge.model_dump_json(), top_k=top_k)
+        results = await self.edge_embeddings.nearest(edge.model_dump_json(), top_k=top_k)
         # at this point you have to decide whether the graph or the vector db is considered for the actual data
         # if the vector db only contains embeddings, then you have to get the actual data from the graph store
         # for now we assume the vector db contains the actual data as well,
@@ -302,7 +302,7 @@ class SemanticGraph(SemanticGraphBase):
         await self.edge_embeddings.clear()
 
     async def nearest_nodes(self, query, top_k=5):
-        results = await self.node_embeddings.query(query, top_k=top_k)
+        results = await self.node_embeddings.nearest(query, top_k=top_k)
         nodes = []
         for r in results:
             # if same vector storage for nodes and edges, filter only nodes
@@ -311,7 +311,7 @@ class SemanticGraph(SemanticGraphBase):
         return nodes
 
     async def nearest_edges(self, query, top_k=5):
-        results = await self.edge_embeddings.query(query, top_k=top_k)
+        results = await self.edge_embeddings.nearest(query, top_k=top_k)
         edges = []
         for r in results:
             if r is not None and r["type_name"] == "KnwlEdge":

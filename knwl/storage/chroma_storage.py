@@ -63,7 +63,7 @@ class ChromaStorage(VectorStorageBase):
     def in_memory(self):
         return self._in_memory
 
-    async def query(self, query: str, top_k: int = 1) -> list[dict]:
+    async def nearest(self, query: str, top_k: int = 1) -> list[dict]:
         # ====================================================================================
         # Note that Chroma has auto-embedding based on all-MiniLM-L6-v2, so you don't need to provide embeddings.
         # The `query_texts` is auto=transformed using this model. The embedding dimension is only 384, so it really is rather shallow for most purposes.
