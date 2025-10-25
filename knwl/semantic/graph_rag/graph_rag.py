@@ -4,7 +4,13 @@ from knwl import ChunkingBase
 from knwl.di import defaults
 from knwl.extraction.graph_extraction_base import GraphExtractionBase
 from knwl.logging import log
-from knwl.models import (GragParams, KnwlGragContext, KnwlGraph, KnwlInput, KnwlGragInput, )
+from knwl.models import (
+    GragParams,
+    KnwlGragContext,
+    KnwlGraph,
+    KnwlInput,
+    KnwlGragInput,
+)
 from knwl.models.KnwlChunk import KnwlChunk
 from knwl.models.KnwlDocument import KnwlDocument
 from knwl.models.KnwlEdge import KnwlEdge
@@ -13,6 +19,7 @@ from knwl.models.KnwlNode import KnwlNode
 from knwl.semantic.graph.semantic_graph_base import SemanticGraphBase
 from knwl.semantic.graph_rag.graph_rag_base import GraphRAGBase
 from knwl.semantic.graph_rag.strategies.local_strategy import LocalGragStrategy
+from knwl.semantic.graph_rag.strategies.naive_strategy import NaiveGragStrategy
 from knwl.semantic.graph_rag.strategies.strategy_base import GragStrategyBase
 from knwl.semantic.rag.rag_base import RagBase
 
@@ -26,12 +33,14 @@ class GraphRAG(GraphRAGBase):
 
     Default implementation of the `GraphRAGBase` abstract base class.
 
-
-
-
     """
 
-    def __init__(self, semantic_graph: SemanticGraphBase | None = None, ragger: RagBase | ChunkingBase | None = None, graph_extractor: GraphExtractionBase | None = None, ):
+    def __init__(
+        self,
+        semantic_graph: SemanticGraphBase | None = None,
+        ragger: RagBase | ChunkingBase | None = None,
+        graph_extractor: GraphExtractionBase | None = None,
+    ):
         super().__init__()
         self.semantic_graph: SemanticGraphBase = semantic_graph
         self.ragger: RagBase | ChunkingBase = ragger
@@ -42,17 +51,27 @@ class GraphRAG(GraphRAGBase):
         if self.semantic_graph is None:
             raise ValueError("GraphRAG: semantic_graph must be provided.")
         if not isinstance(self.semantic_graph, SemanticGraphBase):
-            raise ValueError("GraphRAG: semantic_graph must be an instance of SemanticGraphBase.")
+            raise ValueError(
+                "GraphRAG: semantic_graph must be an instance of SemanticGraphBase."
+            )
 
         if self.ragger is None:
-            log.warn("GraphRAG: ragger (RAG store) is not provided. Chunnking and storing will be disabled.")
+            log.warn(
+                "GraphRAG: ragger (RAG store) is not provided. Chunnking and storing will be disabled."
+            )
         else:
-            if not isinstance(self.ragger, RagBase) and not isinstance(self.ragger, ChunkingBase):
-                raise ValueError("GraphRAG: ragger must be an instance of RagBase or ChunkingBase.")
+            if not isinstance(self.ragger, RagBase) and not isinstance(
+                self.ragger, ChunkingBase
+            ):
+                raise ValueError(
+                    "GraphRAG: ragger must be an instance of RagBase or ChunkingBase."
+                )
         if self.graph_extractor is None:
             raise ValueError("GraphRAG: graph_extractor must be provided.")
         if not isinstance(self.graph_extractor, GraphExtractionBase):
-            raise ValueError("GraphRAG: graph_extractor must be an instance of GraphExtractionBase.")
+            raise ValueError(
+                "GraphRAG: graph_extractor must be an instance of GraphExtractionBase."
+            )
 
     async def edge_degree(self, edge_id: str) -> int:
         return await self.semantic_graph.edge_degree(edge_id)
@@ -60,7 +79,9 @@ class GraphRAG(GraphRAGBase):
     async def edge_degrees(self, edges: list[KnwlEdge]) -> list[int]:
         return await self.semantic_graph.edge_degrees(edges)
 
-    async def get_semantic_endpoints(self, edge_ids: list[str]) -> dict[str, tuple[str, str]]:
+    async def get_semantic_endpoints(
+        self, edge_ids: list[str]
+    ) -> dict[str, tuple[str, str]]:
         return await self.semantic_graph.get_semantic_endpoints(edge_ids)
 
     async def node_degree(self, node_id: str) -> int:
@@ -78,12 +99,20 @@ class GraphRAG(GraphRAGBase):
     async def embed_edges(self, edges: list[KnwlEdge]) -> list[KnwlEdge]:
         return await self.semantic_graph.embed_edges(edges)
 
-    async def ingest(self, input: str | KnwlInput | KnwlDocument, store_source: bool = False, enable_chunking: bool = True, store_chunks: bool = False, ) -> KnwlGraph | None:
+    async def ingest(
+        self,
+        input: str | KnwlInput | KnwlDocument,
+        store_source: bool = False,
+        enable_chunking: bool = True,
+        store_chunks: bool = False,
+    ) -> KnwlGraph | None:
         """
         Ingest raw text or KnwlInput/KnwlDocument and convert to knowledge graph.
         See also the `extract` method which does the same without storing anything.
         """
-        result: KnwlGragIngestion = await self.extract(input, enable_chunking=enable_chunking)
+        result: KnwlGragIngestion = await self.extract(
+            input, enable_chunking=enable_chunking
+        )
         if result.graph is None:
             log.warn("GraphRAG: No knowledge graph was extracted to ingest.")
             return None
@@ -114,9 +143,14 @@ class GraphRAG(GraphRAGBase):
         return result.graph
 
     async def chunking(self, document: KnwlDocument) -> list[KnwlChunk]:
+        """
+        Chunk the document using the provided ragger (ChunkingBase or RagBase).
+        """
 
         if self.ragger is None:
-            raise ValueError("GraphRAG: attempt to chunk but no ragger (ChunkingBase or RagBase instance) is provided.")
+            raise ValueError(
+                "GraphRAG: attempt to chunk but no ragger (ChunkingBase or RagBase instance) is provided."
+            )
         if isinstance(self.ragger, ChunkingBase):
             chunker = cast(ChunkingBase, self.ragger)
             return await chunker.chunk(document.content, document.id)
@@ -124,9 +158,13 @@ class GraphRAG(GraphRAGBase):
             chunker = cast(RagBase, self.ragger)
             return await chunker.chunk(document)
         else:
-            raise ValueError(f"GraphRAG: provided ragger of type '{type(self.ragger)}' is not supported.")
+            raise ValueError(
+                f"GraphRAG: provided ragger of type '{type(self.ragger)}' is not supported."
+            )
 
-    async def extract(self, input: str | KnwlInput | KnwlDocument, enable_chunking: bool = True) -> KnwlGragIngestion | None:
+    async def extract(
+        self, input: str | KnwlInput | KnwlDocument, enable_chunking: bool = True
+    ) -> KnwlGragIngestion | None:
         """
         Extract a knowledge graph from raw text or KnwlInput/KnwlDocument.
         This is the same as `ingest` but without storing anything.
@@ -155,8 +193,17 @@ class GraphRAG(GraphRAGBase):
         if enable_chunking:
             result.chunks = await self.chunking(document_to_ingest)
         else:
-            origin_id = (input.id if (isinstance(input, KnwlInput) or isinstance(input, KnwlDocument)) else None)
-            result.chunks = [KnwlChunk(content=document_to_ingest.content, origin_id=origin_id, )]
+            origin_id = (
+                input.id
+                if (isinstance(input, KnwlInput) or isinstance(input, KnwlDocument))
+                else None
+            )
+            result.chunks = [
+                KnwlChunk(
+                    content=document_to_ingest.content,
+                    origin_id=origin_id,
+                )
+            ]
         # ============================================================================================
         # Extract knowledge graph from chunks
         # ============================================================================================
@@ -176,16 +223,22 @@ class GraphRAG(GraphRAGBase):
                     extracted_graph = chunk_graph
                 else:
                     # this is not a semantic merge but a simple concatenation in order to return the end result
-                    extracted_graph = await self.semantic_graph.consolidate_graphs(extracted_graph, chunk_graph)
+                    extracted_graph = await self.semantic_graph.consolidate_graphs(
+                        extracted_graph, chunk_graph
+                    )
 
         if extracted_graph is None:
-            log.warn("GraphRAG: No knowledge graph was extracted from the input document.")
+            log.warn(
+                "GraphRAG: No knowledge graph was extracted from the input document."
+            )
             return result
         # ============================================================================================
         # Validate and clean extracted graph
         # ============================================================================================
         # Remove self-loops (edges where source == target)
-        cleanup_edges = [edge for edge in extracted_graph.edges if edge.source_id != edge.target_id]
+        cleanup_edges = [
+            edge for edge in extracted_graph.edges if edge.source_id != edge.target_id
+        ]
         # ensure unique chunk_ids
         for node in extracted_graph.nodes:
             node.chunk_ids = list(set(node.chunk_ids))
@@ -200,10 +253,16 @@ class GraphRAG(GraphRAGBase):
                 unique_edges.append(edge)
         for edge in unique_edges:
             edge.chunk_ids = list(set(edge.chunk_ids))
-        result.graph = KnwlGraph(nodes=extracted_graph.nodes, edges=unique_edges, keywords=extracted_graph.keywords, )
+        result.graph = KnwlGraph(
+            nodes=extracted_graph.nodes,
+            edges=unique_edges,
+            keywords=extracted_graph.keywords,
+        )
         return result
 
-    async def augment(self, input: str | KnwlInput | KnwlGragInput, params: GragParams = None) -> KnwlGragContext | None:
+    async def augment(
+        self, input: str | KnwlInput | KnwlGragInput, params: GragParams = None
+    ) -> KnwlGragContext | None:
         """
         Retrieve context from the knowledge graph and augment the input text.
         All you need to answer questions or generate text with context.
@@ -219,7 +278,9 @@ class GraphRAG(GraphRAGBase):
         elif isinstance(input, KnwlInput):
             grag_input = KnwlGragInput(text=input.text, params=query_params)
         else:
-            raise ValueError("GraphRAG: input must be of type str, KnwlInput, or KnwlRagInput.")
+            raise ValueError(
+                "GraphRAG: input must be of type str, KnwlInput, or KnwlRagInput."
+            )
 
         strategy = self.get_strategy(grag_input)
         return await strategy.augment(grag_input)
@@ -231,6 +292,8 @@ class GraphRAG(GraphRAGBase):
         mode = input.params.mode
         if mode == "local":
             return LocalGragStrategy(self)
+        elif mode == "naive":
+            return NaiveGragStrategy(self)
         else:
             raise ValueError(f"GraphRAG: Unknown strategy mode '{mode}'.")
 
@@ -281,7 +344,9 @@ class GraphRAG(GraphRAGBase):
             elif isinstance(self.ragger, RagBase):
                 return await cast(RagBase, self.ragger).get_chunk_by_id(chunk_id)
             else:
-                raise ValueError(f"GraphRAG: provided ragger of type '{type(self.ragger)}' is not supported.")
+                raise ValueError(
+                    f"GraphRAG: provided ragger of type '{type(self.ragger)}' is not supported."
+                )
 
     async def get_source_by_id(self, source_id: str) -> KnwlDocument | None:
         """
@@ -295,7 +360,9 @@ class GraphRAG(GraphRAGBase):
             elif isinstance(self.ragger, RagBase):
                 return await cast(RagBase, self.ragger).get_source_by_id(source_id)
             else:
-                raise ValueError(f"GraphRAG: provided ragger of type '{type(self.ragger)}' is not supported.")
+                raise ValueError(
+                    f"GraphRAG: provided ragger of type '{type(self.ragger)}' is not supported."
+                )
 
     async def save_sources(self, sources: List[KnwlDocument]) -> bool:
         for source in sources:
@@ -306,3 +373,27 @@ class GraphRAG(GraphRAGBase):
         for chunk in chunks:
             await self.ragger.upsert_chunk(chunk)
         return True
+
+    async def nearest_chunks(
+        self, query: str, query_param: GragParams
+    ) -> list[KnwlChunk] | None:
+        """
+        Query chunks based on the input query and parameters.
+        This does not involve the graph directly but is part of the naive RAG pipeline.
+        """
+        if self.ragger is None:
+            raise ValueError(
+                "GraphRAG: attempt to query chunks but no ragger (ChunkingBase or RagBase instance) is provided."
+            )
+        else:
+            if isinstance(self.ragger, ChunkingBase):
+                raise ValueError(
+                    "GraphRAG: attempt to query chunks but ragger is a ChunkingBase instance, which does not support semantic querying."
+                )
+            elif isinstance(self.ragger, RagBase):
+                ragger = cast(RagBase, self.ragger)
+                return await ragger.nearest(query, query_param.top_k)
+            else:
+                raise ValueError(
+                    f"GraphRAG: provided ragger of type '{type(self.ragger)}' is not supported."
+                )

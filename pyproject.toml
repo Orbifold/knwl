@@ -1,7 +1,7 @@
 [project]
 name = "knwl"
 license = "MIT"
-version = "0.7.7"
+version = "0.7.8"
 description = "Graph RAG"
 authors = [
     { name = "Swa", email = "swa@orbifold.net" }

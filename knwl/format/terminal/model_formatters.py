@@ -13,7 +13,19 @@ from rich.table import Table
 from rich.text import Text
 
 from knwl.format.formatter_base import ModelFormatter, register_formatter
-from knwl.models import (KnwlNode, KnwlEdge, KnwlGraph, KnwlDocument, KnwlChunk, KnwlEntity, KnwlExtraction, KnwlGragContext, KnwlResponse, KnwlGragIngestion, KnwlKeywords, )
+from knwl.models import (
+    KnwlNode,
+    KnwlEdge,
+    KnwlGraph,
+    KnwlDocument,
+    KnwlChunk,
+    KnwlEntity,
+    KnwlExtraction,
+    KnwlGragContext,
+    KnwlResponse,
+    KnwlGragIngestion,
+    KnwlKeywords,
+)
 
 
 @register_formatter(KnwlNode, "terminal")
@@ -175,7 +187,6 @@ class KnwlGraphTerminalFormatter(ModelFormatter):
                     )
                 )
 
-
         return formatter.create_panel(
             Group(*content),
             title="👁️ Knowledge Graph",
@@ -324,7 +335,6 @@ class KnwlExtractionTerminalFormatter(ModelFormatter):
 
             content.append(entity_table)
 
-
         return formatter.create_panel(
             Group(*content),
             title="🔍 Extraction Results",
@@ -338,19 +348,32 @@ class KnwlContextTerminalFormatter(ModelFormatter):
 
     def format(self, ctx: KnwlGragContext, formatter, **options) -> Panel:
         """Format a KnwlContext as a rich panel."""
-        show_details = options.get("show_details", True)
+        show_nodes = options.get("show_nodes", True)
+        show_edges = options.get("show_edges", False)
+        show_chunks = options.get("show_chunks", False)
         max_entities = options.get("max_entities", 10)
-        content= []
+        content = []
         content.append(Text("\n"))
         content.append(
             Text(f" Question: {ctx.input.text}", style=formatter.theme.SUBTITLE_STYLE)
         )
-        if show_details:
+        if show_chunks:
+            content.append(Text("\n"))
+            content.append(Text("📑 Chunks:\n", style=formatter.theme.SUBTITLE_STYLE))
+
+            for c in ctx.chunks[:max_entities]:
+                preview = c.text[:150] + "..." if len(c.text) > 150 else c.text
+                content.append(Text(f"📄[{str(c.order)}] {preview}"))
+                content.append(Text("\n"))
+
+        if show_nodes:
             content.append(Text("\n"))
             content.append(Text(" Nodes:", style=formatter.theme.SUBTITLE_STYLE))
             entity_table = Table(box=formatter.theme.TABLE_BOX)
             entity_table.add_column("Name", style=formatter.theme.TYPE_STYLE)
-            entity_table.add_column("Type", style=formatter.theme.HIGHLIGHT, justify="right")
+            entity_table.add_column(
+                "Type", style=formatter.theme.HIGHLIGHT, justify="right"
+            )
             entity_table.add_column("Description", style=formatter.theme.VALUE_STYLE)
 
             for n in ctx.nodes[:max_entities]:
@@ -406,7 +429,6 @@ class KnwlResponseTerminalFormatter(ModelFormatter):
             content.append(Text("\n"))
             context_formatter = KnwlContextTerminalFormatter()
             content.append(context_formatter.format(model.context, formatter))
-
 
         return formatter.create_panel(
             Group(*content),
@@ -500,5 +522,5 @@ class KnwlKeywordsTerminalFormatter(ModelFormatter):
         return formatter.create_panel(
             Group(*content),
             title="🏷️ Keywords Extraction",
-            subtitle="Extracted Keywords"
+            subtitle="Extracted Keywords",
         )

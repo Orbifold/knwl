@@ -739,7 +739,7 @@ class Knwl:
         for i, v in enumerate(stats.items()):
             chunk_id, count = v
             chunk = await self.chunks_storage.get_by_id(chunk_id)
-            graph_rag_chunks[chunk_id] = KnwlGragText(order=count, text=chunk["content"], index=str(i), id=chunk_id)
+            graph_rag_chunks[chunk_id] = KnwlGragText(order=count, text=chunk["content"], origin_id=str(i), id=chunk_id)
         # in decreasing order of count
         graph_rag_texts = sorted(graph_rag_chunks.values(), key=lambda x: x.order, reverse=True)
         return graph_rag_texts
@@ -890,7 +890,7 @@ class Knwl:
         coll = []
         for i, chunk_id in enumerate(chunk_ids):
             chunk = await self.chunks_storage.get_by_id(chunk_id)
-            coll.append(KnwlGragText(index=str(i), order=stats[chunk_id], text=chunk["content"], id=chunk_id))
+            coll.append(KnwlGragText(origin_id=str(i), order=stats[chunk_id], text=chunk["content"], id=chunk_id))
 
         coll = sorted(coll, key=lambda x: x.order, reverse=True)
         return coll

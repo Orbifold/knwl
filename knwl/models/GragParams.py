@@ -22,7 +22,7 @@ class GragParams(BaseModel):
     """
     model_config = {"frozen": True}
 
-    mode: QueryModes = Field(default="global", description="The query mode to use - local, global, hybrid, or naive.")
+    mode: QueryModes = Field(default="local", description="The query mode to use - local, global, hybrid, or naive.")
 
 
     response_type: str = Field(default="Multiple Paragraphs", description="The type of response format to generate.")

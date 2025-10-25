@@ -63,6 +63,14 @@ class GraphRAGBase(FrameworkBase, ABC):
         ...
 
     @abstractmethod
+    async def nearest_chunks(self, query: str, query_param: GragParams) -> list[KnwlChunk] | None:
+        """
+        Query chunks based on the input query and parameters.
+        This does not involve the graph directly but is part of the naive RAG pipeline.
+        """
+        ...
+
+    @abstractmethod
     async def get_node_by_id(self, node_id: str) -> KnwlNode | None:
         """
         Retrieve a node by its ID from the knowledge graph.

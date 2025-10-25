@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field, model_validator
 from knwl.models.KnwlEdge import KnwlEdge
 from knwl.models.KnwlNode import KnwlNode
 from knwl.utils import get_endpoint_ids
-
+from knwl.logging import log
 
 class KnwlExtraction(BaseModel):
     """
@@ -118,7 +118,7 @@ class KnwlExtraction(BaseModel):
     def validate_consistency(self):
         """Validate that the graph is consistent after initialization."""
         if not self.is_consistent():
-            print("Warning: the extracted graph is not consistent, fixing this.")
+            log.debug("Warning: the extracted graph is not consistent, fixing this.")
             self.make_consistent()
         return self
 

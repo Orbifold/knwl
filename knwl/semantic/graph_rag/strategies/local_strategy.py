@@ -73,9 +73,9 @@ class LocalGragStrategy(GragStrategyBase):
             if params.return_chunks:
                 chunk = await self.grag.get_chunk_by_id(chunk_id)
                 if chunk is not None:
-                    graph_rag_chunks[chunk_id] = KnwlGragText(order=count, text=chunk["content"], index=str(i), id=chunk_id)
+                    graph_rag_chunks[chunk_id] = KnwlGragText(order=count, text=chunk["content"], origin_id=str(i), id=chunk_id)
             else:
-                graph_rag_chunks[chunk_id] = KnwlGragText(order=count, text=None, index=str(i), id=chunk_id)
+                graph_rag_chunks[chunk_id] = KnwlGragText(order=count, text=None, origin_id=str(i), id=chunk_id)
         # in decreasing order of count
         rag_texts = sorted(graph_rag_chunks.values(), key=lambda x: x.order, reverse=True)
         return rag_texts

@@ -34,7 +34,7 @@ async def test_extraction():
         print_knwl(edge)
 
 @pytest.mark.asyncio
-async def test_augmentation():
+async def test_local_augmentation():
     content = await get_library_article("mathematics", "Topology")
     doc = KnwlDocument(content=content, id=f"{str(uuid.uuid4())}.txt")
     grag:GraphRAG = services.get_service("graph_rag")    
@@ -47,3 +47,19 @@ async def test_augmentation():
     )
     found = await grag.augment(input)
     print_knwl(found)
+
+@pytest.mark.asyncio
+async def test_naive_augmentation():
+    content = await get_library_article("mathematics", "Topology")
+    doc = KnwlDocument(content=content, id=f"{str(uuid.uuid4())}.txt")
+    grag:GraphRAG = services.get_service("graph_rag")
+    await grag.ingest(doc)
+    input = KnwlGragInput(
+        text="Explain the concept of homeomorphism in topology.",
+        name="Test Query",
+        description="A test query for topology concepts.",
+        params=GragParams(mode="naive", top_k=5)
+    )
+    found = await grag.augment(input)
+    print("")
+    print_knwl(found, show_chunks=True, show_nodes=False, show_edges=False)
