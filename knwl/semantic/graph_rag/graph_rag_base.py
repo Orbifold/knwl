@@ -154,7 +154,7 @@ class GraphRAGBase(FrameworkBase, ABC):
         ...
 
     @abstractmethod
-    async def edge_degrees(self, edges: list[KnwlEdge]) -> list[int]:
+    async def assign_edge_degrees(self, edges: list[KnwlEdge]) -> list[int]:
         ...
 
     @abstractmethod

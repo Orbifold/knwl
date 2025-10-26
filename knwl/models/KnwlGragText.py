@@ -4,7 +4,6 @@ from pydantic import BaseModel, Field
 
 class KnwlGragText(BaseModel):
     """
-    Formerly KnwlRagChunk.
     Represents a piece of text obtained via one of the Grag strategies.
 
     Attributes:
@@ -14,8 +13,6 @@ class KnwlGragText(BaseModel):
         id (str): The unique identifier of the text.
     """
 
-    model_config = {"frozen": True}
-
     origin_id: Optional[str] = Field(
         default=None, description="The source id of the text."
     )
@@ -23,7 +20,7 @@ class KnwlGragText(BaseModel):
         default="",
         description="The text content to use for context. If not supplied, downstream services need to fetch the text data separately using the id.",
     )
-    order: int = Field(description="The order of the text in the sequence.")
+    index: int = Field(description="The order of the text in the sequence.")
     id: str = Field(description="The unique identifier of the text.")
 
     @staticmethod

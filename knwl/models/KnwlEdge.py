@@ -10,7 +10,7 @@ class KnwlEdge(BaseModel):
     Represents a relation between atoms of knowledge.
 
     Minimum required fields are source_id, target_id and type.
-    This is an immutable class, use the update() method to create a new instance with updated fields.
+    Contrary to most models this one is not immutable because it complicates the grag algorithms too much.
 
     Attributes:
         source_id (str): The Id of the source node.
@@ -23,10 +23,17 @@ class KnwlEdge(BaseModel):
         id (str): The unique identifier of the edge, default is a new UUID.
     """
 
-    # model_config = {"frozen": True}
-
+    degree: Optional[int] = Field(
+        default=None, description="The degree of the edge in the graph."
+    )
     source_id: str = Field(description="The Id of the source node.")
     target_id: str = Field(description="The Id of the target node.")
+    source_name: Optional[str] = Field(
+        default=None, description="The name of the source node."
+    )
+    target_name: Optional[str] = Field(
+        default=None, description="The name of the target node."
+    )
     type: str = Field(
         default="Unknown",
         description="The type of the relation. In a property modeled graph this should be an ontology class.",
@@ -39,7 +46,6 @@ class KnwlEdge(BaseModel):
     id: str = Field(
         default=None,
         description="The unique identifier of the node, automatically generated from the required fields.",
-        init=False,
     )
     chunk_ids: List[str] = Field(
         default_factory=list,
@@ -57,6 +63,9 @@ class KnwlEdge(BaseModel):
         default=1.0,
         description="The weight of the edge. This can be used to represent the strength or importance of the relationship. This is given by domain experts or derived from data extraction.",
     )
+    index: int = Field(
+        default=0, description="The index of the edge within the parent list, if any."
+    )
     data: dict = Field(
         default_factory=dict,
         description="Additional data associated with the knowledge node.",
@@ -68,6 +77,7 @@ class KnwlEdge(BaseModel):
             e.source_id + " " + e.target_id + " " + e.type,
             prefix="edge|>",
         )
+
     def has_data(self, key: str) -> bool:
         """
         Check if the KnwlNode has any additional data.
@@ -112,7 +122,8 @@ class KnwlEdge(BaseModel):
     @model_validator(mode="after")
     def update_id(self):
         # Note that using only source and target is not enough to ensure uniqueness
-        object.__setattr__(self, "id", KnwlEdge.hash_edge(self))
+        if self.id is None:
+            object.__setattr__(self, "id", KnwlEdge.hash_edge(self))
         if self.type is None or len(self.type.strip()) == 0:
             if self.keywords and len(self.keywords) > 0:
                 object.__setattr__(self, "type", self.keywords[0])
@@ -126,6 +137,7 @@ class KnwlEdge(BaseModel):
         """Parse JSON string to dict if needed."""
         if v is not None and isinstance(v, str):
             import json
+
             try:
                 return json.loads(v)
             except json.JSONDecodeError as e:
@@ -140,18 +152,3 @@ class KnwlEdge(BaseModel):
             return edge.source_id
         else:
             raise ValueError(f"Node {node_id} is not an endpoint of edge {edge.id}")
-
-    def update(self, **kwargs) -> "KnwlEdge":
-        """
-        Create a new KnwlNode instance with updated fields. Only 'type', 'description', 'weight', 'keywords', 'chunk_ids', and 'data' are allowed.
-        """
-        allowed_fields = {"type", "description", "weight", "keywords", "chunk_ids", "data"}
-        invalid_fields = set(kwargs.keys()) - allowed_fields
-        if invalid_fields:
-            raise ValueError(
-                f"Invalid fields: {invalid_fields}. Only 'type', 'description', 'weight', 'keywords', 'chunk_ids', and 'data' are allowed."
-            )
-        new_edge = self.model_copy(update=kwargs)
-        # pydantic does not call the model_validator on model_copy, so we need to set the id manually
-        object.__setattr__(new_edge, "id", self.hash_edge(new_edge))
-        return new_edge

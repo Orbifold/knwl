@@ -363,7 +363,7 @@ class KnwlContextTerminalFormatter(ModelFormatter):
 
             for c in ctx.chunks[:max_entities]:
                 preview = c.text[:150] + "..." if len(c.text) > 150 else c.text
-                content.append(Text(f"📄[{str(c.order)}] {preview}"))
+                content.append(Text(f"📄[{str(c.index)}] {preview}"))
                 content.append(Text("\n"))
 
         if show_nodes:

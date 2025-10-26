@@ -210,6 +210,7 @@ default_config = {
             "semantic_graph": "@/semantic_graph/memory",
             "ragger": "@/rag_store",
             "graph_extractor": "@/graph_extraction/basic",
+            "keywords_extractor": "@/keywords_extraction",
         },
     },
     "rag_store": {

@@ -1,13 +1,13 @@
 from knwl.models import KnwlInput
-from knwl.models.KnwlGragEdge import KnwlGragEdge
+from knwl.models.KnwlEdge import KnwlEdge
 from knwl.models.KnwlGragInput import KnwlGragInput
 from knwl.models.KnwlGragReference import KnwlGragReference
-from knwl.models.KnwlGragNode import KnwlGragNode
 
 from pydantic import BaseModel, Field
 from typing import List
 
 from knwl.models.KnwlGragText import KnwlGragText
+from knwl.models.KnwlNode import KnwlNode
 
 
 class KnwlGragContext(BaseModel):
@@ -19,8 +19,8 @@ class KnwlGragContext(BaseModel):
         description="The original input text or KnwlInput object."
     )
     chunks: List[KnwlGragText] = Field(default_factory=list)
-    nodes: List[KnwlGragNode] = Field(default_factory=list)
-    edges: List[KnwlGragEdge] = Field(default_factory=list)
+    nodes: List[KnwlNode] = Field(default_factory=list)
+    edges: List[KnwlEdge] = Field(default_factory=list)
     references: List[KnwlGragReference] = Field(default_factory=list)
 
     model_config = {"frozen": True}
@@ -33,13 +33,13 @@ class KnwlGragContext(BaseModel):
 
     def get_nodes_table(self):
         return "\n".join(
-            ["\t".join(KnwlGragNode.get_header())]
+            ["\t".join(KnwlNode.get_header())]
             + [node.to_row() for node in self.nodes]
         )
 
     def get_edges_table(self):
         return "\n".join(
-            ["\t".join(KnwlGragEdge.get_header())]
+            ["\t".join(KnwlEdge.get_header())]
             + [edge.to_row() for edge in self.edges]
         )
 

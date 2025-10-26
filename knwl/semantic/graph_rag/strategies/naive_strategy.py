@@ -5,7 +5,6 @@ from knwl.models import (
     GragParams,
     KnwlEdge,
     KnwlGragContext,
-    KnwlGragNode,
     KnwlNode,
     KnwlGragText,
     KnwlGragReference,
@@ -43,7 +42,7 @@ class NaiveGragStrategy(GragStrategyBase):
                         text=chunk.content,
                         id=chunk.id,
                         origin_id=chunk.origin_id,
-                        order=i,
+                        index=i,
                     )
                 )
             found = coll

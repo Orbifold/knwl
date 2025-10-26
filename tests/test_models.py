@@ -2,7 +2,15 @@ import pytest
 from pydantic import ValidationError
 
 from knwl.format import render_mermaid
-from knwl.models import KnwlEdge, KnwlGraph, KnwlModel, KnwlNode, KnwlInput, KnwlDocument
+from knwl.models import (
+    KnwlEdge,
+    KnwlGraph,
+    KnwlModel,
+    KnwlNode,
+    KnwlInput,
+    KnwlDocument,
+)
+
 pytestmark = pytest.mark.basic
 
 
@@ -13,13 +21,6 @@ def test_knwlnode():
     assert node1.name == "Node1"
     assert node1.type == "TypeA"
     assert node1.description == ""
- 
-    # you can use the update method
-    node2 = node1.update(name="Node2")
-    assert node2.id is not None
-    assert node2.name == "Node2"
-    assert node1.id != node2.id
-    assert node2.id == KnwlNode.hash_keys("Node2", "TypeA")
 
     with pytest.raises(ValidationError):
         KnwlNode(name="", type="TypeA")  # name cannot be empty
@@ -40,15 +41,6 @@ def test_knwledge():
     assert edge1.target_id == "b"
     assert edge1.type == "relates_to"
     assert edge1.description == ""
-  
-    # you can use the update method
-    edge2 = edge1.update(description="new description")
-    # primary key did not change
-    assert edge2.id == edge1.id
-    assert edge2.source_id == "a"
-    assert edge2.target_id == "b"
-    assert edge2.type == "relates_to"
-    assert edge2.description == "new description"
 
     edge3 = KnwlEdge(source_id="a", target_id="c", type="relates_to")
     assert edge3.id != edge1.id  # different target_id

@@ -3,6 +3,7 @@ from typing import cast, List
 from knwl import ChunkingBase
 from knwl.di import defaults
 from knwl.extraction.graph_extraction_base import GraphExtractionBase
+from knwl.extraction.keywords_extraction_base import KeywordsExtractionBase
 from knwl.logging import log
 from knwl.models import (
     GragParams,
@@ -18,6 +19,8 @@ from knwl.models.KnwlGragIngestion import KnwlGragIngestion
 from knwl.models.KnwlNode import KnwlNode
 from knwl.semantic.graph.semantic_graph_base import SemanticGraphBase
 from knwl.semantic.graph_rag.graph_rag_base import GraphRAGBase
+from knwl.semantic.graph_rag.strategies.global_strategy import GlobalGragStrategy
+from knwl.semantic.graph_rag.strategies.hybrid_strategy import HybridGragStrategy
 from knwl.semantic.graph_rag.strategies.local_strategy import LocalGragStrategy
 from knwl.semantic.graph_rag.strategies.naive_strategy import NaiveGragStrategy
 from knwl.semantic.graph_rag.strategies.strategy_base import GragStrategyBase
@@ -40,11 +43,13 @@ class GraphRAG(GraphRAGBase):
         semantic_graph: SemanticGraphBase | None = None,
         ragger: RagBase | ChunkingBase | None = None,
         graph_extractor: GraphExtractionBase | None = None,
+        keywords_extractor: KeywordsExtractionBase | None = None,
     ):
         super().__init__()
         self.semantic_graph: SemanticGraphBase = semantic_graph
         self.ragger: RagBase | ChunkingBase = ragger
         self.graph_extractor: GraphExtractionBase = graph_extractor
+        self.keywords_extractor: KeywordsExtractionBase = keywords_extractor
         self.validate_services()
 
     def validate_services(self) -> None:
@@ -72,12 +77,18 @@ class GraphRAG(GraphRAGBase):
             raise ValueError(
                 "GraphRAG: graph_extractor must be an instance of GraphExtractionBase."
             )
+        if self.keywords_extractor is not None and not isinstance(
+            self.keywords_extractor, KeywordsExtractionBase
+        ):
+            raise ValueError(
+                "GraphRAG: keywords_extractor, if provided, must be an instance of KeywordsExtractionBase."
+            )
 
     async def edge_degree(self, edge_id: str) -> int:
         return await self.semantic_graph.edge_degree(edge_id)
 
-    async def edge_degrees(self, edges: list[KnwlEdge]) -> list[int]:
-        return await self.semantic_graph.edge_degrees(edges)
+    async def assign_edge_degrees(self, edges: list[KnwlEdge]) -> list[int]:
+        return await self.semantic_graph.assign_edge_degrees(edges)
 
     async def get_semantic_endpoints(
         self, edge_ids: list[str]
@@ -287,13 +298,17 @@ class GraphRAG(GraphRAGBase):
 
     def get_strategy(self, input: KnwlGragInput) -> "GragStrategyBase":
         """
-        Get the appropriate strategy based on the input type.
+        Get the appropriate strategy based on the specified mode in the input parameters.
         """
         mode = input.params.mode
         if mode == "local":
             return LocalGragStrategy(self)
         elif mode == "naive":
             return NaiveGragStrategy(self)
+        elif mode == "hybrid":
+            return HybridGragStrategy(self)
+        elif mode == "global":
+            return GlobalGragStrategy(self)
         else:
             raise ValueError(f"GraphRAG: Unknown strategy mode '{mode}'.")
 
