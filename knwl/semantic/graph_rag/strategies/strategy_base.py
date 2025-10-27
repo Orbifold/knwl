@@ -180,7 +180,7 @@ class GragStrategyBase(ABC):
         return all_nodes
 
     @staticmethod
-    def get_unique_chunk_ids(nodes: list[KnwlNode] | list[KnwlEdge]) -> list[str]:
+    def unique_chunk_ids(nodes: list[KnwlNode] | list[KnwlEdge]) -> list[str]:
         """
         Collects unique chunk Id's from a list of nodes or edges.
         """
@@ -188,7 +188,7 @@ class GragStrategyBase(ABC):
             raise ValueError("get_chunk_ids: parameter is None")
         if not len(nodes):
             return []
-        lists = [n.chunk_ids for n in nodes]
+        lists = [n.chunk_ids for n in nodes if n.chunk_ids is not None]
         # flatten the list and remove duplicates
         return unique_strings(lists)
 
@@ -225,16 +225,11 @@ class GragStrategyBase(ABC):
                 e.index = i
         return edges
 
-    async def create_chunk_stats_from_nodes(
-        self, primary_nodes: list[KnwlNode]
-    ) -> dict[str, int]:
+    async def chunk_stats(self, nodes: list[KnwlNode]) -> dict[str, int]:
         """
-
         This returns for each chunk id in the given primary nodes, how many times it appears in the edges attached to the primary nodes.
         In essence, a chunk is more important if this chunk has many relations between entities within the chunk.
         One could also count the number of nodes present in a chunk as a measure but the relationship is an even stronger indicator of information.
-
-        This method calculates the number of times each chunk appears in the edges attached to the primary nodes.
 
         Args:
             primary_nodes (List[KnwlNode]): A list of primary nodes to analyze.
@@ -242,13 +237,13 @@ class GragStrategyBase(ABC):
         Returns:
             dict[str, int]: A dictionary where the keys are chunk Id's and the values are the counts of how many times each chunk appears in the edges.
         """
-        primary_chunk_ids = self.get_unique_chunk_ids(primary_nodes)
-        if not len(primary_chunk_ids):
+        chunk_ids = self.unique_chunk_ids(nodes) # chunk ids across all given nodes
+        if not len(chunk_ids):
             return {}
-        all_edges = await self.edges_from_nodes(primary_nodes)
-        node_map = {n.id: n for n in primary_nodes}
-        edge_chunk_ids = {}
-        stats = {}
+        all_edges = await self.edges_from_nodes(nodes, sorted=False)
+        node_map = {n.id: n for n in nodes} # node id -> KnwlNode
+        edge_chunk_ids = {} # edge id -> list of chunk ids in both endpoints
+        stats = {} # chunk id -> count of appearances in edges
         for edge in all_edges:
             if edge.source_id not in node_map:
                 node_map[edge.source_id] = await self.grag.get_node_by_id(
@@ -263,19 +258,19 @@ class GragStrategyBase(ABC):
             target_chunks = node_map[edge.target_id].chunk_ids
             common_chunk_ids = list(set(source_chunks).intersection(target_chunks))
             edge_chunk_ids[edge.id] = common_chunk_ids
-        for chunk_id in primary_chunk_ids:
+        for chunk_id in chunk_ids:
             # count how many times this chunk appears in the edge_chunk_ids
             stats[chunk_id] = sum([chunk_id in v for v in edge_chunk_ids.values()])
         return stats
 
-    async def get_texts_from_nodes(
-        self, primary_nodes: list[KnwlNode], params: GragParams
+    async def texts_from_nodes(
+        self, nodes: list[KnwlNode], params: GragParams
     ) -> list[KnwlGragText]:
         """
-        Returns the most relevant paragraphs based on the given primary nodes.
-        What makes the paragraphs relevant is defined in the `create_chunk_stats_from_nodes` method.
+        Returns the most relevant paragraphs based on the given nodes.
+        What makes the paragraphs relevant is defined in the `chunk_stats` method.
 
-        This method first creates chunk statistics for the provided primary nodes, then retrieves the corresponding text
+        This method first creates chunk statistics for the provided nodes, then retrieves the corresponding text
         for each chunk from the chunk storage. The chunks are then sorted in decreasing order of their count.
 
         Args:
@@ -284,7 +279,9 @@ class GragStrategyBase(ABC):
         Returns:
             list[dict]: A list of dictionaries, each containing 'count' and 'text' keys, sorted in decreasing order of count.
         """
-        stats = await self.create_chunk_stats_from_nodes(primary_nodes)
+        if nodes is None or not len(nodes):
+            return []
+        stats = await self.chunk_stats(nodes)
         graph_rag_chunks = {}
         for i, v in enumerate(stats.items()):
             chunk_id, count = v

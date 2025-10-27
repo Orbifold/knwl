@@ -218,3 +218,135 @@ async def test_edges_from_nodes():
     assert edges[0].source_name == "node2"  # edge with higher degree should be first
     assert edges[0].target_name == "node3"
     assert edges[0].index == 0
+
+
+@pytest.mark.asyncio
+async def test_chunk_stats():
+    grag = MagicMock()
+
+    nodes = [
+        KnwlNode(
+            id="node1",
+            name="Node 1",
+            type="A",
+            description="Test node 1",
+            index=1,
+            degree=5,
+            chunk_ids=["chunk1", "chunk2", "chunk3"],
+        ),
+        KnwlNode(
+            id="node2",
+            name="Node 2",
+            type="B",
+            description="Test node 2",
+            index=0,
+            degree=10,
+            chunk_ids=["chunk2", "chunk3", "chunk4"],
+        ),
+        KnwlNode(
+            id="node3",
+            name="Node 3",
+            type="B",
+            description="Test node 3",
+            index=0,
+            degree=7,
+            chunk_ids=[],
+        ),
+    ]
+    edge1 = KnwlEdge(
+        id="edge1",
+        source_id="node1",
+        target_id="node2",
+        type="related_to",
+        description="Edge 1",
+        weight=2.0,
+    )
+    edge2 = KnwlEdge(
+        id="edge2",
+        source_id="node2",
+        target_id="node3",
+        type="related_to",
+        description="Edge 2",
+        weight=2.4,
+    )
+    grag.get_attached_edges = AsyncMock(return_value=[edge1, edge2])
+    grag.get_node_by_id = AsyncMock(
+        side_effect=lambda x: next((n for n in nodes if n.id == x), None)
+    )
+    grag.get_semantic_endpoints = AsyncMock(
+        return_value={
+            "edge1": ("node1", "node2"),
+            "edge2": ("node2", "node3"),
+        }
+    )
+    strategy = DummyStrategy(grag)
+    stats = await strategy.chunk_stats(nodes)
+    assert stats == {
+        "chunk2": 1,  # appears once in edge1 at both endpoints
+        "chunk3": 1,  # appears once in edge2 at both endpoints
+        "chunk1": 0,  # not common in any edge
+        "chunk4": 0,
+    }
+
+
+@pytest.mark.asyncio
+async def test_unique_chunks():
+    nodes = [
+        KnwlNode(
+            id="node1",
+            name="Node 1",
+            type="A",
+            description="Test node 1",
+            index=1,
+            degree=5,
+            chunk_ids=["chunk1", "chunk2", "chunk3"],
+        ),
+        KnwlNode(
+            id="node2",
+            name="Node 2",
+            type="B",
+            description="Test node 2",
+            index=0,
+            degree=10,
+            chunk_ids=["chunk2", "chunk3", "chunk4"],
+        ),
+        KnwlNode(
+            id="node2",
+            name="Node 2",
+            type="B",
+            description="Test node 2",
+            index=0,
+            degree=10,
+            chunk_ids=[],
+        ),
+    ]
+    ids = DummyStrategy.unique_chunk_ids(nodes)
+    assert set(ids) == {"chunk1", "chunk2", "chunk3", "chunk4"}
+
+
+@pytest.mark.asyncio
+async def test_text_from_nodes():
+    grag = MagicMock()
+
+    chunk_map = {
+        "chunk1": {"id": "chunk1", "content": "This is chunk 1."},
+        "chunk2": {"id": "chunk2", "content": "This is chunk 2."},
+        "chunk3": {"id": "chunk3", "content": "This is chunk 3."},
+    }
+
+    grag.get_chunk_by_id = AsyncMock(side_effect=lambda x: chunk_map.get(x))
+
+    strategy = DummyStrategy(grag)
+    strategy.chunk_stats = AsyncMock(
+        return_value={
+            "chunk1": 1,
+            "chunk2": 5,
+            "chunk3": 2,
+        }
+    )
+    texts = await strategy.texts_from_nodes(
+        [{}, {}], params=MagicMock(return_chunks=True)
+    )
+    assert len(texts) == 3
+    assert texts[0].id == "chunk2"  # highest count
+    assert texts[0].text == "This is chunk 2."

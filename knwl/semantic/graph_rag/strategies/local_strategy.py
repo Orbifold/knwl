@@ -69,7 +69,7 @@ class LocalGragStrategy(GragStrategyBase):
             )
         return refs
 
-    async def get_texts_from_nodes(
+    async def texts_from_nodes(
         self, primary_nodes: list[KnwlNode], params: GragParams
     ) -> list[KnwlGragText]:
         """
@@ -85,7 +85,7 @@ class LocalGragStrategy(GragStrategyBase):
         Returns:
             list[dict]: A list of dictionaries, each containing 'count' and 'text' keys, sorted in decreasing order of count.
         """
-        stats = await self.create_chunk_stats_from_nodes(primary_nodes)
+        stats = await self.chunk_stats(primary_nodes)
         graph_rag_chunks = {}
         for i, v in enumerate(stats.items()):
             chunk_id, count = v
@@ -169,7 +169,7 @@ class LocalGragStrategy(GragStrategyBase):
             return None
 
         # chunk texts in descending order of importance
-        rag_texts = await self.get_texts_from_nodes(primary_nodes, input.params)
+        rag_texts = await self.texts_from_nodes(primary_nodes, input.params)
         # the relations with endpoint names in descending order of importance
         use_relations = await self.get_graph_rag_relations(primary_nodes, input.params)
 

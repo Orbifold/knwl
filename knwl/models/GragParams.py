@@ -28,7 +28,7 @@ class GragParams(BaseModel):
     response_type: str = Field(default="Multiple Paragraphs", description="The type of response format to generate.")
 
     # Number of top-k items to retrieve; corresponds to entities in "local" mode and relationships in "global" mode.
-    top_k: int = Field(default=60, description="Number of top-k items to retrieve (entities in local mode, relationships in global mode).")
+    top_k: int = Field(default=5, description="Number of top-k items to retrieve (entities in local mode, relationships in global mode).")
 
     # Number of tokens for the original chunks.
     max_token_for_text_unit: int = Field(default=4000, description="Maximum number of tokens for original chunks.")
