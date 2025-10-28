@@ -17,7 +17,9 @@ class KeywordsGragStrategy(GragStrategyBase):
 
     async def augment(self, input: KnwlGragInput) -> KnwlGragContext | None:
         if input.params.mode != "keywords":
-            log.warn("KeywordsGragStrategy requires 'keywords' mode, but proceedded anyway.")
+            log.warn(
+                "KeywordsGragStrategy requires 'keywords' mode, but proceeding anyway."
+            )
         # the input is supposed to be an array of keywords in this case
         keywords = input.text.split(",")
         keywords = [kw.strip() for kw in keywords if len(kw.strip()) > 0]
@@ -28,6 +30,9 @@ class KeywordsGragStrategy(GragStrategyBase):
         log.debug(f"KeywordsGragStrategy: augmenting with keywords: {keywords}")
 
         edges: list[KnwlEdge] = await self.semantic_edge_search(input)
+        if not edges or len(edges) == 0:
+            return KnwlGragContext.empty(input=input)
+
         nodes = await self.nodes_from_edges(edges, sorted=True)
         if input.params.return_chunks:
             texts = await self.texts_from_nodes(nodes, params=input.params)

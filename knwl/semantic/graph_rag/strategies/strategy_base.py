@@ -50,7 +50,7 @@ class GragStrategyBase(ABC):
             input = KnwlGragInput(text=input, params=GragParams())
         query = input.text
         # node rag: get top-k nodes
-        found = await self.grag.nearest_nodes(query, input.params.top_k)
+        found = await self.grag.nearest_nodes(query, input.params)
         if not found:
             return None
         # todo: translation from vector to node not necessary if the vector storage contains the data as well
@@ -89,6 +89,7 @@ class GragStrategyBase(ABC):
                 name=n.name,
                 order=n.degree,
                 index=i,
+                chunk_ids=n.chunk_ids,
             )
             coll.append(kn)
         return coll

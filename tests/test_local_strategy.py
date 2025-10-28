@@ -5,6 +5,7 @@ from knwl import services
 from knwl.format import print_knwl
 from knwl.models import GragParams, KnwlDocument, KnwlGragContext, KnwlGragInput
 from knwl.semantic.graph_rag.graph_rag import GraphRAG
+from knwl.semantic.graph_rag.strategies.local_strategy import LocalGragStrategy
 from knwl.utils import get_full_path
 import os
 
@@ -35,16 +36,28 @@ async def test_extraction():
 
 
 @pytest.mark.asyncio
-async def test_local_augmentation():
+async def test_from_article():
     content = await get_library_article("mathematics", "Topology")
     doc = KnwlDocument(content=content, id=f"{str(uuid.uuid4())}.txt")
     grag: GraphRAG = services.get_service("graph_rag")
     await grag.ingest(doc)
     input = KnwlGragInput(
-        text="Explain the concept of homeomorphism in topology.",
+        text="homeomorphism,topology",
         name="Test Query",
         description="A test query for topology concepts.",
-        params=GragParams(mode="local")
+        params=GragParams(
+            mode="keywords",
+            return_chunks=True,
+        ),
     )
-    found = await grag.augment(input)
-    print_knwl(found)
+    strategy = LocalGragStrategy(grag)
+    found = await strategy.augment(input)
+    print("")
+    print_knwl(found, show_texts=True, show_nodes=True, show_edges=True)
+
+    assert found is not None
+    assert isinstance(found, KnwlGragContext)
+    assert len(found.texts) > 0
+    assert len(found.nodes) > 0
+    assert len(found.edges) > 0
+    assert found.input == input

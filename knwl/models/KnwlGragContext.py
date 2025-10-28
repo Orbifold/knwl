@@ -93,37 +93,12 @@ class KnwlGragContext(BaseModel):
         return KnwlGragContext(
             chunks=chunks, nodes=nodes, edges=edges, references=references
         )
-
-    def __str__(self):
-        nodes = (
-            f"""
------Entities-----
-```csv
-{self.get_nodes_table()}
-```
-            """
-            if len(self.nodes) > 0
-            else ""
+    @staticmethod
+    def empty(input: KnwlGragInput) -> "KnwlGragContext":
+        return KnwlGragContext(
+            input=input,
+            texts=[],
+            nodes=[],
+            edges=[],
+            references=[],
         )
-        edges = (
-            f"""
------Relationships-----
-```csv
-{self.get_edges_table()}
-```
-            """
-            if len(self.edges) > 0
-            else ""
-        )
-        chunks = (
-            f"""
------Sources-----
-```csv
-{self.get_chunk_table()}
-```
-            """
-            if len(self.chunks) > 0
-            else ""
-        )
-
-        return f"""{nodes}{edges}{chunks}"""
