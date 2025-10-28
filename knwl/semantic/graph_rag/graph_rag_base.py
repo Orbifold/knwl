@@ -6,6 +6,7 @@ from knwl.models import (GragParams, KnwlChunk, KnwlGragContext, KnwlGraph, Knwl
 from knwl.models.KnwlDocument import KnwlDocument
 from knwl.models.KnwlEdge import KnwlEdge
 from knwl.models.KnwlGragIngestion import KnwlGragIngestion
+from knwl.models.KnwlKeywords import KnwlKeywords
 from knwl.models.KnwlNode import KnwlNode
 
 
@@ -40,6 +41,18 @@ class GraphRAGBase(FrameworkBase, ABC):
         """
         ...
 
+    @abstractmethod
+    async def extract_keywords(
+        self, input: str | KnwlInput | KnwlGragInput
+    ) -> KnwlKeywords | None:
+        """
+        Extract keywords from the input text.
+        These keywords will be used to query the knowledge graph for relevant context.
+        The high-level keywords are global topics, main subjects or areas of interest in the text.
+        The local keywords are specific entities, concepts, or details mentioned in the text.
+        """
+        ...
+        
     @abstractmethod
     async def augment(self, input: str | KnwlInput | KnwlGragInput, params: GragParams = None) -> KnwlGragContext | None:
         """

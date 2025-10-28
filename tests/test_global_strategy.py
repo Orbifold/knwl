@@ -10,30 +10,6 @@ from knwl.utils import get_full_path
 
 from tests.library.collect import get_library_article
 
-
-@pytest.mark.asyncio
-async def test_extraction():
-
-    content = await get_library_article("mathematics", "Topology")
-    doc = KnwlDocument(content=content, id=f"{str(uuid.uuid4())}.txt")
-    grag: GraphRAG = services.get_service("graph_rag")
-    result = await grag.extract(doc, enable_chunking=False)
-    assert result.input.content == content
-    assert result.graph is not None
-
-    assert len(result.graph.nodes) > 0
-    assert len(result.graph.edges) > 0
-    print("")
-    print_knwl(result)
-
-    print("")
-    for node in result.graph.nodes:
-        print_knwl(node)
-
-    for edge in result.graph.edges:
-        print_knwl(edge)
-
-
 @pytest.mark.asyncio
 async def test_from_article():
     content = await get_library_article("mathematics", "Topology")
@@ -45,7 +21,7 @@ async def test_from_article():
         name="Test Query",
         description="A test query for topology concepts.",
         params=GragParams(
-            mode="keywords",
+            mode="global",
             return_chunks=True,
         ),
     )

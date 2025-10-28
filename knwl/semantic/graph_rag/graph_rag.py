@@ -16,6 +16,7 @@ from knwl.models.KnwlChunk import KnwlChunk
 from knwl.models.KnwlDocument import KnwlDocument
 from knwl.models.KnwlEdge import KnwlEdge
 from knwl.models.KnwlGragIngestion import KnwlGragIngestion
+from knwl.models.KnwlKeywords import KnwlKeywords
 from knwl.models.KnwlNode import KnwlNode
 from knwl.semantic.graph.semantic_graph_base import SemanticGraphBase
 from knwl.semantic.graph_rag.graph_rag_base import GraphRAGBase
@@ -133,7 +134,7 @@ class GraphRAG(GraphRAGBase):
         # ============================================================================================
         if self.ragger:
             await self.ragger.upsert_document(result.input)
-        
+
         # ============================================================================================
         # Merge graph into semantic graph
         # ============================================================================================
@@ -217,7 +218,9 @@ class GraphRAG(GraphRAGBase):
         # merge graphs from all chunks
         extracted_graph: KnwlGraph = None
         for chunk in result.chunks:
-            chunk_graph = await self.graph_extractor.extract_graph(chunk.content, chunk_id=chunk.id)
+            chunk_graph = await self.graph_extractor.extract_graph(
+                chunk.content, chunk_id=chunk.id
+            )
             # # add reference to the chunk
             # for node in chunk_graph.nodes:
             #     node.chunk_ids.append(chunk.id)
@@ -308,7 +311,9 @@ class GraphRAG(GraphRAGBase):
         else:
             raise ValueError(f"GraphRAG: Unknown strategy mode '{mode}'.")
 
-    async def nearest_nodes(self, query: str, params: GragParams) -> list[KnwlNode] | None:
+    async def nearest_nodes(
+        self, query: str, params: GragParams
+    ) -> list[KnwlNode] | None:
         """
         Query nodes from the knowledge graph based on the input query and parameters.
         """
@@ -320,7 +325,9 @@ class GraphRAG(GraphRAGBase):
         """
         return await self.semantic_graph.get_node_by_id(id)
 
-    async def nearest_edges(self, query: str, params: GragParams) -> list[KnwlEdge] | None:
+    async def nearest_edges(
+        self, query: str, params: GragParams
+    ) -> list[KnwlEdge] | None:
         """
         Query edges from the knowledge graph based on the input query and parameters.
         """
@@ -408,3 +415,22 @@ class GraphRAG(GraphRAGBase):
                 raise ValueError(
                     f"GraphRAG: provided ragger of type '{type(self.ragger)}' is not supported."
                 )
+
+    async def extract_keywords(
+        self, input: str | KnwlInput | KnwlGragInput
+    ) -> KnwlKeywords | None:
+        if self.keywords_extractor is None:
+            raise ValueError(
+                "GraphRAG: attempt to extract keywords but no keywords_extractor is provided."
+            )
+        if isinstance(input, str):
+            text = input
+        elif isinstance(input, KnwlInput):
+            text = input.text
+        elif isinstance(input, KnwlGragInput):
+            text = input.text
+        else:
+            raise ValueError(
+                "GraphRAG: input must be of type str, KnwlInput, or KnwlGragInput."
+            )
+        return await self.keywords_extractor.extract(text)

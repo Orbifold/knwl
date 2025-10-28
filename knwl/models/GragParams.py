@@ -2,7 +2,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-QueryModes = Literal["local", "global", "hybrid", "naive", "keywords"]
+AugmentationStrategy = Literal["local", "global", "hybrid", "naive", "keywords"]
 
 
 class GragParams(BaseModel):
@@ -10,7 +10,7 @@ class GragParams(BaseModel):
     Parameters of grag augmentation.
 
     Attributes:
-        mode (QueryModes): The query mode to use - local, global, hybrid, or naive.
+        mode (AugmentationStrategy): The query strategy to use - local, global, hybrid, or naive.
 
         response_type (str): The type of response format to generate.
         top_k (int): Number of top-k items to retrieve (entities in local mode, relationships in global mode).
@@ -20,10 +20,8 @@ class GragParams(BaseModel):
         return_chunks (bool): Whether to return the chunks. If not, only the chunk Id's are returned and downstream services need to fetch the chunk data separately.
         return_references (bool): Whether to return the references.
     """
-    model_config = {"frozen": True}
-
-    mode: QueryModes = Field(default="local", description="The query mode to use - local, global, hybrid, or naive.")
-
+    
+    strategy: AugmentationStrategy = Field(default="local", description="The query strategy to use - local, global, hybrid, or naive.")
 
     response_type: str = Field(default="Multiple Paragraphs", description="The type of response format to generate.")
 
