@@ -2,7 +2,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-QueryModes = Literal["local", "global", "hybrid", "naive"]
+QueryModes = Literal["local", "global", "hybrid", "naive", "keywords"]
 
 
 class GragParams(BaseModel):

@@ -1,4 +1,5 @@
 import json
+from typing import Any
 
 import chromadb
 import pandas as pd
@@ -23,7 +24,7 @@ class ChromaStorage(VectorStorageBase):
     def __init__(
         self,
         collection_name: str = "default",
-        metadata=None,
+        metadata:list[str]=["type_name"],
         memory: bool = False,
         path: str = "$test/vector",
     ):
@@ -63,7 +64,7 @@ class ChromaStorage(VectorStorageBase):
     def in_memory(self):
         return self._in_memory
 
-    async def nearest(self, query: str, top_k: int = 1) -> list[dict]:
+    async def nearest(self, query: str, top_k: int = 1, where: dict[str, Any] | None = None) -> list[dict]:
         # ====================================================================================
         # Note that Chroma has auto-embedding based on all-MiniLM-L6-v2, so you don't need to provide embeddings.
         # The `query_texts` is auto=transformed using this model. The embedding dimension is only 384, so it really is rather shallow for most purposes.
@@ -75,11 +76,11 @@ class ChromaStorage(VectorStorageBase):
             )
         if len(self._metadata) > 0:
             found = self.collection.query(
-                query_texts=query, n_results=top_k, include=["documents", "metadatas"]
+                query_texts=query, n_results=top_k, include=["documents", "metadatas"], where=where
             )
         else:
             found = self.collection.query(
-                query_texts=query, n_results=top_k, include=["documents"]
+                query_texts=query, n_results=top_k, include=["documents"], where=where  
             )
         if found is None:
             return []
@@ -108,7 +109,8 @@ class ChromaStorage(VectorStorageBase):
                 name=self._collection_name
             )  # hack: on `clear` seems to cause issues
             if len(self._metadata) > 0:
-                metadata = {k: value.get(k, None) for k in self._metadata}
+                # auto-extract metadata
+                metadata = {k: value.get(k) for k in self._metadata if k in value}
                 self.collection.upsert(
                     ids=key,
                     documents=str_value,

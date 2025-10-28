@@ -56,14 +56,14 @@ class GraphRAGBase(FrameworkBase, ABC):
         ...
 
     @abstractmethod
-    async def nearest_edges(self, query: str, query_param: GragParams) -> list[KnwlEdge] | None:
+    async def nearest_edges(self, query: str, params: GragParams) -> list[KnwlEdge] | None:
         """
         Query edges from the knowledge graph based on the input query and parameters.
         """
         ...
 
     @abstractmethod
-    async def nearest_chunks(self, query: str, query_param: GragParams) -> list[KnwlChunk] | None:
+    async def nearest_chunks(self, query: str, params: GragParams) -> list[KnwlChunk] | None:
         """
         Query chunks based on the input query and parameters.
         This does not involve the graph directly but is part of the naive RAG pipeline.

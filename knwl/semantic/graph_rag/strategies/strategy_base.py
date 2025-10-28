@@ -1,5 +1,14 @@
 from abc import ABC, abstractmethod
-from knwl.models import KnwlEdge, KnwlEdge, KnwlGragInput, KnwlGragText, KnwlNode
+
+from graspologic import List
+from knwl.models import (
+    KnwlEdge,
+    KnwlEdge,
+    KnwlGragInput,
+    KnwlGragReference,
+    KnwlGragText,
+    KnwlNode,
+)
 from knwl.models.GragParams import GragParams
 from knwl.models.KnwlGragContext import KnwlGragContext
 from knwl.models.KnwlNode import KnwlNode
@@ -102,11 +111,10 @@ class GragStrategyBase(ABC):
         query = input.text
         # edge rag: get top-k nodes
         edges: list[KnwlEdge] = await self.grag.nearest_edges(
-            query=query,
-            query_param=input.params.top_k,
+            query=query, params=input.params
         )
         for e in edges:
-            e.degree = await self.grag.edge_degree(e.source_id, e.target_id)
+            e.degree = await self.grag.edge_degree(e.id)
 
         sorted_edges = sorted(edges, key=lambda x: (x.degree, x.weight), reverse=True)
         edge_endpoint_ids = unique_strings(
@@ -128,7 +136,9 @@ class GragStrategyBase(ABC):
                         description=e.description,
                         weight=e.weight,
                         id=e.id,
-                        index=str(i),
+                        index=i,
+                        type=e.type,
+                        chunk_ids=e.chunk_ids,
                     )
                 )
         # sorted by degree and weight descending
@@ -169,6 +179,7 @@ class GragStrategyBase(ABC):
                     name=n.name,
                     type=n.type,
                     description=n.description,
+                    chunk_ids=n.chunk_ids,
                     degree=degree,
                     index=0,
                 )
@@ -178,19 +189,6 @@ class GragStrategyBase(ABC):
         for i, n in enumerate(all_nodes):
             n.index = i
         return all_nodes
-
-    @staticmethod
-    def unique_chunk_ids(nodes: list[KnwlNode] | list[KnwlEdge]) -> list[str]:
-        """
-        Collects unique chunk Id's from a list of nodes or edges.
-        """
-        if nodes is None:
-            raise ValueError("get_chunk_ids: parameter is None")
-        if not len(nodes):
-            return []
-        lists = [n.chunk_ids for n in nodes if n.chunk_ids is not None]
-        # flatten the list and remove duplicates
-        return unique_strings(lists)
 
     async def edges_from_nodes(
         self, nodes: list[KnwlNode], sorted: bool = True
@@ -225,7 +223,7 @@ class GragStrategyBase(ABC):
                 e.index = i
         return edges
 
-    async def chunk_stats(self, nodes: list[KnwlNode]) -> dict[str, int]:
+    async def chunk_stats_from_nodes(self, nodes: list[KnwlNode]) -> dict[str, int]:
         """
         This returns for each chunk id in the given primary nodes, how many times it appears in the edges attached to the primary nodes.
         In essence, a chunk is more important if this chunk has many relations between entities within the chunk.
@@ -237,13 +235,13 @@ class GragStrategyBase(ABC):
         Returns:
             dict[str, int]: A dictionary where the keys are chunk Id's and the values are the counts of how many times each chunk appears in the edges.
         """
-        chunk_ids = self.unique_chunk_ids(nodes) # chunk ids across all given nodes
+        chunk_ids = self.unique_chunk_ids(nodes)  # chunk ids across all given nodes
         if not len(chunk_ids):
             return {}
         all_edges = await self.edges_from_nodes(nodes, sorted=False)
-        node_map = {n.id: n for n in nodes} # node id -> KnwlNode
-        edge_chunk_ids = {} # edge id -> list of chunk ids in both endpoints
-        stats = {} # chunk id -> count of appearances in edges
+        node_map = {n.id: n for n in nodes}  # node id -> KnwlNode
+        edge_chunk_ids = {}  # edge id -> list of chunk ids in both endpoints
+        stats = {}  # chunk id -> count of appearances in edges
         for edge in all_edges:
             if edge.source_id not in node_map:
                 node_map[edge.source_id] = await self.grag.get_node_by_id(
@@ -261,6 +259,23 @@ class GragStrategyBase(ABC):
         for chunk_id in chunk_ids:
             # count how many times this chunk appears in the edge_chunk_ids
             stats[chunk_id] = sum([chunk_id in v for v in edge_chunk_ids.values()])
+        return stats
+
+    async def chunk_stats_from_edges(self, edges: list[KnwlEdge]) -> dict[str, int]:
+        """
+        This returns for each chunk id in the given edges, how many times it appears across the edges.
+        In essence, a chunk is more important if this chunk has many relations between entities within the chunk.
+        One could also count the number of nodes present in a chunk as a measure but the relationship is an even stronger indicator of information.
+
+        Args:
+            edges (List[KnwlEdge]): A list of edges to analyze.
+        Returns:
+            dict[str, int]: A dictionary where the keys are chunk Id's and the values are the counts of how many times each chunk appears in the edges.
+        """
+        stats = {}
+        for edge in edges:
+            for chunk_id in edge.chunkIds:
+                stats[chunk_id] = stats.get(chunk_id, 0) + 1
         return stats
 
     async def texts_from_nodes(
@@ -281,7 +296,7 @@ class GragStrategyBase(ABC):
         """
         if nodes is None or not len(nodes):
             return []
-        stats = await self.chunk_stats(nodes)
+        stats = await self.chunk_stats_from_nodes(nodes)
         graph_rag_chunks = {}
         for i, v in enumerate(stats.items()):
             chunk_id, count = v
@@ -290,16 +305,78 @@ class GragStrategyBase(ABC):
                 if chunk is not None:
                     graph_rag_chunks[chunk_id] = KnwlGragText(
                         index=count,
-                        text=chunk["content"],
-                        origin_id=str(i),
+                        text=chunk.content,
+                        origin_id=chunk.origin_id,
                         id=chunk_id,
                     )
             else:
                 graph_rag_chunks[chunk_id] = KnwlGragText(
-                    index=count, text=None, origin_id=str(i), id=chunk_id
+                    index=count, text=None, origin_id=None, id=chunk_id
                 )
         # in decreasing order of count
         rag_texts = sorted(
             graph_rag_chunks.values(), key=lambda x: x.index, reverse=True
         )
         return rag_texts
+
+    async def references_from_texts(
+        self, texts: list[KnwlGragText]
+    ) -> list[KnwlGragReference]:
+        """
+        Returns references for the given texts by looking up their origin ids in the source storage.
+        """
+        if not texts:
+            return []
+        refs = []
+        for i, c in enumerate(texts):
+            origin_id = c.origin_id
+            if origin_id is None:
+                log.warn(f"Could not find origin id for text {c.id}")
+                continue
+            doc = await self.grag.get_source_by_id(origin_id)
+            if doc is None:
+                log.warn(f"Could not find source for text {c.id}")
+            else:
+                refs.append(
+                    KnwlGragReference(
+                        document_id=doc.id if doc else "",
+                        index=i,
+                        description=doc.description,
+                        content=doc.content,
+                        timestamp=doc.timestamp,
+                    )
+                )
+        return refs
+
+    async def text_from_edges(
+        self, edges: list[KnwlEdge], query_param: GragParams
+    ) -> List[KnwlGragText]:
+
+        if edges is None or not len(edges):
+            return []
+        stats = await self.chunk_stats_from_edges(edges)
+        chunk_ids = unique_strings([e.chunkIds for e in edges])
+        coll = []
+        for i, chunk_id in enumerate(chunk_ids):
+            chunk = await self.grag.get_chunk_by_id(chunk_id)
+            coll.append(
+                KnwlGragText(
+                    origin_id=chunk_id, index=stats[chunk_id], text=chunk.content
+                )
+            )
+
+        coll = sorted(coll, key=lambda x: x.index, reverse=True)
+        return coll
+
+    @staticmethod
+    def unique_chunk_ids(nodes: list[KnwlNode] | list[KnwlEdge]) -> list[str]:
+        """
+        Collects unique chunk Id's from a list of nodes or edges.
+        """
+        if nodes is None:
+            raise ValueError("get_chunk_ids: parameter is None")
+        if not len(nodes):
+            return []
+        lists = [n.chunk_ids for n in nodes if n.chunk_ids is not None]
+        # flatten the list and remove duplicates
+        return unique_strings(lists)

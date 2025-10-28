@@ -133,11 +133,7 @@ class GraphRAG(GraphRAGBase):
         # ============================================================================================
         if self.ragger:
             await self.ragger.upsert_document(result.input)
-        # ============================================================================================
-        # Store chunks
-        # ============================================================================================
-        if self.ragger:
-            await self.ragger.upsert_document(result.input)
+        
         # ============================================================================================
         # Merge graph into semantic graph
         # ============================================================================================
@@ -221,12 +217,12 @@ class GraphRAG(GraphRAGBase):
         # merge graphs from all chunks
         extracted_graph: KnwlGraph = None
         for chunk in result.chunks:
-            chunk_graph = await self.graph_extractor.extract_graph(chunk.content)
-            # add reference to the chunk
-            for node in chunk_graph.nodes:
-                node.chunk_ids.append(chunk.id)
-            for edge in chunk_graph.edges:
-                edge.chunk_ids.append(chunk.id)
+            chunk_graph = await self.graph_extractor.extract_graph(chunk.content, chunk_id=chunk.id)
+            # # add reference to the chunk
+            # for node in chunk_graph.nodes:
+            #     node.chunk_ids.append(chunk.id)
+            # for edge in chunk_graph.edges:
+            #     edge.chunk_ids.append(chunk.id)
             result.chunk_graphs.append(chunk_graph)
             if chunk_graph is not None:
                 # semantic merge into KG
@@ -312,11 +308,11 @@ class GraphRAG(GraphRAGBase):
         else:
             raise ValueError(f"GraphRAG: Unknown strategy mode '{mode}'.")
 
-    async def nearest_nodes(self, query: str, top_k: int = 5) -> list[KnwlNode] | None:
+    async def nearest_nodes(self, query: str, params: GragParams) -> list[KnwlNode] | None:
         """
         Query nodes from the knowledge graph based on the input query and parameters.
         """
-        return await self.semantic_graph.nearest_nodes(query, top_k)
+        return await self.semantic_graph.nearest_nodes(query, params.top_k)
 
     async def get_node_by_id(self, id: str) -> KnwlNode | None:
         """
@@ -324,11 +320,11 @@ class GraphRAG(GraphRAGBase):
         """
         return await self.semantic_graph.get_node_by_id(id)
 
-    async def nearest_edges(self, query: str, top_k: int = 5) -> list[KnwlEdge] | None:
+    async def nearest_edges(self, query: str, params: GragParams) -> list[KnwlEdge] | None:
         """
         Query edges from the knowledge graph based on the input query and parameters.
         """
-        return await self.semantic_graph.nearest_edges(query, top_k)
+        return await self.semantic_graph.nearest_edges(query, params.top_k)
 
     async def get_attached_edges(self, nodes: list[KnwlNode]) -> list[KnwlEdge]:
         """
@@ -373,7 +369,7 @@ class GraphRAG(GraphRAGBase):
             if isinstance(self.ragger, ChunkingBase):
                 return None
             elif isinstance(self.ragger, RagBase):
-                return await cast(RagBase, self.ragger).get_source_by_id(source_id)
+                return await cast(RagBase, self.ragger).get_document_by_id(source_id)
             else:
                 raise ValueError(
                     f"GraphRAG: provided ragger of type '{type(self.ragger)}' is not supported."

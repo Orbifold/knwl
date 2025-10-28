@@ -37,7 +37,7 @@ class StorageBase(FrameworkBase, ABC):
         """
         return None
 
-    async def nearest(self, query: str, top_k: int = 5) -> list[KnwlModel]:
+    async def nearest(self, query: str, top_k: int = 5, where: dict[str, Any] | None = None) -> list[KnwlModel]:
         """
         Semantic search, retrieves the top_k nearest objects based on a query.
         """

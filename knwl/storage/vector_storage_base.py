@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Any
 
 from knwl.storage.storage_base import StorageBase
 
@@ -9,7 +10,7 @@ class VectorStorageBase(StorageBase, ABC):
     """
 
     @abstractmethod
-    async def nearest(self, query: str, top_k: int = 1) -> list[dict]:
+    async def nearest(self, query: str, top_k: int = 1, where: dict[str, Any] | None = None) -> list[dict]:
         """
         Execute a vector similarity search query against the storage.
 

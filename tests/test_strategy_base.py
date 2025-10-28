@@ -1,7 +1,9 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
-from knwl.models import KnwlEdge
+from knwl.models import KnwlDocument, KnwlEdge
+from knwl.models.KnwlChunk import KnwlChunk
+from knwl.models.KnwlGragText import KnwlGragText
 from knwl.models.KnwlNode import KnwlNode
 from knwl.semantic.graph_rag.strategies.strategy_base import GragStrategyBase
 
@@ -280,7 +282,7 @@ async def test_chunk_stats():
         }
     )
     strategy = DummyStrategy(grag)
-    stats = await strategy.chunk_stats(nodes)
+    stats = await strategy.chunk_stats_from_nodes(nodes)
     assert stats == {
         "chunk2": 1,  # appears once in edge1 at both endpoints
         "chunk3": 1,  # appears once in edge2 at both endpoints
@@ -337,7 +339,7 @@ async def test_text_from_nodes():
     grag.get_chunk_by_id = AsyncMock(side_effect=lambda x: chunk_map.get(x))
 
     strategy = DummyStrategy(grag)
-    strategy.chunk_stats = AsyncMock(
+    strategy.chunk_stats_from_nodes = AsyncMock(
         return_value={
             "chunk1": 1,
             "chunk2": 5,
@@ -350,3 +352,67 @@ async def test_text_from_nodes():
     assert len(texts) == 3
     assert texts[0].id == "chunk2"  # highest count
     assert texts[0].text == "This is chunk 2."
+
+
+@pytest.mark.asyncio
+async def test_references():
+    grag = MagicMock()
+    texts = [
+        KnwlGragText(id="t1", text="Text 1", index=2, origin_id="chunk1"),
+        KnwlGragText(id="t2", text="Text 2", index=5, origin_id="chunk2"),
+    ]
+    grag.get_chunk_by_id = AsyncMock(
+        side_effect=lambda x: (
+            {"id": x, "content": f"Content for {x}"}
+            if x in ["chunk1", "chunk2"]
+            else None
+        )
+    )
+    grag.get_source_by_id = AsyncMock(
+        side_effect=lambda x: (
+            KnwlDocument(
+                id=f"Source of {x}",
+                content=f"Content for {x}",
+                name=f"Source for {x}",
+                description="Desc",
+                timestamp="now",
+            )
+            if x in ["chunk1", "chunk2"]
+            else None
+        )
+    )
+    strategy = DummyStrategy(grag)
+    references = await strategy.references_from_texts(texts)
+    assert len(references) == 2
+    assert references[0].content == "Content for chunk1"
+    assert references[0].document_id == "Source of chunk1"
+
+
+@pytest.mark.asyncio
+async def test_references_from_chunks():
+    grag = MagicMock()
+    chunk_ids = ["1", "2"]
+    grag.get_chunk_by_id = AsyncMock(
+        side_effect=lambda x: (
+            KnwlChunk(id=x, content=f"Content {x}", origin_id=f"Origin {x}")
+            if x in ["1", "2"]
+            else None
+        )
+    )
+    grag.get_source_by_id = AsyncMock(
+        side_effect=lambda x: (
+            KnwlDocument(
+                id=f"Document of {x}",
+                content=f"Content of {x}",
+                name=f"Source for {x}",
+                description="Desc",
+                timestamp="now",
+            )
+            if x in ["Origin 1", "Origin 2"]
+            else None
+        )
+    )
+    strategy = DummyStrategy(grag)
+    references = await strategy.references_from_chunks(chunk_ids)
+    assert len(references) == 2
+    assert references[0].content == "Content of Origin 1"

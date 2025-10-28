@@ -44,7 +44,7 @@ async def test_local_augmentation():
         text="Explain the concept of homeomorphism in topology.",
         name="Test Query",
         description="A test query for topology concepts.",
-        params=GragParams(mode="local", top_k=5),
+        params=GragParams(mode="local")
     )
     found = await grag.augment(input)
     print_knwl(found)

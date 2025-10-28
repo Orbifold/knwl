@@ -20,8 +20,12 @@ class KnwlGragText(BaseModel):
         default="",
         description="The text content to use for context. If not supplied, downstream services need to fetch the text data separately using the id.",
     )
-    index: int = Field(description="The order of the text in the sequence.")
-    id: str = Field(description="The unique identifier of the text.")
+    index: Optional[int] = Field(
+        default=0, description="The order of the text in the sequence."
+    )
+    id: Optional[str] = Field(
+        default=None, description="The unique identifier of the text."
+    )
 
     @staticmethod
     def get_header():

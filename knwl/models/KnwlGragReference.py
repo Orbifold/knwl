@@ -1,4 +1,7 @@
-from pydantic import BaseModel, Field
+from typing import Optional
+from pydantic import BaseModel, Field, model_validator
+
+from knwl.utils import hash_with_prefix
 
 
 class KnwlGragReference(BaseModel):
@@ -20,10 +23,22 @@ class KnwlGragReference(BaseModel):
         timestamp (str): The timestamp when the reference was created or last modified.
         id (str): The unique identifier of the reference, typically a hash of its content.
     """
-    model_config = {"frozen": True}
     
-    index: str = Field(description="The index identifier of the reference.")
-    name: str = Field(description="The name of the reference.")
-    description: str = Field(description="A description of the reference.")
-    timestamp: str = Field(description="The timestamp when the reference was created or last modified.")
-    id: str = Field(description="The unique identifier of the reference, typically a hash of its content.")
+    index: Optional[int] = Field(default=0,description="The index within the list of references.")
+    document_id: str = Field(description="The unique identifier of the document containing the reference.")
+    content: Optional[str] = Field(default=None, description="The content of the reference.")
+    name: Optional[str] = Field(default=None, description="The name of the reference.")
+    description: Optional[str] = Field(default=None, description="A description of the reference.")
+    timestamp: Optional[str] = Field(default=None, description="The timestamp when the reference was created or last modified.")
+    id: Optional[str] = Field(default=None, description="The unique identifier of the reference, typically a hash of its content.")
+
+    @model_validator(mode="after")
+    def set_id(self) -> "KnwlGragReference":
+        if self.content is not None and len(str.strip(self.content)) > 0:
+            object.__setattr__(self, "id", KnwlGragReference.hash_keys(self.content))
+        return self
+
+    @staticmethod
+    def hash_keys(content: str) -> str:
+        return hash_with_prefix(content, prefix="grag-ref|>")
+ 

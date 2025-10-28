@@ -9,40 +9,13 @@ from knwl.utils import hash_with_prefix
 class KnwlInput(BaseModel):
 
     text: str
-    name: str = Field(default_factory=lambda: f"Input {datetime.now().isoformat()}")
-    description: str = Field(
+    name: Optional[str] = Field(default_factory=lambda: f"Input {datetime.now().isoformat()}")
+    description: Optional[str] = Field(
         default="", description="An optional description of the input text."
     )
     id: Optional[str] = Field(default=None)
 
-    model_config = {"frozen": True}
-
-    def __init__(self, text=None, name=None, description=None, id=None, **kwargs):
-        """Allow KnwlInput('text') syntax or keyword arguments."""
-        if (
-            isinstance(text, str)
-            and name is None
-            and description is None
-            and id is None
-        ):
-            # Handle KnwlInput("text") case
-            super().__init__(
-                text=text,
-                name=f"Input {datetime.now().isoformat()}",
-                description="",
-                id=None,
-                **kwargs,
-            )
-        else:
-            # Handle normal keyword arguments
-            super().__init__(
-                text=text,
-                name=name or f"Input {datetime.now().isoformat()}",
-                description=description or "",
-                id=id,
-                **kwargs,
-            )
-
+   
     @field_validator("text")
     @classmethod
     def validate_text(cls, v):

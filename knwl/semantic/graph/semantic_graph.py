@@ -350,7 +350,9 @@ class SemanticGraph(SemanticGraphBase):
         await self.edge_embeddings.clear()
 
     async def nearest_nodes(self, query, top_k=5):
-        results = await self.node_embeddings.nearest(query, top_k=top_k)
+        results = await self.node_embeddings.nearest(
+            query, top_k=top_k, where={"type_name": "KnwlNode"}
+        )
         nodes = []
         for r in results:
             # if same vector storage for nodes and edges, filter only nodes
@@ -359,7 +361,9 @@ class SemanticGraph(SemanticGraphBase):
         return nodes
 
     async def nearest_edges(self, query, top_k=5):
-        results = await self.edge_embeddings.nearest(query, top_k=top_k)
+        results = await self.edge_embeddings.nearest(
+            query, top_k=top_k, where={"type_name": "KnwlEdge"}
+        )
         edges = []
         for r in results:
             if r is not None and r["type_name"] == "KnwlEdge":

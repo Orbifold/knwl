@@ -34,7 +34,7 @@ class KnwlEdge(BaseModel):
     target_name: Optional[str] = Field(
         default=None, description="The name of the target node."
     )
-    type: str = Field(
+    type: Optional[str] = Field(
         default="Unknown",
         description="The type of the relation. In a property modeled graph this should be an ontology class.",
     )
@@ -43,11 +43,11 @@ class KnwlEdge(BaseModel):
         frozen=True,
         description="The type name of the edge for (de)serialization purposes.",
     )
-    id: str = Field(
+    id: Optional[str] = Field(
         default=None,
         description="The unique identifier of the node, automatically generated from the required fields.",
     )
-    chunk_ids: List[str] = Field(
+    chunk_ids: Optional[list[str]] = Field(
         default_factory=list,
         description="The chunk identifiers associated with this edge.",
     )
@@ -59,14 +59,14 @@ class KnwlEdge(BaseModel):
     description: Optional[str] = Field(
         default="", description="A description of the edge."
     )
-    weight: float = Field(
+    weight: Optional[float] = Field(
         default=1.0,
         description="The weight of the edge. This can be used to represent the strength or importance of the relationship. This is given by domain experts or derived from data extraction.",
     )
-    index: int = Field(
+    index: Optional[int] = Field(
         default=0, description="The index of the edge within the parent list, if any."
     )
-    data: dict = Field(
+    data: Optional[dict] = Field(
         default_factory=dict,
         description="Additional data associated with the knowledge node.",
     )

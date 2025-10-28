@@ -74,7 +74,7 @@ class RagStore(RagBase):
         return await self.chunker.chunk(doc.content, source_key=doc.id)
 
     async def get_document_by_id(self, document_id: str) -> KnwlDocument | None:
-        return await self.document_store.get(document_id)
+        return await self.document_store.get_by_id(document_id)
 
     async def delete_document_by_id(self, document_id: str) -> None:
         if document_id is None:
@@ -86,7 +86,7 @@ class RagStore(RagBase):
         return await self.chunk_store.upsert(obj)
 
     async def get_chunk_by_id(self, chunk_id: str) -> KnwlChunk | None:
-        return await self.chunk_store.get(chunk_id)
+        return await self.chunk_store.get_by_id(chunk_id)
 
     async def delete_chunk_by_id(self, chunk_id: str) -> None:
         await self.chunk_store.delete(chunk_id)

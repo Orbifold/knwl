@@ -39,36 +39,6 @@ class LocalGragStrategy(GragStrategyBase):
     def __init__(self, grag: GraphRAGBase):
         super().__init__(grag)
 
-    async def get_source_references(
-        self, texts: List[KnwlGragText]
-    ) -> List[KnwlGragReference]:
-        if not texts:
-            return []
-        refs = []
-        for i, c in enumerate(texts):
-            chunk_id = c.id
-            chunk = await self.grag.get_chunk_by_id(chunk_id)
-            if chunk is None:
-                log.warn(f"Could not find chunk {chunk_id}")
-                continue
-            origin_id = chunk.origin_id
-            if origin_id is None:
-                log.warn(f"Could not find origin id for chunk {chunk_id}")
-                continue
-            doc = await self.grag.get_source_by_id(origin_id)
-            if doc is None:
-                log.warn(f"Could not find origin id for chunk {chunk_id}")
-            refs.append(
-                KnwlGragReference(
-                    id=origin_id,
-                    index=str(i),
-                    description=doc.description,
-                    name=doc.name,
-                    timestamp=doc.timestamp,
-                )
-            )
-        return refs
-
     async def texts_from_nodes(
         self, primary_nodes: list[KnwlNode], params: GragParams
     ) -> list[KnwlGragText]:
@@ -85,7 +55,7 @@ class LocalGragStrategy(GragStrategyBase):
         Returns:
             list[dict]: A list of dictionaries, each containing 'count' and 'text' keys, sorted in decreasing order of count.
         """
-        stats = await self.chunk_stats(primary_nodes)
+        stats = await self.chunk_stats_from_nodes(primary_nodes)
         graph_rag_chunks = {}
         for i, v in enumerate(stats.items()):
             chunk_id, count = v
@@ -125,8 +95,10 @@ class LocalGragStrategy(GragStrategyBase):
                 all_edges_data.append(
                     KnwlEdge(
                         order=d,
+                        source_id=e.source_id,
+                        target_id=e.target_id,
                         source_name=edge_endpoint_names[e.id][0],
-                        target=edge_endpoint_names[e.id][1],
+                        target_name=edge_endpoint_names[e.id][1],
                         keywords=e.keywords,
                         description=e.description,
                         weight=e.weight,
@@ -195,7 +167,7 @@ class LocalGragStrategy(GragStrategyBase):
 
         # ====================== References ====================================
         if input.params.return_references:
-            refs = await self.get_source_references(rag_texts)
+            refs = await self.references_from_texts(rag_texts)
         else:
             refs = []
 

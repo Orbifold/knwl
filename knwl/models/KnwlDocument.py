@@ -26,8 +26,8 @@ class KnwlDocument(BaseModel):
         default_factory=lambda: datetime.now().isoformat(),
         description="Creation timestamp",
     )
-    description: str = Field(default="", description="Document description")
-    name: str = Field(default="", description="Document name")
+    description: Optional[str] = Field(default="", description="Document description")
+    name: Optional[str] = Field(default="", description="Document name")
     type_name: str = Field(
         default="KnwlDocument",
         frozen=True,
@@ -35,7 +35,6 @@ class KnwlDocument(BaseModel):
     )
     # todo: have ontology in a separate ontology store
 
-    model_config = {"frozen": True}
 
     @field_validator("content")
     def content_not_empty(cls, v):

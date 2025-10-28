@@ -5,6 +5,7 @@ from knwl import services
 from knwl.format import print_knwl
 from knwl.models import GragParams, KnwlDocument, KnwlGragContext, KnwlGragInput
 from knwl.semantic.graph_rag.graph_rag import GraphRAG
+from knwl.semantic.graph_rag.strategies.naive_strategy import NaiveGragStrategy
 from knwl.utils import get_full_path
 import os
 
@@ -67,3 +68,113 @@ async def test_naive_augmentation():
 │                                                                              │
 ╰───────────────────────── 5 chunks, 0 nodes, 0 edges ─────────────────────────╯
     """
+
+
+@pytest.mark.asyncio
+async def test_naive_augmentation():
+    content = await get_library_article("mathematics", "Topology")
+    doc = KnwlDocument(content=content, id=f"{str(uuid.uuid4())}.txt")
+    grag: GraphRAG = services.get_service("graph_rag")
+    await grag.ingest(doc)
+    input = KnwlGragInput(
+        text="Explain the concept of homeomorphism in topology.",
+        name="Test Query",
+        description="A test query for topology concepts.",
+        params=GragParams(mode="naive"),
+    )
+    found = await grag.augment(input)
+    print("")
+    print_knwl(found, show_chunks=True, show_nodes=False, show_edges=False)
+
+    assert found is not None
+    assert isinstance(found, KnwlGragContext)
+    assert len(found.chunks) > 0
+    assert len(found.nodes) == 0
+    assert len(found.edges) == 0
+    assert found.input == input
+
+
+@pytest.mark.asyncio
+async def test_naive_strategy_initialization():
+    """Test that NaiveGragStrategy can be initialized with a GraphRAG instance."""
+    grag: GraphRAG = services.get_service("graph_rag")
+    strategy = NaiveGragStrategy(grag)
+    assert strategy.grag == grag
+
+
+@pytest.mark.asyncio
+async def test_naive_strategy_augment_with_no_results():
+    """Test naive strategy when no chunks are found."""
+    grag: GraphRAG = services.get_service("graph_rag")
+    strategy = NaiveGragStrategy(grag)
+
+    input = KnwlGragInput(
+        text="A completely unrelated query that should find nothing",
+        name="Empty Query",
+        description="Test query that should return no results.",
+        params=GragParams(mode="naive", limit=5),
+    )
+
+    context = await strategy.augment(input)
+
+    assert context is not None
+    assert isinstance(context, KnwlGragContext)
+    assert len(context.chunks) == 0
+    assert len(context.nodes) == 0
+    assert len(context.edges) == 0
+    assert context.input == input
+
+
+@pytest.mark.asyncio
+async def test_naive_strategy_augment_with_results():
+    """Test naive strategy returns chunks in correct format."""
+    content = await get_library_article("mathematics", "Topology")
+    doc = KnwlDocument(content=content, id=f"{str(uuid.uuid4())}.txt")
+    grag: GraphRAG = services.get_service("graph_rag")
+    await grag.ingest(doc)
+
+    strategy = NaiveGragStrategy(grag)
+    input = KnwlGragInput(
+        text="topology",
+        name="Test Query",
+        description="Simple test query.",
+        params=GragParams(mode="naive", top_k=3),
+    )
+
+    context = await strategy.augment(input)
+
+    assert context is not None
+    assert isinstance(context, KnwlGragContext)
+    assert len(context.chunks) <= 3
+    assert len(context.nodes) == 0
+    assert len(context.edges) == 0
+
+    # Verify chunk structure
+    for i, chunk in enumerate(context.chunks):
+        assert chunk.text is not None
+        assert chunk.id is not None
+        assert chunk.index == i
+
+
+@pytest.mark.asyncio
+async def test_naive_strategy_respects_limit_param():
+    """Test that naive strategy respects the limit parameter."""
+    content = await get_library_article("mathematics", "Topology")
+    doc = KnwlDocument(content=content, id=f"{str(uuid.uuid4())}.txt")
+    grag: GraphRAG = services.get_service("graph_rag")
+    await grag.ingest(doc)
+
+    strategy = NaiveGragStrategy(grag)
+
+    # Test with limit=2
+    input = KnwlGragInput(
+        text="topology mathematics",
+        name="Limited Query",
+        description="Test query with limit.",
+        params=GragParams(mode="naive", top_k=2),
+    )
+
+    context = await strategy.augment(input)
+
+    assert context is not None
+    assert len(context.chunks) <= 2

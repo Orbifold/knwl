@@ -4,7 +4,7 @@
 # ============================================================================================
 # %% 
 # Demonstration of knwl formatting capabilities
- from knwl import services, service, KnwlLLMAnswer
+from knwl import services, service, KnwlLLMAnswer
 from knwl import OllamaClient
 from knwl.format import print_knwl
 from faker import Faker
@@ -25,6 +25,3 @@ for i in range(30):
     )
 
 print_knwl(coll)
-
-
-# %%

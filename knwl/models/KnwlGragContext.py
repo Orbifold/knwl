@@ -18,12 +18,10 @@ class KnwlGragContext(BaseModel):
     input: str | KnwlGragInput = Field(
         description="The original input text or KnwlInput object."
     )
-    chunks: List[KnwlGragText] = Field(default_factory=list)
+    texts: List[KnwlGragText] = Field(default_factory=list)
     nodes: List[KnwlNode] = Field(default_factory=list)
     edges: List[KnwlEdge] = Field(default_factory=list)
     references: List[KnwlGragReference] = Field(default_factory=list)
-
-    model_config = {"frozen": True}
 
     def get_chunk_table(self):
         return "\n".join(

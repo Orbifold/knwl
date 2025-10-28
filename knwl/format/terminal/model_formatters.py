@@ -158,7 +158,7 @@ class KnwlGraphTerminalFormatter(ModelFormatter):
         # Add nodes preview
         if show_nodes and model.nodes:
             content.append(Text("\n"))
-            content.append(Text("Nodes:", style=formatter.theme.SUBTITLE_STYLE))
+            content.append(Text("🔵 Nodes:", style=formatter.theme.SUBTITLE_STYLE))
             nodes_to_show = model.nodes[:max_items]
             for node in nodes_to_show:
                 node_formatter = KnwlNodeTerminalFormatter()
@@ -174,7 +174,7 @@ class KnwlGraphTerminalFormatter(ModelFormatter):
         # Add edges preview
         if show_edges and model.edges:
             content.append(Text("\n"))
-            content.append(Text("Edges:", style=formatter.theme.SUBTITLE_STYLE))
+            content.append(Text("🔗 Edges:", style=formatter.theme.SUBTITLE_STYLE))
             edges_to_show = model.edges[:max_items]
             for edge in edges_to_show:
                 edge_formatter = KnwlEdgeTerminalFormatter()
@@ -350,25 +350,25 @@ class KnwlContextTerminalFormatter(ModelFormatter):
         """Format a KnwlContext as a rich panel."""
         show_nodes = options.get("show_nodes", True)
         show_edges = options.get("show_edges", False)
-        show_chunks = options.get("show_chunks", False)
+        show_texts = options.get("show_texts", False)
         max_entities = options.get("max_entities", 10)
         content = []
         content.append(Text("\n"))
         content.append(
-            Text(f" Question: {ctx.input.text}", style=formatter.theme.SUBTITLE_STYLE)
+            Text(f"💬 Question: {ctx.input.text}", style=formatter.theme.SUBTITLE_STYLE)
         )
-        if show_chunks:
+        if show_texts:
             content.append(Text("\n"))
             content.append(Text("📑 Chunks:\n", style=formatter.theme.SUBTITLE_STYLE))
 
-            for c in ctx.chunks[:max_entities]:
+            for c in ctx.texts[:max_entities]:
                 preview = c.text[:150] + "..." if len(c.text) > 150 else c.text
                 content.append(Text(f"📄[{str(c.index)}] {preview}"))
                 content.append(Text("\n"))
 
         if show_nodes:
             content.append(Text("\n"))
-            content.append(Text(" Nodes:", style=formatter.theme.SUBTITLE_STYLE))
+            content.append(Text("🔵 Nodes:", style=formatter.theme.SUBTITLE_STYLE))
             entity_table = Table(box=formatter.theme.TABLE_BOX)
             entity_table.add_column("Name", style=formatter.theme.TYPE_STYLE)
             entity_table.add_column(
@@ -380,11 +380,29 @@ class KnwlContextTerminalFormatter(ModelFormatter):
                 entity_table.add_row(n.name, n.type, n.description)
 
             content.append(entity_table)
+            
+        if show_edges:
+            content.append(Text("\n"))
+            content.append(Text("🔗 Edges:", style=formatter.theme.SUBTITLE_STYLE))
+            edge_table = Table(box=formatter.theme.TABLE_BOX)
+            edge_table.add_column("Type", style=formatter.theme.TYPE_STYLE)
+            edge_table.add_column(
+                "Source", style=formatter.theme.HIGHLIGHT, justify="right"
+            )
+            edge_table.add_column(
+                "Target", style=formatter.theme.VALUE_STYLE, justify="right"
+            )
+
+            for e in ctx.edges[:max_entities]:
+                edge_table.add_row(e.type, e.source_name, e.target_name)
+
+            content.append(edge_table)
+
 
         return formatter.create_panel(
             Group(*content),
             title="🎯 Context",
-            subtitle=f"{len(ctx.chunks)} chunks, {len(ctx.nodes)} nodes, {len(ctx.edges)} edges",
+            subtitle=f"{len(ctx.texts)} chunks, {len(ctx.nodes)} nodes, {len(ctx.edges)} edges",
             width=320,  # Set explicit width (adjust as needed)
             expand=True,  # Or use expand=True to fill available space
         )
@@ -402,7 +420,7 @@ class KnwlResponseTerminalFormatter(ModelFormatter):
         content = []
 
         # Question
-        content.append(Text("Question:", style=formatter.theme.SUBTITLE_STYLE))
+        content.append(Text("💬 Question:", style=formatter.theme.SUBTITLE_STYLE))
         content.append(Text(model.question, style="bold white"))
         content.append(Text("\n"))
 
@@ -469,7 +487,7 @@ class KnwlGragIngestionTerminalFormatter(ModelFormatter):
 
         if show_edges:
             content.append(Text("\n"))
-            content.append(Text("Edges:", style=formatter.theme.SUBTITLE_STYLE))
+            content.append(Text("🔗 Edges:", style=formatter.theme.SUBTITLE_STYLE))
 
             edge_table = Table(box=formatter.theme.TABLE_BOX)
             edge_table.add_column("Type", style=formatter.theme.TYPE_STYLE)
