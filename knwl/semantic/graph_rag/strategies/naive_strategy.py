@@ -22,24 +22,21 @@ class NaiveGragStrategy(GragStrategyBase):
         """
         This is really just a redirect to the `nearest_chunks` method of the `RagBase` instance.
         Obviously, you don't need Knwl to do classic RAG but it's part of the framework so you can route or experiment with different strategies.
+        Equally well, the chunks could be sorted based on how many nodes/edges they are connected to.
         """
-        found = await self.grag.nearest_chunks(input.text, input.params)
-        if found is None:
-            found = []
+        chunks = await self.grag.nearest_chunks(input.text, input.params)
+        if chunks is None:
+            return KnwlGragContext.empty(input)
+        if input.params.return_chunks:            
+            texts = await self.texts_from_chunks(chunks, params=input.params)
+            references = await self.references_from_texts(texts)
         else:
-            log.debug(
-                f"NaiveGragStrategy.augment: found {len(found)} chunks for question '{input.text}'."
-            )
-            coll = []
-            for i, chunk in enumerate(found):
-                coll.append(
-                    KnwlGragText(
-                        text=chunk.content,
-                        id=chunk.id,
-                        origin_id=chunk.origin_id,
-                        index=i,
-                    )
-                )
-            found = coll
-        context = KnwlGragContext(input=input, chunks=found, nodes=[], edges=[])
-        return context
+            texts = []
+            references = []
+        return KnwlGragContext(
+            input=input,
+            texts=texts,
+            nodes=[],
+            edges=[],
+            references=references,
+        )

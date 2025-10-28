@@ -79,8 +79,8 @@ async def test_semantic_edges():
     )
     grag.nearest_edges = AsyncMock(return_value=[e1, e2])
     grag.edge_degree = AsyncMock(
-        side_effect=lambda s, t: (
-            e1.degree if (s, t) == ("node1", "node2") else e2.degree
+        side_effect=lambda id: (
+            e1.degree if id == "edge1" else e2.degree
         )
     )
     grag.get_node_by_id = AsyncMock(
@@ -331,9 +331,9 @@ async def test_text_from_nodes():
     grag = MagicMock()
 
     chunk_map = {
-        "chunk1": {"id": "chunk1", "content": "This is chunk 1."},
-        "chunk2": {"id": "chunk2", "content": "This is chunk 2."},
-        "chunk3": {"id": "chunk3", "content": "This is chunk 3."},
+        "chunk1": KnwlChunk(id="chunk1", content="This is chunk 1."),
+        "chunk2": KnwlChunk(id="chunk2", content="This is chunk 2."),
+        "chunk3": KnwlChunk(id="chunk3", content="This is chunk 3."),
     }
 
     grag.get_chunk_by_id = AsyncMock(side_effect=lambda x: chunk_map.get(x))
@@ -391,14 +391,13 @@ async def test_references():
 @pytest.mark.asyncio
 async def test_references_from_chunks():
     grag = MagicMock()
-    chunk_ids = ["1", "2"]
-    grag.get_chunk_by_id = AsyncMock(
-        side_effect=lambda x: (
-            KnwlChunk(id=x, content=f"Content {x}", origin_id=f"Origin {x}")
-            if x in ["1", "2"]
-            else None
-        )
-    )
+    chunk_map = {
+        "chunk1": KnwlChunk(id="chunk1", content="This is chunk 1.", origin_id="Origin 1"),
+        "chunk2": KnwlChunk(id="chunk2", content="This is chunk 2.", origin_id="Origin 2"),
+        "chunk3": KnwlChunk(id="chunk3", content="This is chunk 3.", origin_id="Origin 3"),
+    }
+
+    grag.get_chunk_by_id = AsyncMock(side_effect=lambda x: chunk_map.get(x))
     grag.get_source_by_id = AsyncMock(
         side_effect=lambda x: (
             KnwlDocument(
@@ -408,11 +407,11 @@ async def test_references_from_chunks():
                 description="Desc",
                 timestamp="now",
             )
-            if x in ["Origin 1", "Origin 2"]
+            if x in ["Origin 1", "Origin 2", "Origin 3"]
             else None
         )
     )
     strategy = DummyStrategy(grag)
-    references = await strategy.references_from_chunks(chunk_ids)
-    assert len(references) == 2
+    references = await strategy.references_from_texts(chunk_map.values())
+    assert len(references) == 3
     assert references[0].content == "Content of Origin 1"

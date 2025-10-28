@@ -5,11 +5,12 @@ from knwl import services
 from knwl.format import print_knwl
 from knwl.models import GragParams, KnwlDocument, KnwlGragContext, KnwlGragInput
 from knwl.semantic.graph_rag.graph_rag import GraphRAG
-from knwl.semantic.graph_rag.strategies.global_strategy import GlobalGragStrategy
+from knwl.semantic.graph_rag.strategies.hybrid_strategy import HybridGragStrategy
 from knwl.semantic.graph_rag.strategies.local_strategy import LocalGragStrategy
 from knwl.utils import get_full_path
 
 from tests.library.collect import get_library_article
+
 
 @pytest.mark.asyncio
 async def test_from_article():
@@ -18,15 +19,15 @@ async def test_from_article():
     grag: GraphRAG = services.get_service("graph_rag")
     await grag.ingest(doc)
     input = KnwlGragInput(
-        text="What is homotopy in topology?",
+        text="homeomorphism,topology",
         name="Test Query",
         description="A test query for topology concepts.",
         params=GragParams(
-            strategy="global",
+            strategy="hybrid",
             return_chunks=True,
         ),
     )
-    strategy = GlobalGragStrategy(grag)
+    strategy = HybridGragStrategy(grag)
     found = await strategy.augment(input)
     print("")
     print_knwl(found, show_texts=True, show_nodes=True, show_edges=True)

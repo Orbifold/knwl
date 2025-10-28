@@ -299,7 +299,7 @@ class GraphRAG(GraphRAGBase):
         """
         Get the appropriate strategy based on the specified mode in the input parameters.
         """
-        mode = input.params.mode
+        mode = input.params.strategy
         if mode == "local":
             return LocalGragStrategy(self)
         elif mode == "naive":

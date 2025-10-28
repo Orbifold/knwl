@@ -22,7 +22,7 @@ async def test_naive_augmentation():
         text="Explain the concept of homeomorphism in topology.",
         name="Test Query",
         description="A test query for topology concepts.",
-        params=GragParams(mode="naive"),
+        params=GragParams(strategy="naive"),
     )
     found = await grag.augment(input)
     print("")
@@ -80,15 +80,15 @@ async def test_naive_augmentation():
         text="Explain the concept of homeomorphism in topology.",
         name="Test Query",
         description="A test query for topology concepts.",
-        params=GragParams(mode="naive"),
+        params=GragParams(strategy="naive", return_chunks=True),
     )
     found = await grag.augment(input)
     print("")
-    print_knwl(found, show_chunks=True, show_nodes=False, show_edges=False)
+    print_knwl(found, show_texts=True, show_nodes=False, show_edges=False)
 
     assert found is not None
     assert isinstance(found, KnwlGragContext)
-    assert len(found.chunks) > 0
+    assert len(found.texts) > 0
     assert len(found.nodes) == 0
     assert len(found.edges) == 0
     assert found.input == input
@@ -112,14 +112,14 @@ async def test_naive_strategy_augment_with_no_results():
         text="A completely unrelated query that should find nothing",
         name="Empty Query",
         description="Test query that should return no results.",
-        params=GragParams(mode="naive", limit=5),
+        params=GragParams(strategy="naive", limit=5),
     )
 
     context = await strategy.augment(input)
 
     assert context is not None
     assert isinstance(context, KnwlGragContext)
-    assert len(context.chunks) == 0
+    assert len(context.texts) == 0
     assert len(context.nodes) == 0
     assert len(context.edges) == 0
     assert context.input == input
@@ -138,19 +138,19 @@ async def test_naive_strategy_augment_with_results():
         text="topology",
         name="Test Query",
         description="Simple test query.",
-        params=GragParams(mode="naive", top_k=3),
+        params=GragParams(strategy="naive", top_k=3),
     )
 
     context = await strategy.augment(input)
 
     assert context is not None
     assert isinstance(context, KnwlGragContext)
-    assert len(context.chunks) <= 3
+    assert len(context.texts) <= 3
     assert len(context.nodes) == 0
     assert len(context.edges) == 0
 
     # Verify chunk structure
-    for i, chunk in enumerate(context.chunks):
+    for i, chunk in enumerate(context.texts):
         assert chunk.text is not None
         assert chunk.id is not None
         assert chunk.index == i
@@ -171,10 +171,10 @@ async def test_naive_strategy_respects_limit_param():
         text="topology mathematics",
         name="Limited Query",
         description="Test query with limit.",
-        params=GragParams(mode="naive", top_k=2),
+        params=GragParams(strategy="naive", top_k=2),
     )
 
     context = await strategy.augment(input)
 
     assert context is not None
-    assert len(context.chunks) <= 2
+    assert len(context.texts) <= 2

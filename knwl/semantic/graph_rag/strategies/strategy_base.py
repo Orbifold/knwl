@@ -10,6 +10,7 @@ from knwl.models import (
     KnwlNode,
 )
 from knwl.models.GragParams import GragParams
+from knwl.models.KnwlChunk import KnwlChunk
 from knwl.models.KnwlGragContext import KnwlGragContext
 from knwl.models.KnwlNode import KnwlNode
 from knwl.semantic.graph_rag.graph_rag_base import GraphRAGBase
@@ -275,7 +276,7 @@ class GragStrategyBase(ABC):
         """
         stats = {}
         for edge in edges:
-            for chunk_id in edge.chunkIds:
+            for chunk_id in edge.chunk_ids:
                 stats[chunk_id] = stats.get(chunk_id, 0) + 1
         return stats
 
@@ -321,7 +322,7 @@ class GragStrategyBase(ABC):
         return rag_texts
 
     async def references_from_texts(
-        self, texts: list[KnwlGragText]
+        self, texts: list[KnwlGragText] | list[KnwlChunk]
     ) -> list[KnwlGragReference]:
         """
         Returns references for the given texts by looking up their origin ids in the source storage.
@@ -356,7 +357,7 @@ class GragStrategyBase(ABC):
         if edges is None or not len(edges):
             return []
         stats = await self.chunk_stats_from_edges(edges)
-        chunk_ids = unique_strings([e.chunkIds for e in edges])
+        chunk_ids = unique_strings([e.chunk_ids for e in edges])
         coll = []
         for i, chunk_id in enumerate(chunk_ids):
             chunk = await self.grag.get_chunk_by_id(chunk_id)
@@ -368,7 +369,80 @@ class GragStrategyBase(ABC):
 
         coll = sorted(coll, key=lambda x: x.index, reverse=True)
         return coll
+    
+    async def texts_from_chunks(
+        self, chunks: list[KnwlChunk], params: GragParams
+    ) -> list[KnwlGragText]:
+        """
+        Converts a list of KnwlChunk objects to KnwlGragText objects.
+        The chunks could be sorted based on how many nodes/edges they are connected to, but this is not done here.
+        
+        Args:
+            chunks (list[KnwlChunk]): A list of KnwlChunk objects to convert.
 
+        Returns:
+            list[KnwlGragText]: A list of KnwlGragText objects.
+        """
+        if chunks is None or not len(chunks):
+            return []
+        texts = []
+        for i, chunk in enumerate(chunks):
+            texts.append(
+                KnwlGragText(
+                    index=i,
+                    text=chunk.content if params.return_chunks else None,
+                    origin_id=chunk.origin_id,
+                    id=chunk.id,
+                )
+            )
+        return texts
+    
+    async def augment_via_nodes(self, input: KnwlGragInput) -> KnwlGragContext | None:
+        """
+        A strategy on its own, if you wish, to augment the input via nodes and through this retrieve edges, texts and references.
+        """
+        nodes = await self.semantic_node_search(input)
+        if not nodes:
+            return KnwlGragContext.empty(input=input)
+        edges = await self.edges_from_nodes(nodes)
+        if input.params.return_chunks:
+            texts = await self.texts_from_nodes(nodes, params=input.params)
+            references = await self.references_from_texts(texts)
+        else:
+            texts = []
+            references = []
+        context = KnwlGragContext(
+            input=input,
+            nodes=nodes,
+            edges=edges,
+            texts=texts,
+            references=references,
+        )
+        return context
+
+    async def augment_via_edges(self, input: KnwlGragInput) -> KnwlGragContext | None:
+        """
+        A strategy on its own, if you wish, to augment the input via edges and through this retrieve nodes, texts and references.
+        """
+        edges = await self.semantic_edge_search(input)
+        if not edges:
+            return KnwlGragContext.empty(input=input)
+        nodes = await self.nodes_from_edges(edges)
+        if input.params.return_chunks:
+            texts = await self.text_from_edges(edges, query_param=input.params)
+            references = await self.references_from_texts(texts)
+        else:
+            texts = []
+            references = []
+        context = KnwlGragContext(
+            input=input,
+            nodes=nodes,
+            edges=edges,
+            texts=texts,
+            references=references,
+        )
+        return context
+    
     @staticmethod
     def unique_chunk_ids(nodes: list[KnwlNode] | list[KnwlEdge]) -> list[str]:
         """

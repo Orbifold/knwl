@@ -2,7 +2,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-AugmentationStrategy = Literal["local", "global", "hybrid", "naive", "keywords"]
+AugmentationStrategy = Literal["local", "global", "hybrid", "naive"]
 
 
 class GragParams(BaseModel):
@@ -10,7 +10,7 @@ class GragParams(BaseModel):
     Parameters of grag augmentation.
 
     Attributes:
-        mode (AugmentationStrategy): The query strategy to use - local, global, hybrid, or naive.
+        strategy (AugmentationStrategy): The query strategy to use - local, global, hybrid, or naive.
 
         response_type (str): The type of response format to generate.
         top_k (int): Number of top-k items to retrieve (entities in local mode, relationships in global mode).

@@ -41,11 +41,11 @@ async def test_from_article():
     grag: GraphRAG = services.get_service("graph_rag")
     await grag.ingest(doc)
     input = KnwlGragInput(
-        text="homeomorphism,topology",
+        text="What was the contribution of Dennis Sullivan in topology?",
         name="Test Query",
         description="A test query for topology concepts.",
         params=GragParams(
-            mode="keywords",
+            strategy="local",
             return_chunks=True,
         ),
     )

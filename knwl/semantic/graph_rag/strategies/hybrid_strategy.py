@@ -11,6 +11,8 @@ from knwl.models import (
 )
 from knwl.models.KnwlGragInput import KnwlGragInput
 from knwl.semantic.graph_rag.graph_rag_base import GraphRAGBase
+from knwl.semantic.graph_rag.strategies.global_strategy import GlobalGragStrategy
+from knwl.semantic.graph_rag.strategies.local_strategy import LocalGragStrategy
 from knwl.semantic.graph_rag.strategies.strategy_base import GragStrategyBase
 from knwl.utils import unique_strings
 
@@ -25,4 +27,18 @@ class HybridGragStrategy(GragStrategyBase):
         super().__init__(grag)
 
     async def augment(self, input: KnwlGragInput) -> KnwlGragContext | None:
-        pass
+        keywords = await self.grag.extract_keywords(input.text)
+        if not keywords:
+            log.debug("No keywords found for global strategy.")
+            return KnwlGragContext.empty(input)
+        high_level = KnwlGragContext.empty(input)
+        low_level = KnwlGragContext.empty(input)
+        if len(keywords.high_level) > 0:
+            high_level_query = ", ".join(keywords.high_level)
+            input.text = high_level_query
+            high_level = await self.augment_via_edges(input)
+        if len(keywords.low_level) > 0:
+            low_level_query = ", ".join(keywords.low_level)
+            input.text = low_level_query
+            low_level = await self.augment_via_nodes(input)
+        return KnwlGragContext.combine(high_level, low_level)
