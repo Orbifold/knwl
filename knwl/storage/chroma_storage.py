@@ -24,7 +24,7 @@ class ChromaStorage(VectorStorageBase):
     def __init__(
         self,
         collection_name: str = "default",
-        metadata:list[str]=["type_name"],
+        metadata: list[str] = ["type_name"],
         memory: bool = False,
         path: str = "$test/vector",
     ):
@@ -64,7 +64,9 @@ class ChromaStorage(VectorStorageBase):
     def in_memory(self):
         return self._in_memory
 
-    async def nearest(self, query: str, top_k: int = 1, where: dict[str, Any] | None = None) -> list[dict]:
+    async def nearest(
+        self, query: str, top_k: int = 1, where: dict[str, Any] | None = None
+    ) -> list[dict]:
         # ====================================================================================
         # Note that Chroma has auto-embedding based on all-MiniLM-L6-v2, so you don't need to provide embeddings.
         # The `query_texts` is auto=transformed using this model. The embedding dimension is only 384, so it really is rather shallow for most purposes.
@@ -76,11 +78,14 @@ class ChromaStorage(VectorStorageBase):
             )
         if len(self._metadata) > 0:
             found = self.collection.query(
-                query_texts=query, n_results=top_k, include=["documents", "metadatas"], where=where
+                query_texts=query,
+                n_results=top_k,
+                include=["documents", "metadatas"],
+                where=where,
             )
         else:
             found = self.collection.query(
-                query_texts=query, n_results=top_k, include=["documents"], where=where  
+                query_texts=query, n_results=top_k, include=["documents"], where=where
             )
         if found is None:
             return []
@@ -111,6 +116,8 @@ class ChromaStorage(VectorStorageBase):
             if len(self._metadata) > 0:
                 # auto-extract metadata
                 metadata = {k: value.get(k) for k in self._metadata if k in value}
+                if metadata == {}:
+                    metadata = None # chroma doesn't like empty metadata
                 self.collection.upsert(
                     ids=key,
                     documents=str_value,
@@ -167,6 +174,7 @@ class ChromaStorage(VectorStorageBase):
 
     async def delete_by_id(self, id: str):
         self.collection.delete(ids=[id])
+
     async def exists(self, id: str) -> bool:
         result = self.collection.get(ids=[id], include=["documents"])
         return len(result["documents"]) > 0

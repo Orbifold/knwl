@@ -102,7 +102,7 @@ def test_knwlinput():
     inp2 = KnwlInput(**inp.model_dump(mode="json"))
     assert inp2.id == inp.id
 
-    input = KnwlInput("Some text")
+    input = KnwlInput(text="Some text")
     assert input.text == "Some text"
     assert input.name.startswith("Input ")
     assert input.description == ""

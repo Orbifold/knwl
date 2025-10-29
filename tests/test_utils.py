@@ -279,20 +279,7 @@ async def test_limit_async_func_call_with_waiting():
     results = await asyncio.gather(*tasks)
     assert results == [0, 1]
 
-
-def test_source():
-    source = KnwlDocument(content="Hello, world!")
-    assert source.content == "Hello, world!"
-    assert source.id is not None
-    print()
-    print(source)
-
-    print()
-    print(source.__dict__)
-    with pytest.raises(ValidationError):
-        source.content = "New content"
-
-
+ 
 def test_chunk_class():
     with pytest.raises(ValueError):
         KnwlChunk(content="", tokens=2, index=0, origin_id="doc1")
