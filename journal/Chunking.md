@@ -39,3 +39,5 @@ asyncio.run(main())
 ```
 
 This will print out the chunks of text, each containing up to 20 tokens. You can adjust the `chunk_size` and `chunk_overlap` parameters to see how they affect the chunking process.
+
+Note that you can also use the `print_knwl` for a pretty-printed version of the chunks.

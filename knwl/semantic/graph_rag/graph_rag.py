@@ -1,6 +1,6 @@
 from typing import cast, List
 
-from knwl import ChunkingBase
+from knwl.chunking.chunking_base import ChunkingBase
 from knwl.di import defaults
 from knwl.extraction.graph_extraction_base import GraphExtractionBase
 from knwl.extraction.keywords_extraction_base import KeywordsExtractionBase

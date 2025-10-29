@@ -68,7 +68,7 @@ default_config = {
         "basic": {
             "class": "knwl.extraction.basic_graph_extraction.BasicGraphExtraction",
             "mode": "full",  # fast or full
-            "llm": "@/llm/ollama",
+            "llm": "@/llm/openai",
         },
     },
     "glean_graph_extraction": {

@@ -4,7 +4,7 @@
 # ============================================================================================
 # %% 
 # Demonstration of knwl formatting capabilities
-from knwl import services, service, KnwlLLMAnswer
+from knwl import services, service, KnwlAnswer
 from knwl import OllamaClient
 from knwl.format import print_knwl
 from faker import Faker
@@ -22,7 +22,7 @@ fake = Faker()
 coll = []
 for i in range(30):
     coll.append(
-        KnwlLLMAnswer(
+        KnwlAnswer(
             question=fake.sentence(nb_words=50), answer=fake.sentence(nb_words=200)
         )
     )

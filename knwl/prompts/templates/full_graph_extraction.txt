@@ -72,7 +72,7 @@ Output:
 #############################
 Example 3:
 
-Entity_types: [person, role, technology, organization, event, location, concept]
+Entity_types: [person, role, technology, organization, company, event, location, concept]
 Text:
 their voice slicing through the buzz of activity. "Control may be an illusion when facing an intelligence that literally writes its own rules," they stated stoically, casting a watchful eye over the flurry of data.
 

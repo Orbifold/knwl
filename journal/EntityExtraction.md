@@ -1,4 +1,4 @@
-Entity extraction is halfway graph extraction and Knwl offers a basic entity extraction service.
+Graph RAG consists of several techniques and entity extraction is typically done within the context of building a graph from text data. However, if you want to perform standalone entity extraction, you can use the `EntityExtractionService` directly.
 
 ```python
 import asyncio
