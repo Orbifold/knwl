@@ -21,9 +21,9 @@ from knwl.models import (
     KnwlChunk,
     KnwlEntity,
     KnwlExtraction,
-    KnwlGragContext,
+    KnwlContext,
     KnwlResponse,
-    KnwlGragIngestion,
+    KnwlIngestion,
     KnwlKeywords,
 )
 
@@ -342,11 +342,11 @@ class KnwlExtractionTerminalFormatter(ModelFormatter):
         )
 
 
-@register_formatter(KnwlGragContext, "terminal")
+@register_formatter(KnwlContext, "terminal")
 class KnwlContextTerminalFormatter(ModelFormatter):
     """Formatter for KnwlContext models."""
 
-    def format(self, ctx: KnwlGragContext, formatter, **options) -> Panel:
+    def format(self, ctx: KnwlContext, formatter, **options) -> Panel:
         """Format a KnwlContext as a rich panel."""
         show_nodes = options.get("show_nodes", True)
         show_edges = options.get("show_edges", False)
@@ -456,16 +456,16 @@ class KnwlResponseTerminalFormatter(ModelFormatter):
         )
 
 
-@register_formatter(KnwlGragIngestion, "terminal")
-class KnwlGragIngestionTerminalFormatter(ModelFormatter):
-    """Formatter for KnwlGragIngestion models."""
+@register_formatter(KnwlIngestion, "terminal")
+class KnwlIngestionTerminalFormatter(ModelFormatter):
+    """Formatter for KnwlIngestion models."""
 
-    def format(self, model: KnwlGragIngestion, formatter, **options) -> Panel:
+    def format(self, model: KnwlIngestion, formatter, **options) -> Panel:
         show_entities = options.get("show_entities", True)
         show_edges = options.get("show_edges", True)
 
         max_entities = options.get("max_entities", 10)
-        """Format a KnwlGragIngestion as a rich panel with statistics."""
+        """Format a KnwlIngestion as a rich panel with statistics."""
         content = [
             Text(f"Document Id: {model.input.id}", style=formatter.theme.MUTED),
             Text(

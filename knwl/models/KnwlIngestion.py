@@ -6,7 +6,7 @@ from knwl.models.KnwlDocument import KnwlDocument
 from knwl.utils import hash_with_prefix
 
 
-class KnwlGragIngestion(BaseModel):
+class KnwlIngestion(BaseModel):
     """
     A class representing the result of a Graph RAG ingestion operation."""
 
@@ -27,7 +27,7 @@ class KnwlGragIngestion(BaseModel):
     )
     
     @model_validator(mode="after")
-    def set_id(self) -> "KnwlGragIngestion":
+    def set_id(self) -> "KnwlIngestion":
         if self.id is None:
             object.__setattr__(
                 self, "id", hash_with_prefix(self.input.content, prefix="gragresult|>")
@@ -50,7 +50,7 @@ class KnwlGragIngestion(BaseModel):
         return [node.description for node in self.graph.nodes] if self.graph else []
 
     def __repr__(self) -> str:
-        return f"<KnwlGragIngestion, id={self.id}, num_chunks={len(self.chunks)}, num_chunk_graphs={len(self.chunk_graphs)}, nodes={len(self.graph.nodes) if self.graph else 0}, edges={len(self.graph.edges) if self.graph else 0}>"
+        return f"<KnwlIngestion, id={self.id}, num_chunks={len(self.chunks)}, num_chunk_graphs={len(self.chunk_graphs)}, nodes={len(self.graph.nodes) if self.graph else 0}, edges={len(self.graph.edges) if self.graph else 0}>"
 
     def __str__(self) -> str:
         return self.__repr__()

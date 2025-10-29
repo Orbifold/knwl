@@ -3,7 +3,7 @@ import pytest
 
 from knwl import services
 from knwl.format import print_knwl
-from knwl.models import GragParams, KnwlDocument, KnwlGragContext, KnwlGragInput
+from knwl.models import GragParams, KnwlDocument, KnwlContext, KnwlInput
 from knwl.semantic.graph_rag.graph_rag import GraphRAG
 from knwl.semantic.graph_rag.strategies.naive_strategy import NaiveGragStrategy
 from knwl.utils import get_full_path
@@ -18,7 +18,7 @@ async def test_naive_augmentation():
     doc = KnwlDocument(content=content, id=f"{str(uuid.uuid4())}.txt")
     grag: GraphRAG = services.get_service("graph_rag")
     await grag.ingest(doc)
-    input = KnwlGragInput(
+    input = KnwlInput(
         text="Explain the concept of homeomorphism in topology.",
         name="Test Query",
         description="A test query for topology concepts.",
@@ -76,7 +76,7 @@ async def test_naive_augmentation():
     doc = KnwlDocument(content=content, id=f"{str(uuid.uuid4())}.txt")
     grag: GraphRAG = services.get_service("graph_rag")
     await grag.ingest(doc)
-    input = KnwlGragInput(
+    input = KnwlInput(
         text="Explain the concept of homeomorphism in topology.",
         name="Test Query",
         description="A test query for topology concepts.",
@@ -87,7 +87,7 @@ async def test_naive_augmentation():
     print_knwl(found, show_texts=True, show_nodes=False, show_edges=False)
 
     assert found is not None
-    assert isinstance(found, KnwlGragContext)
+    assert isinstance(found, KnwlContext)
     assert len(found.texts) > 0
     assert len(found.nodes) == 0
     assert len(found.edges) == 0
@@ -108,7 +108,7 @@ async def test_naive_strategy_augment_with_no_results():
     grag: GraphRAG = services.get_service("graph_rag")
     strategy = NaiveGragStrategy(grag)
 
-    input = KnwlGragInput(
+    input = KnwlInput(
         text="A completely unrelated query that should find nothing",
         name="Empty Query",
         description="Test query that should return no results.",
@@ -118,7 +118,7 @@ async def test_naive_strategy_augment_with_no_results():
     context = await strategy.augment(input)
 
     assert context is not None
-    assert isinstance(context, KnwlGragContext)
+    assert isinstance(context, KnwlContext)
     assert len(context.texts) == 0
     assert len(context.nodes) == 0
     assert len(context.edges) == 0
@@ -134,7 +134,7 @@ async def test_naive_strategy_augment_with_results():
     await grag.ingest(doc)
 
     strategy = NaiveGragStrategy(grag)
-    input = KnwlGragInput(
+    input = KnwlInput(
         text="topology",
         name="Test Query",
         description="Simple test query.",
@@ -144,7 +144,7 @@ async def test_naive_strategy_augment_with_results():
     context = await strategy.augment(input)
 
     assert context is not None
-    assert isinstance(context, KnwlGragContext)
+    assert isinstance(context, KnwlContext)
     assert len(context.texts) <= 3
     assert len(context.nodes) == 0
     assert len(context.edges) == 0
@@ -167,7 +167,7 @@ async def test_naive_strategy_respects_limit_param():
     strategy = NaiveGragStrategy(grag)
 
     # Test with limit=2
-    input = KnwlGragInput(
+    input = KnwlInput(
         text="topology mathematics",
         name="Limited Query",
         description="Test query with limit.",

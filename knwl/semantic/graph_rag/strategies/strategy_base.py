@@ -4,14 +4,14 @@ from graspologic import List
 from knwl.models import (
     KnwlEdge,
     KnwlEdge,
-    KnwlGragInput,
-    KnwlGragReference,
-    KnwlGragText,
+    KnwlInput,
+    KnwlReference,
+    KnwlText,
     KnwlNode,
 )
 from knwl.models.GragParams import GragParams
 from knwl.models.KnwlChunk import KnwlChunk
-from knwl.models.KnwlGragContext import KnwlGragContext
+from knwl.models.KnwlContext import KnwlContext
 from knwl.models.KnwlNode import KnwlNode
 from knwl.semantic.graph_rag.graph_rag_base import GraphRAGBase
 from knwl.logging import log
@@ -23,7 +23,7 @@ class GragStrategyBase(ABC):
         self.grag = grag
 
     @abstractmethod
-    async def augment(self, input: KnwlGragInput) -> KnwlGragContext | None:
+    async def augment(self, input: KnwlInput) -> KnwlContext | None:
         """
         You can find nearest nodes, edges, chunks, nodes from edges, edges from nodes...there is no single best approach within GRAG.
         A strategy refers to one way of augmenting the input one or more of these elements.
@@ -32,7 +32,7 @@ class GragStrategyBase(ABC):
         ...
 
     async def semantic_node_search(
-        self, input: KnwlGragInput | str
+        self, input: KnwlInput | str
     ) -> list[KnwlNode] | None:
         """
         Retrieves the nearest nodes from the graph based on semantic similarity of the input.
@@ -48,7 +48,7 @@ class GragStrategyBase(ABC):
             List[KnwlNode] | None: A list of KnwlNode objects if nodes are found, otherwise None.
         """
         if isinstance(input, str):
-            input = KnwlGragInput(text=input, params=GragParams())
+            input = KnwlInput(text=input, params=GragParams())
         query = input.text
         # node rag: get top-k nodes
         found = await self.grag.nearest_nodes(query, input.params)
@@ -96,7 +96,7 @@ class GragStrategyBase(ABC):
         return coll
 
     async def semantic_edge_search(
-        self, input: KnwlGragInput | str
+        self, input: KnwlInput | str
     ) -> list[KnwlEdge] | None:
         """
         Retrieves the nearest edges from the graph based on semantic similarity of the input.
@@ -109,7 +109,7 @@ class GragStrategyBase(ABC):
             List[KnwlEdge] | None: A list of KnwlEdge objects if edges are found, otherwise None.
         """
         if isinstance(input, str):
-            input = KnwlGragInput(text=input, params=GragParams())
+            input = KnwlInput(text=input, params=GragParams())
         query = input.text
         # edge rag: get top-k nodes
         edges: list[KnwlEdge] = await self.grag.nearest_edges(
@@ -282,7 +282,7 @@ class GragStrategyBase(ABC):
 
     async def texts_from_nodes(
         self, nodes: list[KnwlNode], params: GragParams
-    ) -> list[KnwlGragText]:
+    ) -> list[KnwlText]:
         """
         Returns the most relevant paragraphs based on the given nodes.
         What makes the paragraphs relevant is defined in the `chunk_stats` method.
@@ -305,14 +305,14 @@ class GragStrategyBase(ABC):
             if params.return_chunks:
                 chunk = await self.grag.get_chunk_by_id(chunk_id)
                 if chunk is not None:
-                    graph_rag_chunks[chunk_id] = KnwlGragText(
+                    graph_rag_chunks[chunk_id] = KnwlText(
                         index=count,
                         text=chunk.content,
                         origin_id=chunk.origin_id,
                         id=chunk_id,
                     )
             else:
-                graph_rag_chunks[chunk_id] = KnwlGragText(
+                graph_rag_chunks[chunk_id] = KnwlText(
                     index=count, text=None, origin_id=None, id=chunk_id
                 )
         # in decreasing order of count
@@ -322,8 +322,8 @@ class GragStrategyBase(ABC):
         return rag_texts
 
     async def references_from_texts(
-        self, texts: list[KnwlGragText] | list[KnwlChunk]
-    ) -> list[KnwlGragReference]:
+        self, texts: list[KnwlText] | list[KnwlChunk]
+    ) -> list[KnwlReference]:
         """
         Returns references for the given texts by looking up their origin ids in the source storage.
         """
@@ -340,7 +340,7 @@ class GragStrategyBase(ABC):
                 log.warn(f"Could not find source for text {c.id}")
             else:
                 refs.append(
-                    KnwlGragReference(
+                    KnwlReference(
                         document_id=doc.id if doc else "",
                         index=i,
                         description=doc.description,
@@ -352,7 +352,7 @@ class GragStrategyBase(ABC):
 
     async def text_from_edges(
         self, edges: list[KnwlEdge], query_param: GragParams
-    ) -> List[KnwlGragText]:
+    ) -> List[KnwlText]:
 
         if edges is None or not len(edges):
             return []
@@ -362,7 +362,7 @@ class GragStrategyBase(ABC):
         for i, chunk_id in enumerate(chunk_ids):
             chunk = await self.grag.get_chunk_by_id(chunk_id)
             coll.append(
-                KnwlGragText(
+                KnwlText(
                     origin_id=chunk_id, index=stats[chunk_id], text=chunk.content
                 )
             )
@@ -372,7 +372,7 @@ class GragStrategyBase(ABC):
     
     async def texts_from_chunks(
         self, chunks: list[KnwlChunk], params: GragParams
-    ) -> list[KnwlGragText]:
+    ) -> list[KnwlText]:
         """
         Converts a list of KnwlChunk objects to KnwlGragText objects.
         The chunks could be sorted based on how many nodes/edges they are connected to, but this is not done here.
@@ -388,7 +388,7 @@ class GragStrategyBase(ABC):
         texts = []
         for i, chunk in enumerate(chunks):
             texts.append(
-                KnwlGragText(
+                KnwlText(
                     index=i,
                     text=chunk.content if params.return_chunks else None,
                     origin_id=chunk.origin_id,
@@ -397,13 +397,13 @@ class GragStrategyBase(ABC):
             )
         return texts
     
-    async def augment_via_nodes(self, input: KnwlGragInput) -> KnwlGragContext | None:
+    async def augment_via_nodes(self, input: KnwlInput) -> KnwlContext | None:
         """
         A strategy on its own, if you wish, to augment the input via nodes and through this retrieve edges, texts and references.
         """
         nodes = await self.semantic_node_search(input)
         if not nodes:
-            return KnwlGragContext.empty(input=input)
+            return KnwlContext.empty(input=input)
         edges = await self.edges_from_nodes(nodes)
         if input.params.return_chunks:
             texts = await self.texts_from_nodes(nodes, params=input.params)
@@ -411,7 +411,7 @@ class GragStrategyBase(ABC):
         else:
             texts = []
             references = []
-        context = KnwlGragContext(
+        context = KnwlContext(
             input=input,
             nodes=nodes,
             edges=edges,
@@ -420,13 +420,13 @@ class GragStrategyBase(ABC):
         )
         return context
 
-    async def augment_via_edges(self, input: KnwlGragInput) -> KnwlGragContext | None:
+    async def augment_via_edges(self, input: KnwlInput) -> KnwlContext | None:
         """
         A strategy on its own, if you wish, to augment the input via edges and through this retrieve nodes, texts and references.
         """
         edges = await self.semantic_edge_search(input)
         if not edges:
-            return KnwlGragContext.empty(input=input)
+            return KnwlContext.empty(input=input)
         nodes = await self.nodes_from_edges(edges)
         if input.params.return_chunks:
             texts = await self.text_from_edges(edges, query_param=input.params)
@@ -434,7 +434,7 @@ class GragStrategyBase(ABC):
         else:
             texts = []
             references = []
-        context = KnwlGragContext(
+        context = KnwlContext(
             input=input,
             nodes=nodes,
             edges=edges,

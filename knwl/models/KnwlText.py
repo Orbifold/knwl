@@ -2,7 +2,7 @@ from typing import Optional
 from pydantic import BaseModel, Field
 
 
-class KnwlGragText(BaseModel):
+class KnwlText(BaseModel):
     """
     Represents a piece of text obtained via one of the Grag strategies.
 

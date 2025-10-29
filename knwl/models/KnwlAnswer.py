@@ -23,14 +23,7 @@ class KnwlAnswer(BaseModel):
         question (str): The original question or prompt that generated this answer.
         from_cache (bool): Indicates whether the answer was retrieved from cache.
         id (Optional[str]): Unique identifier for the answer, auto-generated if not provided.
-
-    Methods:
-        set_id_if_none(): Model validator that automatically sets the ID if it's None.
-        hash_keys(messages, llm_service, llm_model): Static method that generates a unique
-            hash ID from the input parameters with an "answer|>" prefix.
-        __repr__(): Returns a string representation with key attributes.
-        __str__(): Returns the same string representation as __repr__().
-
+  
     Example:
         ```python
         llm = services.get_service("llm")

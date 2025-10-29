@@ -7,15 +7,15 @@ from knwl.extraction.keywords_extraction_base import KeywordsExtractionBase
 from knwl.logging import log
 from knwl.models import (
     GragParams,
-    KnwlGragContext,
+    KnwlContext,
     KnwlGraph,
     KnwlInput,
-    KnwlGragInput,
+    KnwlInput,
 )
 from knwl.models.KnwlChunk import KnwlChunk
 from knwl.models.KnwlDocument import KnwlDocument
 from knwl.models.KnwlEdge import KnwlEdge
-from knwl.models.KnwlGragIngestion import KnwlGragIngestion
+from knwl.models.KnwlIngestion import KnwlIngestion
 from knwl.models.KnwlKeywords import KnwlKeywords
 from knwl.models.KnwlNode import KnwlNode
 from knwl.semantic.graph.semantic_graph_base import SemanticGraphBase
@@ -122,7 +122,7 @@ class GraphRAG(GraphRAGBase):
         Ingest raw text or KnwlInput/KnwlDocument and convert to knowledge graph.
         See also the `extract` method which does the same without storing anything.
         """
-        result: KnwlGragIngestion = await self.extract(
+        result: KnwlIngestion = await self.extract(
             input, enable_chunking=enable_chunking
         )
         if result.graph is None:
@@ -172,7 +172,7 @@ class GraphRAG(GraphRAGBase):
 
     async def extract(
         self, input: str | KnwlInput | KnwlDocument, enable_chunking: bool = True
-    ) -> KnwlGragIngestion | None:
+    ) -> KnwlIngestion | None:
         """
         Extract a knowledge graph from raw text or KnwlInput/KnwlDocument.
         This is the same as `ingest` but without storing anything.
@@ -193,7 +193,7 @@ class GraphRAG(GraphRAGBase):
             document_to_ingest = KnwlDocument.from_input(input)
         elif isinstance(input, str):
             document_to_ingest = KnwlDocument(content=input)
-        result = KnwlGragIngestion(input=document_to_ingest)
+        result = KnwlIngestion(input=document_to_ingest)
 
         # ============================================================================================
         # Chunking
@@ -271,8 +271,8 @@ class GraphRAG(GraphRAGBase):
         return result
 
     async def augment(
-        self, input: str | KnwlInput | KnwlGragInput, params: GragParams = None
-    ) -> KnwlGragContext | None:
+        self, input: str | KnwlInput , params: GragParams = None
+    ) -> KnwlContext | None:
         """
         Retrieve context from the knowledge graph and augment the input text.
         All you need to answer questions or generate text with context.
@@ -281,12 +281,12 @@ class GraphRAG(GraphRAGBase):
         if params is None:
             query_params = GragParams()
         if isinstance(input, str):
-            grag_input = KnwlGragInput(text=input, params=query_params)
-        elif isinstance(input, KnwlGragInput):
+            grag_input = KnwlInput(text=input, params=query_params)
+        elif isinstance(input, KnwlInput):
             grag_input = input
             query_params = grag_input.params
         elif isinstance(input, KnwlInput):
-            grag_input = KnwlGragInput(text=input.text, params=query_params)
+            grag_input = KnwlInput(text=input.text, params=query_params)
         else:
             raise ValueError(
                 "GraphRAG: input must be of type str, KnwlInput, or KnwlRagInput."
@@ -295,7 +295,7 @@ class GraphRAG(GraphRAGBase):
         strategy = self.get_strategy(grag_input)
         return await strategy.augment(grag_input)
 
-    def get_strategy(self, input: KnwlGragInput) -> "GragStrategyBase":
+    def get_strategy(self, input: KnwlInput) -> "GragStrategyBase":
         """
         Get the appropriate strategy based on the specified mode in the input parameters.
         """
@@ -417,7 +417,7 @@ class GraphRAG(GraphRAGBase):
                 )
 
     async def extract_keywords(
-        self, input: str | KnwlInput | KnwlGragInput
+        self, input: str | KnwlInput 
     ) -> KnwlKeywords | None:
         if self.keywords_extractor is None:
             raise ValueError(
@@ -427,10 +427,10 @@ class GraphRAG(GraphRAGBase):
             text = input
         elif isinstance(input, KnwlInput):
             text = input.text
-        elif isinstance(input, KnwlGragInput):
+        elif isinstance(input, KnwlInput):
             text = input.text
         else:
             raise ValueError(
-                "GraphRAG: input must be of type str, KnwlInput, or KnwlGragInput."
+                "GraphRAG: input must be of type str, KnwlInput, or KnwlInput."
             )
         return await self.keywords_extractor.extract(text)

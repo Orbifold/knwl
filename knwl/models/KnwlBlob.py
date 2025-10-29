@@ -9,7 +9,7 @@ from knwl.utils import get_full_path, hash_with_prefix
 
 class KnwlBlob(BaseModel):
     """
-    A (immutable) class representing a binary large object (BLOB).
+    A class representing a binary large object (BLOB).
 
     Attributes:
         data (bytes): The binary data of the BLOB.
@@ -36,8 +36,6 @@ class KnwlBlob(BaseModel):
         frozen=True,
         description="The type name of this class, for serialization purposes.",
     )
-
-    model_config = {"frozen": True}
 
     @field_validator("data")
     def data_not_empty(cls, v):

@@ -2,10 +2,10 @@ from abc import ABC, abstractmethod
 from typing import List
 
 from knwl.framework_base import FrameworkBase
-from knwl.models import (GragParams, KnwlChunk, KnwlGragContext, KnwlGraph, KnwlInput, KnwlGragInput, )
+from knwl.models import (GragParams, KnwlChunk, KnwlContext, KnwlGraph, KnwlInput, KnwlInput, )
 from knwl.models.KnwlDocument import KnwlDocument
 from knwl.models.KnwlEdge import KnwlEdge
-from knwl.models.KnwlGragIngestion import KnwlGragIngestion
+from knwl.models.KnwlIngestion import KnwlIngestion
 from knwl.models.KnwlKeywords import KnwlKeywords
 from knwl.models.KnwlNode import KnwlNode
 
@@ -34,7 +34,7 @@ class GraphRAGBase(FrameworkBase, ABC):
         ...
 
     @abstractmethod
-    async def extract(self, input: str | KnwlInput | KnwlDocument, enable_chunking: bool = True) -> KnwlGragIngestion | None:
+    async def extract(self, input: str | KnwlInput | KnwlDocument, enable_chunking: bool = True) -> KnwlIngestion | None:
         """
         Extract a knowledge graph from raw text or KnwlInput/KnwlDocument.
         This is the same as `ingest` but without embedding (consolidation).
@@ -43,7 +43,7 @@ class GraphRAGBase(FrameworkBase, ABC):
 
     @abstractmethod
     async def extract_keywords(
-        self, input: str | KnwlInput | KnwlGragInput
+        self, input: str |  KnwlInput
     ) -> KnwlKeywords | None:
         """
         Extract keywords from the input text.
@@ -54,7 +54,7 @@ class GraphRAGBase(FrameworkBase, ABC):
         ...
         
     @abstractmethod
-    async def augment(self, input: str | KnwlInput | KnwlGragInput, params: GragParams = None) -> KnwlGragContext | None:
+    async def augment(self, input: str | KnwlInput , params: GragParams = None) -> KnwlContext | None:
         """
         Retrieve context from the knowledge graph and augment the input text.
         All you need to answer questions or generate text with context.

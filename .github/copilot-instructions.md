@@ -58,25 +58,26 @@ All components inherit from `FrameworkBase` (ABC) providing:
 ## Core Data Flow
 
 ```
-Input Text → Documents → Chunks → Graph Extraction → KnwlGraph → Vector Storage
+Input Text → Documents → Chunks → Graph Extraction → SemanticGraph → Vector Storage
                                       ↓
                               KnwlExtraction (nodes+edges)
                                       ↓
                               Merge & Summarize → Storage (JSON/Chroma/NetworkX)
 ```
 
-**Main orchestration** in `Knwl` class (`knwl.py`):
+**Main orchestration** in `GraphRAG` class (`knwl/semantic/graph_rag/graph_rag.py`):
 
-1. **`insert(sources, basic_rag=False)`** - Primary ingestion pipeline:
-   - Saves sources → chunks text → extracts entities/edges → merges to graph → vectorizes
-   - Set `basic_rag=True` to skip graph construction (chunks only)
-   - Returns `KnwlGraph` or `None`
+1. **`ingest(inputs)`** - Primary ingestion pipeline:
+   - Processes `KnwlInput` → chunks text → extracts graph → stores in semantic graph
+   - Returns `KnwlIngestion` with metadata
+   - Optionally chunks and stores text if `ragger` is provided
 
-2. **`query(question, mode="local")`** - Query modes:
+2. **`augment(inputs, params)`** - Query/augmentation with multiple strategies:
    - **local**: Keywords → nodes → retrieve neighborhood + chunks
-   - **global**: Keywords → edges → retrieve endpoints + edge chunks
+   - **global**: Keywords → edges → retrieve endpoints + edge chunks  
    - **naive**: Direct semantic chunk retrieval (no graph)
    - **hybrid**: Combines local + global contexts
+   - Returns `KnwlContext` with augmented context and references
 
 ## Models (`knwl/models/`)
 
@@ -98,14 +99,21 @@ Input Text → Documents → Chunks → Graph Extraction → KnwlGraph → Vecto
 **Base classes define pluggable interfaces:**
 - `LLMBase` → `OllamaClient`, `OpenAIClient`
 - `ChunkingBase` → `TiktokenChunking`
-- `StorageBase` → `JsonStorage`, `ChromaStorage`, `NetworkXGraphStorage`
+- `StorageBase` → `JsonStorage`, `SqliteStorage`
+- `VectorStorageBase` → `ChromaStorage`
+- `GraphStorageBase` → `NetworkXGraphStorage`
 - `GraphExtractionBase` → `BasicGraphExtraction`, `GleanGraphExtraction`
+- `GraphRAGBase` → `GraphRAG`
+- `SemanticGraphBase` → `SemanticGraph`
+- `RagBase` → `RagStore`
+- `GragStrategyBase` → `LocalGragStrategy`, `GlobalGragStrategy`, `NaiveGragStrategy`, `HybridGragStrategy`
 - `EntityExtractionBase`, `KeywordsExtractionBase`, `FormatterBase`, etc.
 
 **Storage namespaces** isolate data:
 ```python
 JsonStorage(namespace="documents")   # → {path}/documents.json
-VectorStorageBase(namespace="nodes") # → Chroma collection "nodes"
+ChromaStorage(namespace="nodes")     # → Chroma collection "nodes"
+NetworkXGraphStorage(namespace="kg") # → {path}/kg.graphml
 ```
 
 ## Testing
@@ -125,6 +133,7 @@ uv run pytest
 - `@pytest.mark.asyncio` - async test
 - `@pytest.mark.integration` - external services
 - `@pytest.mark.slow` - long-running
+- `@pytest.mark.basic` - basic tests that don't require external services
 
 **Important**: DI container persists between tests - clear state in `setup_method()` if tests interfere.
 
@@ -189,8 +198,7 @@ async def my_func(llm=None):
 
 ## Entry Points
 
-- **Library**: `from knwl.knwl import Knwl; await Knwl().insert(text)`
-- **CLI**: `cli.py` - Typer-based interactive chat with `/mode`, `/help` commands
+- **Library**: `from knwl.semantic.graph_rag.graph_rag import GraphRAG; rag = GraphRAG(...); await rag.ingest(input)`
 - **API**: `api/main.py` - FastAPI REST service (uvicorn, configurable workers)
 
 **Running API**:
@@ -199,7 +207,7 @@ async def my_func(llm=None):
 python api/main.py  # reads config from api.host, api.port, api.development
 
 # Production
-uvicorn knwl.api.main:app --host 0.0.0.0 --port 9000 --workers 8
+uvicorn api.main:app --host 0.0.0.0 --port 9000 --workers 8
 ```
 
 ## Project Management
@@ -216,10 +224,12 @@ uvicorn knwl.api.main:app --host 0.0.0.0 --port 9000 --workers 8
 
 ## Key Files for Reference
 
-- `knwl.py` - Main `Knwl` orchestration class (~1000 lines)
+- `knwl/semantic/graph_rag/graph_rag.py` - Main `GraphRAG` orchestration class
 - `knwl/di.py` - DI framework (~930 lines, see `tests/test_di.py`)
 - `knwl/config.py` - Config structure, `get_config()`, merge logic
 - `knwl/services.py` - Service registry, dynamic class loading
 - `knwl/framework_base.py` - Base class for all components
 - `knwl/prompts/extraction_prompts.py` - LLM prompts for entity extraction
+- `knwl/semantic/graph/semantic_graph.py` - Semantic graph implementation
+- `knwl/semantic/rag/rag_store.py` - RAG store for chunk management
 - `tests/fixtures.py` - Test data and shared fixtures

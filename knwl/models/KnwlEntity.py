@@ -1,6 +1,8 @@
 from pydantic import BaseModel, Field, model_validator
 from typing import Optional
 from knwl.utils import hash_with_prefix
+
+
 class KnwlEntity(BaseModel):
     """
     A Pydantic model representing an extracted knowledge entity.
@@ -19,6 +21,7 @@ class KnwlEntity(BaseModel):
     Note:
         The `id` field is automatically populated after model validation using the entity name and type.
     """
+
     entity: str = Field(..., description="The extracted entity")
     type: str = Field(
         ..., description="The type of the extracted entity (e.g., PERSON, ORG, GPE)"
@@ -44,3 +47,9 @@ class KnwlEntity(BaseModel):
         )
 
         return self
+
+    def __repr__(self):
+        return f"<KnwlEntity, entity={self.entity}, type={self.type}, id={self.id}>"
+
+    def __str__(self):
+        return self.__repr__()

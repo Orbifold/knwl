@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field, model_validator
 from knwl.utils import hash_with_prefix
 
 
-class KnwlGragReference(BaseModel):
+class KnwlReference(BaseModel):
     """
     Represents a reference in the RAG (Retrieval-Augmented Generation) system.
     This class holds metadata about a reference, including its index, name, description,
@@ -33,9 +33,9 @@ class KnwlGragReference(BaseModel):
     id: Optional[str] = Field(default=None, description="The unique identifier of the reference, typically a hash of its content.")
 
     @model_validator(mode="after")
-    def set_id(self) -> "KnwlGragReference":
+    def set_id(self) -> "KnwlReference":
         if self.content is not None and len(str.strip(self.content)) > 0:
-            object.__setattr__(self, "id", KnwlGragReference.hash_keys(self.content))
+            object.__setattr__(self, "id", KnwlReference.hash_keys(self.content))
         return self
 
     @staticmethod

@@ -6,17 +6,14 @@ from .KnwlExtraction import KnwlExtraction
 from .KnwlDocument import KnwlDocument
 from .KnwlChunk import KnwlChunk
 from .KnwlInput import KnwlInput
-from .KnwlGragInput import KnwlGragInput
-from .KnwlGragContext import KnwlGragContext
 from .KnwlEntity import KnwlEntity
 from .KnwlBlob import KnwlBlob
-from .KnwlGragIngestion import KnwlGragIngestion
+from .KnwlIngestion import KnwlIngestion
 from .GragParams import GragParams
 from .KnwlKeywords import KnwlKeywords
-from .KnwlGragInput import KnwlGragInput
-from .KnwlGragContext import KnwlGragContext
-from .KnwlGragText import KnwlGragText
-from .KnwlGragReference import KnwlGragReference
+from .KnwlContext import KnwlContext
+from .KnwlText import KnwlText
+from .KnwlReference import KnwlReference
 from .KnwlModel import KnwlModel
 
-__all__ = ["KnwlNode", "KnwlEdge", "KnwlGraph", "KnwlExtraction", "KnwlDocument", "KnwlChunk", "KnwlInput", "KnwlGragInput", "KnwlGragContext", "KnwlAnswer", "KnwlEntity", "KnwlBlob", "KnwlGragIngestion", "GragParams", "KnwlKeywords", "KnwlGragContext", "KnwlGragInput", "KnwlGragText", "KnwlGragReference", "KnwlModel"]
+__all__ = ["KnwlNode", "KnwlEdge", "KnwlGraph", "KnwlExtraction", "KnwlDocument", "KnwlChunk", "KnwlInput",   "KnwlAnswer", "KnwlEntity", "KnwlBlob", "KnwlIngestion", "GragParams", "KnwlKeywords", "KnwlContext",  "KnwlText", "KnwlReference", "KnwlModel"]

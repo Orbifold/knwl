@@ -3,7 +3,7 @@ import pytest
 
 from knwl.models import KnwlDocument, KnwlEdge
 from knwl.models.KnwlChunk import KnwlChunk
-from knwl.models.KnwlGragText import KnwlGragText
+from knwl.models.KnwlText import KnwlText
 from knwl.models.KnwlNode import KnwlNode
 from knwl.semantic.graph_rag.strategies.strategy_base import GragStrategyBase
 
@@ -358,8 +358,8 @@ async def test_text_from_nodes():
 async def test_references():
     grag = MagicMock()
     texts = [
-        KnwlGragText(id="t1", text="Text 1", index=2, origin_id="chunk1"),
-        KnwlGragText(id="t2", text="Text 2", index=5, origin_id="chunk2"),
+        KnwlText(id="t1", text="Text 1", index=2, origin_id="chunk1"),
+        KnwlText(id="t2", text="Text 2", index=5, origin_id="chunk2"),
     ]
     grag.get_chunk_by_id = AsyncMock(
         side_effect=lambda x: (

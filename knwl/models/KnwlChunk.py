@@ -23,8 +23,6 @@ class KnwlChunk(BaseModel):
     )
     id: Optional[str] = Field(default=None, description="The unique ID of the chunk")
 
-    model_config = {"frozen": True}
-
     @field_validator("content")
     def content_not_empty(cls, v):
         if v is None or len(str.strip(v)) == 0:

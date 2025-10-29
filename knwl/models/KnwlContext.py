@@ -1,32 +1,31 @@
 from knwl.models import KnwlInput
 from knwl.models.KnwlEdge import KnwlEdge
-from knwl.models.KnwlGragInput import KnwlGragInput
-from knwl.models.KnwlGragReference import KnwlGragReference
+from knwl.models.KnwlReference import KnwlReference
 
 from pydantic import BaseModel, Field
 from typing import List
 
-from knwl.models.KnwlGragText import KnwlGragText
+from knwl.models.KnwlText import KnwlText
 from knwl.models.KnwlNode import KnwlNode
 
 
-class KnwlGragContext(BaseModel):
+class KnwlContext(BaseModel):
     """
     Represents the augmented context based on the knowledge graph for a given input.
     """
 
-    input: str | KnwlGragInput = Field(
+    input: str | KnwlInput = Field(
         description="The original input text or KnwlInput object."
     )
-    texts: List[KnwlGragText] = Field(default_factory=list)
+    texts: List[KnwlText] = Field(default_factory=list)
     nodes: List[KnwlNode] = Field(default_factory=list)
     edges: List[KnwlEdge] = Field(default_factory=list)
-    references: List[KnwlGragReference] = Field(default_factory=list)
+    references: List[KnwlReference] = Field(default_factory=list)
 
     @staticmethod
     def combine(
-        first: "KnwlGragContext", second: "KnwlGragContext"
-    ) -> "KnwlGragContext":
+        first: "KnwlContext", second: "KnwlContext"
+    ) -> "KnwlContext":
         texts = [c for c in first.texts]
         nodes = [n for n in first.nodes]
         edges = [e for e in first.edges]
@@ -53,7 +52,7 @@ class KnwlGragContext(BaseModel):
             if r.id not in reference_ids:
                 references.append(r)
 
-        return KnwlGragContext(
+        return KnwlContext(
             input=first.input,
             texts=texts,
             nodes=nodes,
@@ -62,11 +61,16 @@ class KnwlGragContext(BaseModel):
         )
 
     @staticmethod
-    def empty(input: KnwlGragInput) -> "KnwlGragContext":
-        return KnwlGragContext(
+    def empty(input: KnwlInput) -> "KnwlContext":
+        return KnwlContext(
             input=input,
             texts=[],
             nodes=[],
             edges=[],
             references=[],
         )
+
+    def __repr__(self):
+        return f"<KnwlContext, texts={len(self.texts)}, nodes={len(self.nodes)}, edges={len(self.edges)}, references={len(self.references)}>"
+    def __str__(self):
+        return self.__repr__()

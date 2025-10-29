@@ -7,7 +7,7 @@ from datetime import datetime
 
 class KnwlDocument(BaseModel):
     """
-    A (immutable) class representing a source document.
+    A class representing a source document.
 
     Attributes:
         content (str): The content of the source document.
