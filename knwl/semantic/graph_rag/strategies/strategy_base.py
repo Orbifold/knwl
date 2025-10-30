@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 
-from graspologic import List
 from knwl.models import (
     KnwlEdge,
     KnwlEdge,
@@ -45,7 +44,7 @@ class GragStrategyBase(ABC):
             query_param (QueryParam): An object containing query parameters, including top_k.
 
         Returns:
-            List[KnwlNode] | None: A list of KnwlNode objects if nodes are found, otherwise None.
+            list[KnwlNode] | None: A list of KnwlNode objects if nodes are found, otherwise None.
         """
         if isinstance(input, str):
             input = KnwlInput(text=input, params=GragParams())
@@ -106,7 +105,7 @@ class GragStrategyBase(ABC):
             query (str): The query string used to search for edges.
             query_param (QueryParam): An object containing query parameters, including top_k.
         Returns:
-            List[KnwlEdge] | None: A list of KnwlEdge objects if edges are found, otherwise None.
+            list[KnwlEdge] | None: A list of KnwlEdge objects if edges are found, otherwise None.
         """
         if isinstance(input, str):
             input = KnwlInput(text=input, params=GragParams())
@@ -199,10 +198,10 @@ class GragStrategyBase(ABC):
         Collects edges attached to the given nodes and optionally sorts them by degree and weight in descending order.
 
         Args:
-            nodes (List[KnwlNode]): A list of KnwlNode objects for which to retrieve attached edges.
+            nodes (list[KnwlNode]): A list of KnwlNode objects for which to retrieve attached edges.
 
         Returns:
-            List[KnwlEdge]: A list of KnwlEdge objects attached to the given nodes.
+            list[KnwlEdge]: A list of KnwlEdge objects attached to the given nodes.
         """
         # return await asyncio.gather(*[self.graph_storage.get_node_edges(n.name) for n in nodes])
 
@@ -232,7 +231,7 @@ class GragStrategyBase(ABC):
         One could also count the number of nodes present in a chunk as a measure but the relationship is an even stronger indicator of information.
 
         Args:
-            primary_nodes (List[KnwlNode]): A list of primary nodes to analyze.
+            primary_nodes (list[KnwlNode]): A list of primary nodes to analyze.
 
         Returns:
             dict[str, int]: A dictionary where the keys are chunk Id's and the values are the counts of how many times each chunk appears in the edges.
@@ -270,7 +269,7 @@ class GragStrategyBase(ABC):
         One could also count the number of nodes present in a chunk as a measure but the relationship is an even stronger indicator of information.
 
         Args:
-            edges (List[KnwlEdge]): A list of edges to analyze.
+            edges (list[KnwlEdge]): A list of edges to analyze.
         Returns:
             dict[str, int]: A dictionary where the keys are chunk Id's and the values are the counts of how many times each chunk appears in the edges.
         """
@@ -352,7 +351,7 @@ class GragStrategyBase(ABC):
 
     async def text_from_edges(
         self, edges: list[KnwlEdge], query_param: GragParams
-    ) -> List[KnwlText]:
+    ) -> list[KnwlText]:
 
         if edges is None or not len(edges):
             return []

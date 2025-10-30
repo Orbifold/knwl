@@ -28,13 +28,13 @@ class JsonLLMCache(LLMCacheBase):
         return self.storage.path
 
     async def is_in_cache(
-        self, messages: str | List[str] | List[dict], llm_service: str, llm_model: str
+        self, messages: str | list[str] | list[dict], llm_service: str, llm_model: str
     ) -> bool:
         found = await self.get(messages, llm_service, llm_model)
         return found is not None
 
     async def get(
-        self, messages: str | List[str | List[dict]], llm_service: str, llm_model: str
+        self, messages: str | list[str | list[dict]], llm_service: str, llm_model: str
     ) -> KnwlAnswer | None:
         if isinstance(messages, str):
             messages = [{"role": "user", "content": messages}]

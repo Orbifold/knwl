@@ -24,7 +24,7 @@ def get_endpoint_ids(key: str) -> tuple[str | None, str | None]:
     return found.split(",")[0], found.split(",")[1]
 
 
-def unique_strings(ar: List[str] | List[List[str]]) -> List[str]:
+def unique_strings(ar: list[str] | list[list[str]]) -> list[str]:
     if ar is None:
         return []
     if len(ar) == 0:

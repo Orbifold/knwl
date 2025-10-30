@@ -15,10 +15,10 @@ class KnwlEdge(BaseModel):
     Attributes:
         source_id (str): The Id of the source node.
         target_id (str): The Id of the target node.
-        chunk_ids (List[str]): The IDs of the chunks.
+        chunk_ids (list[str]): The IDs of the chunks.
         weight (float): The weight of the edge.
         description (Optional[str]): A description of the edge.
-        keywords (List[str]): Keywords associated with the edge.
+        keywords (list[str]): Keywords associated with the edge.
         type_name (str): The type name of the edge, default is "KnwlEdge".
         id (str): The unique identifier of the edge, default is a new UUID.
     """

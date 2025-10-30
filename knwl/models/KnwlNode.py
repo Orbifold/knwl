@@ -17,7 +17,7 @@ class KnwlNode(BaseModel):
         type (str): The type of the knowledge node.
         degree (int): The degree of the knowledge node in the graph.
         description (str): A description of the knowledge node.
-        chunk_ids (List[str]): The chunk identifiers associated with the knowledge node.
+        chunk_ids (list[str]): The chunk identifiers associated with the knowledge node.
         type_name (str): The type name of the knowledge node, this is read-only and present for downstream (de)serialization.
         id (str): The unique identifier of the knowledge node, automatically generated based on name and type.
         data (dict): Additional data associated with the knowledge node.
@@ -43,7 +43,7 @@ class KnwlNode(BaseModel):
         default="",
         description="The content or description which normally comes from the extracted text. This can be used for embedding purposes, together with the name and the type",
     )
-    chunk_ids: List[str] = Field(
+    chunk_ids: list[str] = Field(
         default_factory=list,
         description="The chunk identifiers associated with the knowledge node.",
     )

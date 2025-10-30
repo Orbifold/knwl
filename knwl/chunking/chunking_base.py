@@ -1,7 +1,6 @@
 import os
 from pathlib import Path
 from abc import ABC, abstractmethod
-from graspologic import List
 
 from knwl.framework_base import FrameworkBase
 from knwl.models.KnwlChunk import KnwlChunk
@@ -14,7 +13,7 @@ class ChunkingBase(FrameworkBase):
     """
 
     @abstractmethod
-    async def chunk(self, content: str, source_key: str = None) -> List[KnwlChunk]:
+    async def chunk(self, content: str, source_key: str = None) -> list[KnwlChunk]:
         """
         Chunk the content into smaller pieces.
 
@@ -22,7 +21,7 @@ class ChunkingBase(FrameworkBase):
             content (str): The content to be chunked.
             source_key (str, optional): The key of the source document.
         Returns:
-            List[KnwlChunk]: A list of Chunk objects, each containing a portion of the content.
+            list[KnwlChunk]: A list of Chunk objects, each containing a portion of the content.
         """
         ...
 
@@ -34,7 +33,7 @@ class ChunkingBase(FrameworkBase):
             content (str): The string content to be encoded.
             settings.tokenize_model (str, optional): The name of the model to use for encoding. Defaults to "gpt-4o".
         Returns:
-            List[int]: A list of token IDs representing the encoded string.
+            list[int]: A list of token IDs representing the encoded string.
         """
         ...
 

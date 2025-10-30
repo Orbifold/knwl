@@ -11,12 +11,12 @@ class LLMCacheBase(FrameworkBase):
     """
 
     @abstractmethod
-    async def is_in_cache(self, messages: str | List[str] | List[dict], llm_service: str, llm_model: str) -> bool:
+    async def is_in_cache(self, messages: str | list[str] | list[dict], llm_service: str, llm_model: str) -> bool:
         """Check if the given messages are cached for the specified LLM service and model."""
         pass
 
     @abstractmethod
-    async def get(self, messages: str | List[str | List[dict]], llm_service: str, llm_model: str) -> KnwlAnswer | None:
+    async def get(self, messages: str | list[str | list[dict]], llm_service: str, llm_model: str) -> KnwlAnswer | None:
         """Retrieve cached LLM answer for the given messages, service, and model."""
         pass
 
@@ -41,7 +41,7 @@ class LLMCacheBase(FrameworkBase):
         pass
 
     @abstractmethod
-    async def get_by_ids(self, ids: List[str], fields=None):
+    async def get_by_ids(self, ids: list[str], fields=None):
         """Retrieve multiple cached items by their IDs."""
         pass
 

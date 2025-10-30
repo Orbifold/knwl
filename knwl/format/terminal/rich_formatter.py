@@ -153,7 +153,7 @@ class RichFormatter(FormatterBase):
             lines.append(f"• {item}")
         return "\n".join(lines)
     
-    def _format_model_list(self, models: List[BaseModel], **options) -> Table:
+    def _format_model_list(self, models: list[BaseModel], **options) -> Table:
         """Format a list of Pydantic models as a table."""
         if not models:
             return Text("No items", style=self.theme.MUTED)
@@ -263,7 +263,7 @@ class RichFormatter(FormatterBase):
     def create_table(
         self,
         title: Optional[str] = None,
-        columns: Optional[List[str]] = None,
+        columns: Optional[list[str]] = None,
         **kwargs
     ) -> Table:
         """

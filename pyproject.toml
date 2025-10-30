@@ -1,52 +1,30 @@
 [project]
 name = "knwl"
 license = "MIT"
-version = "1.2.0"
-description = "Graph RAG"
+version = "1.2.1"
+description = "A flexible Graph RAG package with advanced ingestion and augmentation strategies."
 authors = [
-    { name = "Swa", email = "swa@orbifold.net" }
+    { name = "Francois Vanderseypen (Orbifold Consulting)", email = "swa@orbifold.net" }
 ]
+
 readme = "README.md"
+
 requires-python = ">=3.10,<3.13"
+
 dependencies = [
     "torch>=2.5.1",
-    "graspologic>=3.4.1",
     "networkx>=3.4.2",
     "transformers>=4.46.1",
     "tiktoken>=0.8.0",
-    "tenacity>=9.0.0",
     "ollama>=0.4.7",
     "openai>=1.53.0",
     "pydantic>=2.0.0",
     "rich>=13.0.0",
-    "chromadb>=1.1.1",
-    "wikipedia>=1.4.0",
-    "typer>=0.19.2",
+    "chromadb>=1.1.1"
 ]
 
-[project.urls]
-Homepage = "https://github.com/Orbifold/knwl"
-Repository = "https://github.com/Orbifold/knwl"
-Documentation = "https://github.com/Orbifold/knwl"
-
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
-    "faker>=30.8.2",
-    "jupyter>=1.1.1",
-    "pytest-cov>=6.0.0",
-    "pytest-mock>=3.14.0",
-    "pytest-asyncio>=0.24.0",
-    "pytest>=8.3.3",
-    "beautifulsoup4>=4.14.2",
-]
-
-
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[tool.uv]
-dev-dependencies = [
     "faker>=30.8.2",
     "jupyter>=1.1.1",
     "pytest-cov>=6.0.0",
@@ -55,3 +33,13 @@ dev-dependencies = [
     "pytest>=8.3.3",
     "wikipedia-api>=0.8.1",
 ]
+
+[project.urls]
+Homepage = "https://github.com/Orbifold/knwl"
+Repository = "https://github.com/Orbifold/knwl"
+Documentation = "https://github.com/Orbifold/knwl"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+

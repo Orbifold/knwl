@@ -181,7 +181,7 @@ generator: Knwl Framework
         """Create a Markdown heading."""
         return f"{'#' * level} {text}\n"
     
-    def create_table(self, headers: List[str], rows: List[List[str]]) -> str:
+    def create_table(self, headers: list[str], rows: list[list[str]]) -> str:
         """Create a Markdown table."""
         lines = []
         

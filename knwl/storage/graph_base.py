@@ -70,7 +70,7 @@ class GraphStorageBase(StorageBase, ABC):
             node_name (str): The name of the node to retrieve.
 
         Returns:
-            List[dict] | None: Since the name is not unique and can appear with different semantic types (e.g. Apple as fruit and as company), a list of dictionaries is returned if found, None otherwise.
+            list[dict] | None: Since the name is not unique and can appear with different semantic types (e.g. Apple as fruit and as company), a list of dictionaries is returned if found, None otherwise.
 
         """
         ...
@@ -134,7 +134,7 @@ class GraphStorageBase(StorageBase, ABC):
             source_node_id (str): The ID of the source node.
 
         Returns:
-            List[dict] | None: A list of edge objects if the node exists, None otherwise.
+            list[dict] | None: A list of edge objects if the node exists, None otherwise.
         """
         ...
 
@@ -144,10 +144,10 @@ class GraphStorageBase(StorageBase, ABC):
         Asynchronously retrieves the edges attached to the given nodes.
 
         Args:
-            nodes (List[KnwlNode]): A list of KnwlNode objects for which to retrieve attached edges.
+            nodes (list[KnwlNode]): A list of KnwlNode objects for which to retrieve attached edges.
 
         Returns:
-            List[KnwlEdge]: A list of KnwlEdge objects attached to the given nodes.
+            list[KnwlEdge]: A list of KnwlEdge objects attached to the given nodes.
         """
         ...
 
@@ -157,10 +157,10 @@ class GraphStorageBase(StorageBase, ABC):
         Asynchronously retrieves the degrees of the given edges.
 
         Args:
-            edges (List[KnwlEdge]): A list of KnwlEdge objects for which to retrieve degrees.
+            edges (list[KnwlEdge]): A list of KnwlEdge objects for which to retrieve degrees.
 
         Returns:
-            List[int]: A list of degrees for the given edges.
+            list[int]: A list of degrees for the given edges.
         """
         ...
 
@@ -180,7 +180,7 @@ class GraphStorageBase(StorageBase, ABC):
         `
 
         Args:
-            edge_ids (List[str]): A list of node IDs for which to retrieve names.
+            edge_ids (list[str]): A list of node IDs for which to retrieve names.
         """
         ...
 

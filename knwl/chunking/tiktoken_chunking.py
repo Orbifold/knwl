@@ -39,7 +39,7 @@ class TiktokenChunking(ChunkingBase):
             content (str): The string content to be encoded.
             settings.tokenize_model (str, optional): The name of the model to use for encoding. Defaults to "gpt-4o".
         Returns:
-            List[int]: A list of token IDs representing the encoded string.
+            list[int]: A list of token IDs representing the encoded string.
         """
         self.ensure_encoder()
         tokens = self._encoder.encode(content)
@@ -71,7 +71,7 @@ class TiktokenChunking(ChunkingBase):
         if self._encoder is None:
             self._encoder = tiktoken.encoding_for_model(self._model)
 
-    async def chunk(self, content: str, source_key: str = None) -> List[KnwlChunk]:
+    async def chunk(self, content: str, source_key: str = None) -> list[KnwlChunk]:
         tokens = await self.encode(content)
         results = []
         for index, start in enumerate(

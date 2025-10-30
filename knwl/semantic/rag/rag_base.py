@@ -94,7 +94,7 @@ class RagBase(FrameworkBase, ABC):
             top_k (int): The number of top results to return.
 
         Returns:
-            List[KnwlChunk]: A list of the nearest chunks.
+            list[KnwlChunk]: A list of the nearest chunks.
         """
         ...
 

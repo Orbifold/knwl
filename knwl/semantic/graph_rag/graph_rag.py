@@ -382,12 +382,12 @@ class GraphRAG(GraphRAGBase):
                     f"GraphRAG: provided ragger of type '{type(self.ragger)}' is not supported."
                 )
 
-    async def save_sources(self, sources: List[KnwlDocument]) -> bool:
+    async def save_sources(self, sources: list[KnwlDocument]) -> bool:
         for source in sources:
             await self.ragger.upsert_document(source)
         return True
 
-    async def save_chunks(self, chunks: List[KnwlChunk]) -> bool:
+    async def save_chunks(self, chunks: list[KnwlChunk]) -> bool:
         for chunk in chunks:
             await self.ragger.upsert_chunk(chunk)
         return True

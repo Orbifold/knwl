@@ -40,7 +40,7 @@ class LLMBase(FrameworkBase, ABC):
         ...
 
     @abstractmethod
-    async def is_cached(self, messages: str | List[str] | List[dict]) -> bool:
+    async def is_cached(self, messages: str | list[str] | list[dict]) -> bool:
         ...
 
     def get_caching_service(
@@ -61,7 +61,7 @@ class LLMBase(FrameworkBase, ABC):
     @staticmethod
     def assemble_messages(
         user_message: str, system_message=None, extra_messages=None
-    ) -> List[dict]:
+    ) -> list[dict]:
         if user_message is None or user_message.strip() == "":
             raise ValueError("user_message cannot be None or empty.")
         if extra_messages is None:

@@ -17,9 +17,9 @@ class KnwlExtraction(BaseModel):
 
     Attributes
     ----------
-    nodes : dict[str, List[KnwlNode]]
+    nodes : dict[str, list[KnwlNode]]
         A dictionary where the keys are names of entities and the values are lists of KnwlNode objects. These can have different types and descriptions.
-    edges : dict[str, List[KnwlEdge]]
+    edges : dict[str, list[KnwlEdge]]
         A dictionary where the keys are strings and the values are lists of KnwlEdge objects.
         Note that the key is the tuple of endpoints sorted in ascending order.
         The KG is undirected and the key is used to ensure that the same edge is not added twice.
@@ -30,9 +30,9 @@ class KnwlExtraction(BaseModel):
 
     """
 
-    nodes: dict[str, List[KnwlNode]]
-    edges: dict[str, List[KnwlEdge]]
-    keywords: List[str] = Field(default_factory=list)
+    nodes: dict[str, list[KnwlNode]]
+    edges: dict[str, list[KnwlEdge]]
+    keywords: list[str] = Field(default_factory=list)
     typeName: str = "KnwlExtraction"
     id: str = Field(default_factory=lambda: str(uuid4()))
 
@@ -73,34 +73,34 @@ class KnwlExtraction(BaseModel):
                     new_edges[edge] = self.edges[edge]
         self.edges = new_edges
 
-    def get_node_ids(self) -> List[str]:
+    def get_node_ids(self) -> list[str]:
         coll = []
         for k in self.nodes.keys():
             for n in self.nodes[k]:
                 coll.append(n.id)
         return coll
 
-    def get_edge_ids(self) -> List[str]:
+    def get_edge_ids(self) -> list[str]:
         coll = []
         for k in self.edges.keys():
             for e in self.edges[k]:
                 coll.append(e.id)
         return coll
 
-    def get_node_keys(self) -> List[str]:
+    def get_node_keys(self) -> list[str]:
         return list(self.nodes.keys())
 
-    def get_edge_keys(self) -> List[str]:
+    def get_edge_keys(self) -> list[str]:
         return list(self.edges.keys())
 
-    def get_all_node_types(self) -> List[str]:
+    def get_all_node_types(self) -> list[str]:
         types = set()
         for k in self.nodes.keys():
             for n in self.nodes[k]:
                 types.add(n.type)
         return list(types)
 
-    def get_all_edge_types(self) -> List[str]:
+    def get_all_edge_types(self) -> list[str]:
         types = set()
         for k in self.edges.keys():
             for e in self.edges[k]:
@@ -108,7 +108,7 @@ class KnwlExtraction(BaseModel):
                     types.add(t)
         return list(types)
 
-    def get_name_by_type(self, entity_type: str) -> List[str]:
+    def get_name_by_type(self, entity_type: str) -> list[str]:
         """Get all nodes of a specific type."""
         coll = set()
         for k in self.nodes.keys():

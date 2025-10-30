@@ -375,10 +375,10 @@ class SemanticGraph(SemanticGraphBase):
         Retrieve the edges attached to the given nodes.
 
         Args:
-            nodes (List[KnwlNode]): A list of KnwlNode objects for which to retrieve attached edges.
+            nodes (list[KnwlNode]): A list of KnwlNode objects for which to retrieve attached edges.
 
         Returns:
-            List[KnwlEdge]: A list of KnwlEdge objects attached to the given nodes.
+            list[KnwlEdge]: A list of KnwlEdge objects attached to the given nodes.
         """
         if nodes is None:
             raise ValueError("get_attached_edges: parameter is None")

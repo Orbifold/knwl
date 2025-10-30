@@ -93,7 +93,7 @@ class DIContainer:
     def register_config_injection(
         self,
         func_name: str,
-        config_mapping: Union[Dict[str, str], List[str]],
+        config_mapping: Union[Dict[str, str], list[str]],
         param_name: Optional[str] = None,
         override: Optional[Dict] = None,
     ):
@@ -483,7 +483,7 @@ def singleton_service(
 
 
 def inject_config(
-    config_keys_or_mapping: Union[str, Dict[str, str], List[str]],
+    config_keys_or_mapping: Union[str, Dict[str, str], list[str]],
     *additional_config_keys: str,
     param_name: Optional[str] = None,
     override: Optional[Dict] = None,

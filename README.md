@@ -1,6 +1,6 @@
 # KNWL
 
-A lightweight, protocol-based Graph RAG Python package with semantic search, classic RAG, and advanced graph-based retrieval strategies.
+A flexible Graph RAG package with advanced ingestion and augmentation strategies.
 
 ## Features
 

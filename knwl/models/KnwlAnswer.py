@@ -13,7 +13,7 @@ class KnwlAnswer(BaseModel):
     ID based on the messages, service, and model used.
 
     Attributes:
-        messages (List[dict]): The conversation messages exchanged with the LLM.
+        messages (list[dict]): The conversation messages exchanged with the LLM.
         llm_model (str): The specific LLM model used (default: "qwen2.5:14b").
         llm_service (str): The LLM service provider (default: "ollama").
         answer (str): The generated response from the LLM.
@@ -49,7 +49,7 @@ class KnwlAnswer(BaseModel):
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
     """
-    messages: List[dict] = Field(default_factory=list)
+    messages: list[dict] = Field(default_factory=list)
     llm_model: str = Field(default="qwen2.5:14b")
     llm_service: str = Field(default="ollama")
     answer: str = Field(default="")
@@ -69,7 +69,7 @@ class KnwlAnswer(BaseModel):
         return self
 
     @staticmethod
-    def hash_keys(messages: List[dict], llm_service: str, llm_model: str) -> str:
+    def hash_keys(messages: list[dict], llm_service: str, llm_model: str) -> str:
         return hash_with_prefix(str(messages) + llm_service + llm_model, prefix="answer|>")
 
     def __repr__(self):

@@ -389,7 +389,7 @@ class NetworkXGraphStorage(GraphStorageBase):
         else:
             return None
 
-    async def get_node_by_name(self, node_name: str) -> Union[List[dict], None]:
+    async def get_node_by_name(self, node_name: str) -> Union[list[dict], None]:
         found = []
         for node_id in self.graph.nodes:
             node = self.graph.nodes[node_id]
@@ -438,22 +438,22 @@ class NetworkXGraphStorage(GraphStorageBase):
             source_node_id (str): The ID of the source node.
 
         Returns:
-            List[BaseModel] | None: A list of BaseModel objects if the node exists, None otherwise.
+            list[BaseModel] | None: A list of BaseModel objects if the node exists, None otherwise.
         """
         if await self.node_exists(source_node_id):
             es = list(self.graph.edges(source_node_id, data=True))
             return [self.to_edge(e) for e in es]
         return None
 
-    async def get_attached_edges(self, nodes: List[str]) -> List[dict]:
+    async def get_attached_edges(self, nodes: list[str]) -> list[dict]:
         """
         Asynchronously retrieves the edges attached to the given nodes.
 
         Args:
-            nodes (List[BaseModel]): A list of BaseModel objects for which to retrieve attached edges.
+            nodes (list[BaseModel]): A list of BaseModel objects for which to retrieve attached edges.
 
         Returns:
-            List[BaseModel]: A list of BaseModel objects attached to the given nodes.
+            list[BaseModel]: A list of BaseModel objects attached to the given nodes.
         """
         # return await asyncio.gather(*[self.graph_storage.get_node_edges(n.name) for n in nodes])
         edges = []
@@ -463,27 +463,27 @@ class NetworkXGraphStorage(GraphStorageBase):
             edges.extend([e for e in n_edges if e is not None and e["id"] not in [ee["id"] for ee in edges]])
         return edges
 
-    async def get_edge_degrees(self, edges: List[dict]) -> List[int]:
+    async def get_edge_degrees(self, edges: list[dict]) -> list[int]:
         """
         Asynchronously retrieves the degrees of the given edges.
 
         Args:
-            edges (List[BaseModel]): A list of BaseModel objects for which to retrieve degrees.
+            edges (list[BaseModel]): A list of BaseModel objects for which to retrieve degrees.
 
         Returns:
-            List[int]: A list of degrees for the given edges.
+            list[int]: A list of degrees for the given edges.
         """
         return await asyncio.gather(*[self.edge_degree(e.source_id, e.target_id) for e in edges])
 
-    async def get_semantic_endpoints(self, edge_ids: List[str]) -> dict[str, tuple[str, str]]:
+    async def get_semantic_endpoints(self, edge_ids: list[str]) -> dict[str, tuple[str, str]]:
         """
         Asynchronously retrieves the names of the nodes with the given IDs.
 
         Args:
-            edge_ids (List[str]): A list of node IDs for which to retrieve names.
+            edge_ids (list[str]): A list of node IDs for which to retrieve names.
 
         Returns:
-            List[str]: A list of node names.
+            list[str]: A list of node names.
         """
         edges = await asyncio.gather(*[self.get_edge_by_id(id) for id in edge_ids])
         coll = {}

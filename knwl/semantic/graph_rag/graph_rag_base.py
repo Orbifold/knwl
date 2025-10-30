@@ -21,7 +21,7 @@ class GraphRAGBase(FrameworkBase, ABC):
     async def embed_edge(self, edge: KnwlEdge) -> KnwlEdge | None: ...
 
     @abstractmethod
-    async def embed_edges(self, edges: List[KnwlEdge]) -> List[KnwlEdge]: ...
+    async def embed_edges(self, edges: list[KnwlEdge]) -> list[KnwlEdge]: ...
 
     @abstractmethod
     async def ingest(self, input: str | KnwlInput | KnwlDocument) -> KnwlGraph | None:
@@ -104,26 +104,26 @@ class GraphRAGBase(FrameworkBase, ABC):
         ...
 
     @abstractmethod
-    async def get_attached_edges(self, nodes: List[KnwlNode]) -> List[KnwlEdge]:
+    async def get_attached_edges(self, nodes: list[KnwlNode]) -> list[KnwlEdge]:
         """
         Retrieve the edges attached to the given nodes.
 
         Args:
-            nodes (List[KnwlNode]): A list of KnwlNode objects for which to retrieve attached edges.
+            nodes (list[KnwlNode]): A list of KnwlNode objects for which to retrieve attached edges.
 
         Returns:
-            List[KnwlEdge]: A list of KnwlEdge objects attached to the given nodes.
+            list[KnwlEdge]: A list of KnwlEdge objects attached to the given nodes.
         """
         ...
 
     @abstractmethod
-    async def save_sources(self, sources: List[KnwlDocument]) -> bool:
+    async def save_sources(self, sources: list[KnwlDocument]) -> bool:
         """
         Save the source documents used for ingestion.
         This is important for traceability and reference but implementation is optional if this operates within a broader system that already manages documents (workflow).
 
         Args:
-            sources (List[KnwlDocument]): A list of KnwlDocument objects representing the source documents.
+            sources (list[KnwlDocument]): A list of KnwlDocument objects representing the source documents.
 
         Returns:
             bool: True if the sources were saved successfully, False otherwise.
@@ -131,13 +131,13 @@ class GraphRAGBase(FrameworkBase, ABC):
         ...
 
     @abstractmethod
-    async def save_chunks(self, chunks: List[KnwlChunk]) -> bool:
+    async def save_chunks(self, chunks: list[KnwlChunk]) -> bool:
         """
         Save the chunks generated during ingestion.
         This is important for traceability and reference but implementation is optional if this operates within a broader system that already manages text chunks (workflow).
 
         Args:
-            chunks (List[KnwlChunk]): A list of KnwlChunk objects representing the text chunks.
+            chunks (list[KnwlChunk]): A list of KnwlChunk objects representing the text chunks.
 
         Returns:
             bool: True if the chunks were saved successfully, False otherwise.

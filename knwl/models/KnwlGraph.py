@@ -15,9 +15,9 @@ class KnwlGraph(BaseModel):
 
     """
 
-    nodes: List[KnwlNode]
-    edges: List[KnwlEdge]
-    keywords: List[str] = Field(default_factory=list)
+    nodes: list[KnwlNode]
+    edges: list[KnwlEdge]
+    keywords: list[str] = Field(default_factory=list)
     type_name: str = Field(
         default="KnwlGraph",
         frozen=True,
@@ -42,19 +42,19 @@ class KnwlGraph(BaseModel):
 
         return None
 
-    def get_node_ids(self) -> List[str]:
+    def get_node_ids(self) -> list[str]:
         return [node.id for node in self.nodes]
 
-    def get_edge_ids(self) -> List[str]:
+    def get_edge_ids(self) -> list[str]:
         return [edge.id for edge in self.edges]
 
-    def get_node_names(self) -> List[str]:
+    def get_node_names(self) -> list[str]:
         return [node.name for node in self.nodes]
 
-    def get_node_types(self) -> List[str]:
+    def get_node_types(self) -> list[str]:
         return [node.type for node in self.nodes]
 
-    def get_node_descriptions(self) -> List[str]:
+    def get_node_descriptions(self) -> list[str]:
         return [node.description for node in self.nodes]
 
     def get_node_by_id(self, id: str) -> KnwlNode | None:

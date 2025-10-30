@@ -17,10 +17,10 @@ class KnwlContext(BaseModel):
     input: str | KnwlInput = Field(
         description="The original input text or KnwlInput object."
     )
-    texts: List[KnwlText] = Field(default_factory=list)
-    nodes: List[KnwlNode] = Field(default_factory=list)
-    edges: List[KnwlEdge] = Field(default_factory=list)
-    references: List[KnwlReference] = Field(default_factory=list)
+    texts: list[KnwlText] = Field(default_factory=list)
+    nodes: list[KnwlNode] = Field(default_factory=list)
+    edges: list[KnwlEdge] = Field(default_factory=list)
+    references: list[KnwlReference] = Field(default_factory=list)
 
     @staticmethod
     def combine(

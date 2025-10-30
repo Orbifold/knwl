@@ -1,7 +1,6 @@
 import os
 from pathlib import Path
 from abc import ABC, abstractmethod
-from graspologic import List
 
 from knwl.framework_base import FrameworkBase
 from knwl.models.KnwlChunk import KnwlChunk

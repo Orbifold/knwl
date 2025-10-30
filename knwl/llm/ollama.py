@@ -81,7 +81,7 @@ class OllamaClient(LLMBase):
             await self._caching_service.upsert(answer)
         return answer
 
-    async def is_cached(self, messages: str | List[str] | List[dict]) -> bool:
+    async def is_cached(self, messages: str | list[str] | list[dict]) -> bool:
         if self.caching_service is None:
             return False
         return await self._caching_service.is_in_cache(messages, "ollama", self._model)
