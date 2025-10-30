@@ -11,7 +11,7 @@ class Log(FrameworkBase):
         config = kwargs.get("override", None)
         self.enabled = self.get_param(["logging", "enabled"], args, kwargs, default=True, override=config)
         self.logging_level = self.get_param(["logging", "level"], args, kwargs, default="INFO", override=config)
-        self.path = self.get_param(["logging", "path"], args, kwargs, default="$root/knwl.log", override=config)
+        self.path = self.get_param(["logging", "path"], args, kwargs, default="$/user/default/knwl.log", override=config)
         self.path = get_full_path(self.path)
 
         # Initialize logger

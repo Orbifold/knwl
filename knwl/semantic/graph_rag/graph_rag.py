@@ -6,7 +6,7 @@ from knwl.extraction.graph_extraction_base import GraphExtractionBase
 from knwl.extraction.keywords_extraction_base import KeywordsExtractionBase
 from knwl.logging import log
 from knwl.models import (
-    GragParams,
+    KnwlParams,
     KnwlContext,
     KnwlGraph,
     KnwlInput,
@@ -24,6 +24,7 @@ from knwl.semantic.graph_rag.strategies.global_strategy import GlobalGragStrateg
 from knwl.semantic.graph_rag.strategies.hybrid_strategy import HybridGragStrategy
 from knwl.semantic.graph_rag.strategies.local_strategy import LocalGragStrategy
 from knwl.semantic.graph_rag.strategies.naive_strategy import NaiveGragStrategy
+from knwl.semantic.graph_rag.strategies.self_strategy import SelfGragStrategy
 from knwl.semantic.graph_rag.strategies.strategy_base import GragStrategyBase
 from knwl.semantic.rag.rag_base import RagBase
 
@@ -271,7 +272,7 @@ class GraphRAG(GraphRAGBase):
         return result
 
     async def augment(
-        self, input: str | KnwlInput , params: GragParams = None
+        self, input: str | KnwlInput , params: KnwlParams = None
     ) -> KnwlContext | None:
         """
         Retrieve context from the knowledge graph and augment the input text.
@@ -279,7 +280,7 @@ class GraphRAG(GraphRAGBase):
         """
 
         if params is None:
-            query_params = GragParams()
+            query_params = KnwlParams()
         if isinstance(input, str):
             grag_input = KnwlInput(text=input, params=query_params)
         elif isinstance(input, KnwlInput):
@@ -308,11 +309,13 @@ class GraphRAG(GraphRAGBase):
             return HybridGragStrategy(self)
         elif mode == "global":
             return GlobalGragStrategy(self)
+        elif mode == "none" or mode == "self":
+            return SelfGragStrategy(self)
         else:
             raise ValueError(f"GraphRAG: Unknown strategy mode '{mode}'.")
 
     async def nearest_nodes(
-        self, query: str, params: GragParams
+        self, query: str, params: KnwlParams
     ) -> list[KnwlNode] | None:
         """
         Query nodes from the knowledge graph based on the input query and parameters.
@@ -326,7 +329,7 @@ class GraphRAG(GraphRAGBase):
         return await self.semantic_graph.get_node_by_id(id)
 
     async def nearest_edges(
-        self, query: str, params: GragParams
+        self, query: str, params: KnwlParams
     ) -> list[KnwlEdge] | None:
         """
         Query edges from the knowledge graph based on the input query and parameters.
@@ -393,7 +396,7 @@ class GraphRAG(GraphRAGBase):
         return True
 
     async def nearest_chunks(
-        self, query: str, query_param: GragParams
+        self, query: str, query_param: KnwlParams
     ) -> list[KnwlChunk] | None:
         """
         Query chunks based on the input query and parameters.

@@ -20,7 +20,7 @@ Hierarchical dictionary with **service variants** enabling runtime component swa
 
 **Key features:**
 - **Cross-references**: `"@/llm/ollama"` resolves to config at `llm.ollama`
-- **Path placeholders**: `$root` (project root), `$test` (tests/data), `$data` expand dynamically
+- **Path placeholders**: `$root` (project root), `$/tests` (tests/data), `$/data` expand dynamically
 - **Deep merge**: `override` parameter merges recursively, doesn't replace entire sections
 - Access via `get_config("llm", "model", override={...})`
 

@@ -8,7 +8,7 @@ from knwl.models import (
     KnwlText,
     KnwlNode,
 )
-from knwl.models.GragParams import GragParams
+from knwl.models.KnwlParams import KnwlParams
 from knwl.models.KnwlChunk import KnwlChunk
 from knwl.models.KnwlContext import KnwlContext
 from knwl.models.KnwlNode import KnwlNode
@@ -47,7 +47,7 @@ class GragStrategyBase(ABC):
             list[KnwlNode] | None: A list of KnwlNode objects if nodes are found, otherwise None.
         """
         if isinstance(input, str):
-            input = KnwlInput(text=input, params=GragParams())
+            input = KnwlInput(text=input, params=KnwlParams())
         query = input.text
         # node rag: get top-k nodes
         found = await self.grag.nearest_nodes(query, input.params)
@@ -108,7 +108,7 @@ class GragStrategyBase(ABC):
             list[KnwlEdge] | None: A list of KnwlEdge objects if edges are found, otherwise None.
         """
         if isinstance(input, str):
-            input = KnwlInput(text=input, params=GragParams())
+            input = KnwlInput(text=input, params=KnwlParams())
         query = input.text
         # edge rag: get top-k nodes
         edges: list[KnwlEdge] = await self.grag.nearest_edges(
@@ -280,7 +280,7 @@ class GragStrategyBase(ABC):
         return stats
 
     async def texts_from_nodes(
-        self, nodes: list[KnwlNode], params: GragParams
+        self, nodes: list[KnwlNode], params: KnwlParams
     ) -> list[KnwlText]:
         """
         Returns the most relevant paragraphs based on the given nodes.
@@ -350,7 +350,7 @@ class GragStrategyBase(ABC):
         return refs
 
     async def text_from_edges(
-        self, edges: list[KnwlEdge], query_param: GragParams
+        self, edges: list[KnwlEdge], query_param: KnwlParams
     ) -> list[KnwlText]:
 
         if edges is None or not len(edges):
@@ -370,7 +370,7 @@ class GragStrategyBase(ABC):
         return coll
     
     async def texts_from_chunks(
-        self, chunks: list[KnwlChunk], params: GragParams
+        self, chunks: list[KnwlChunk], params: KnwlParams
     ) -> list[KnwlText]:
         """
         Converts a list of KnwlChunk objects to KnwlGragText objects.

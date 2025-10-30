@@ -10,7 +10,7 @@ pytestmark = pytest.mark.basic
 @pytest.mark.asyncio
 async def test_file_storage_upsert_get_delete():
     # Setup
-    storage = FileStorage(base_path="$test/file_storage")
+    storage = FileStorage(base_path="$/tests/file_storage")
     blob = KnwlBlob(
         id="test_blob",
         data=b"Much ado about nothing.",

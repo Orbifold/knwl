@@ -69,6 +69,19 @@ class KnwlAnswer(BaseModel):
         return self
 
     @staticmethod
+    def none() -> "KnwlAnswer":
+        return KnwlAnswer(
+            answer="I don't know.",
+            messages=[],
+            llm_model="",
+            llm_service="",
+            timing=0.0,
+            key="",
+            category="",
+            question="",
+            from_cache=False,
+        )
+    @staticmethod
     def hash_keys(messages: list[dict], llm_service: str, llm_model: str) -> str:
         return hash_with_prefix(str(messages) + llm_service + llm_model, prefix="answer|>")
 

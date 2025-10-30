@@ -1,5 +1,6 @@
 import pytest
 from knwl.config import get_config, merge_configs
+from knwl.config import resolve_reference, resolve_config
 
 pytestmark = pytest.mark.basic
 
@@ -21,7 +22,7 @@ def test_config_get():
     assert get_config("llm", "ollama", "temperature") == 0.1
     assert get_config("llm", "ollama", "context_window") == 32768
     assert get_config("llm", "ollama", "caching_service") == "@/llm_caching/json"
-    assert get_config("llm_caching", "json", "path") == "$test/llm.json"
+    assert get_config("llm_caching", "json", "path") == "$/tests/llm.json"
     assert get_config("nonexistent", default="default_value") == "default_value"
     assert get_config("llm", "nonexistent", default={"key": "value"}) == {
         "key": "value"
@@ -86,3 +87,37 @@ def test_config_merge():
     }
     result = get_config("llm", "openai", "caching_service", override=config)
     assert result == "@/llm_caching/special"
+
+
+def test_resolve_reference():
+
+    config = {
+        "klm": {"default": "a", "a": {"u": 4, "v": 5, "w": 6}},
+        "abc": {"default": "b", "b": {"z": "@/klm"}, "c": {"y": "@/klm/a/u"}},
+    }
+    result = resolve_reference("@/abc/b/z", override=config)
+    assert result == {"u": 4, "v": 5, "w": 6}
+
+    result = resolve_reference("@/abc/c/y", override=config)
+    assert result == 4
+
+    result = resolve_reference("@/klm", override=config)
+    assert result == {"u": 4, "v": 5, "w": 6}
+
+    result = resolve_reference("@/abc/c", override=config)
+    assert result == {"y": 4}
+
+
+def test_resolve_config():
+    config = {
+        "klm": {"default": "a", "a": {"u": 4, "v": 5, "w": 6}},
+        "abc": {"default": "b", "b": {"z": "@/klm"}, "c": {"y": "@/klm/a/u"}},
+    }
+    result = resolve_config("abc", override=config)
+    assert result == {"z": {"u": 4, "v": 5, "w": 6}}
+
+    result = resolve_config("klm", override=config)
+    assert result == {"u": 4, "v": 5, "w": 6}
+
+    result = resolve_config("@/abc/c", override=config)
+    assert result == {"y": 4}

@@ -25,7 +25,7 @@ class FileStorage(BlobStorageBase, ABC):
     def __init__(self, base_path: Optional[str] = None):
         super().__init__()
 
-        self.base_path = get_full_path(base_path or "$data/files")
+        self.base_path = get_full_path(base_path or "$/data/files")
 
     async def upsert(self, blob: KnwlBlob) -> str | None:
         """

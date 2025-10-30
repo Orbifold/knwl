@@ -104,7 +104,7 @@ print(html)
 
 # Save to file
 print("\n--- Saving to HTML file ---")
-output_file = get_full_path("$test/knwl_node.html")
+output_file = get_full_path("$/tests/knwl_node.html")
 render_knwl(
     node,
     format_type="html",
@@ -129,7 +129,7 @@ document = KnwlDocument(
 md = format_knwl(document, format_type="markdown")
 print(md)
 
-output_file = get_full_path("$test/knwl_document.md")
+output_file = get_full_path("$/tests/knwl_document.md")
 render_knwl(
     document,
     format_type="markdown",

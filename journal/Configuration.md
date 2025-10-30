@@ -108,3 +108,36 @@ More concretely, you will see that the default graph RAG service is configured l
 
 The syntax `@/semantic_graph/memory` tells Knwl to use the configuration defined for the `memory` variant of the `semantic_graph` service. This allows for consistent configuration across different services without duplication.
 If there is no variant specified, Knwl will use the default variant for that service. The `@/rag_store` in the example above will resolve to the default variant of the `rag_store` service.
+
+# Print
+
+The `print_knwl` function is a generic printing utility for various Knwl objects. It also allows to print configuration details of services. For example, to print the configuration of the chunking service, you can do:
+
+```python
+from knwl import print_knwl
+print_knwl("@/chunking")
+```
+
+or the default Ollama model:
+
+```python
+print_knwl("@/llm/ollama/model")
+```
+
+The configuration can contains redirections but the print will resolve them for clarity.
+
+There are special paths in Knwl that can be used to reference different directories. These paths are prefixed with `$` and are resolved to specific locations in the file system. The special paths include:
+
+- `$/data`: This path points to the `data` directory within the Knwl project. It is typically used to store datasets or other data files required by Knwl.
+- `$/root`: This path points to the root directory of the Knwl project. It can be used to reference files or directories located at the top level of the Knwl project.
+- `$/user`: This path points to a user-specific directory, typically located in the user's home directory. It is used to store user-specific configurations or data related to Knwl.
+- `$/tests`: This path points to the `tests/data` directory within the Knwl project. It is used to store test datasets or files required for testing Knwl functionalities.
+  These special paths can be used in configuration files or code to easily reference important directories without hardcoding absolute paths. The Knwl utility functions will resolve these paths to their actual locations when needed.
+
+You can test the special paths using the `print_knwl` function like so:
+
+```python
+print_knwl("$/user/abc")
+print_knwl("$/data/xyz")
+print_knwl("$/tests/xyz")
+```

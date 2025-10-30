@@ -3,7 +3,7 @@ import pytest
 
 from knwl import services
 from knwl.format import print_knwl
-from knwl.models import GragParams, KnwlDocument, KnwlContext, KnwlInput
+from knwl.models import KnwlParams, KnwlDocument, KnwlContext, KnwlInput
 from knwl.semantic.graph_rag.graph_rag import GraphRAG
 from knwl.semantic.graph_rag.strategies.local_strategy import LocalGragStrategy
 from knwl.utils import get_full_path
@@ -44,7 +44,7 @@ async def test_from_article():
         text="What was the contribution of Dennis Sullivan in topology?",
         name="Test Query",
         description="A test query for topology concepts.",
-        params=GragParams(
+        params=KnwlParams(
             strategy="local",
             return_chunks=True,
         ),

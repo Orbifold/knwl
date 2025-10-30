@@ -3,7 +3,7 @@ import pytest
 
 from knwl import services
 from knwl.format import print_knwl
-from knwl.models import GragParams, KnwlDocument, KnwlContext, KnwlInput
+from knwl.models import KnwlParams, KnwlDocument, KnwlContext, KnwlInput
 from knwl.semantic.graph_rag.graph_rag import GraphRAG
 from knwl.semantic.graph_rag.strategies.naive_strategy import NaiveGragStrategy
 from knwl.utils import get_full_path
@@ -22,7 +22,7 @@ async def test_naive_augmentation():
         text="Explain the concept of homeomorphism in topology.",
         name="Test Query",
         description="A test query for topology concepts.",
-        params=GragParams(strategy="naive"),
+        params=KnwlParams(strategy="naive"),
     )
     found = await grag.augment(input)
     print("")
@@ -80,7 +80,7 @@ async def test_naive_augmentation():
         text="Explain the concept of homeomorphism in topology.",
         name="Test Query",
         description="A test query for topology concepts.",
-        params=GragParams(strategy="naive", return_chunks=True),
+        params=KnwlParams(strategy="naive", return_chunks=True),
     )
     found = await grag.augment(input)
     print("")
@@ -112,7 +112,7 @@ async def test_naive_strategy_augment_with_no_results():
         text="A completely unrelated query that should find nothing",
         name="Empty Query",
         description="Test query that should return no results.",
-        params=GragParams(strategy="naive", limit=5),
+        params=KnwlParams(strategy="naive", limit=5),
     )
 
     context = await strategy.augment(input)
@@ -138,7 +138,7 @@ async def test_naive_strategy_augment_with_results():
         text="topology",
         name="Test Query",
         description="Simple test query.",
-        params=GragParams(strategy="naive", top_k=3),
+        params=KnwlParams(strategy="naive", top_k=3),
     )
 
     context = await strategy.augment(input)
@@ -171,7 +171,7 @@ async def test_naive_strategy_respects_limit_param():
         text="topology mathematics",
         name="Limited Query",
         description="Test query with limit.",
-        params=GragParams(strategy="naive", top_k=2),
+        params=KnwlParams(strategy="naive", top_k=2),
     )
 
     context = await strategy.augment(input)

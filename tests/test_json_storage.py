@@ -38,7 +38,7 @@ async def test_all_keys(test_store):
 @pytest.mark.asyncio
 async def test_save_somewhere():
 
-    storage = JsonStorage(f"$test/{fake.word()}.json")
+    storage = JsonStorage(f"$/tests/{fake.word()}.json")
     data = {"key1": {"value": "data1"}}
     await storage.upsert(data)
     await storage.save()

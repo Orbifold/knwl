@@ -2,7 +2,7 @@ from typing import List
 
 from knwl.logging import log
 from knwl.models import (
-    GragParams,
+    KnwlParams,
     KnwlEdge,
     KnwlContext,
     KnwlNode,

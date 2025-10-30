@@ -38,14 +38,14 @@ async def test_basic_ask():
     # let's change the default caching path
     # note that only the overrides are passed, the rest is taken from default_config
     file_name = fake.word()
-    config = {"llm_caching": {"json": {"path": f"$test/{file_name}.json"}}}
+    config = {"llm_caching": {"json": {"path": f"$/tests/{file_name}.json"}}}
     llm = services.get_service("llm", "ollama", override=config)
     resp = await llm.ask("Hello")
     assert resp is not None
     assert isinstance(resp, KnwlAnswer)
 
     assert await llm.is_cached("Hello") is True
-    file_path = get_full_path(f"$test/{file_name}.json")
+    file_path = get_full_path(f"$/tests/{file_name}.json")
     assert os.path.exists(file_path)
     print("")
     print(resp.answer)

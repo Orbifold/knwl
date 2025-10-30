@@ -90,7 +90,7 @@ async def test_chroma_via_service():
                 "class": "knwl.storage.chroma_storage.ChromaStorage",
                 "memory": False,
                 "collection_name": "special",
-                "path": "$test/v2",
+                "path": "$/tests/v2",
             },
         }
     }

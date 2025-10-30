@@ -2,7 +2,6 @@ import json
 from typing import Any
 
 import chromadb
-import pandas as pd
 
 from knwl.logging import log
 from knwl.storage.vector_storage_base import VectorStorageBase
@@ -26,7 +25,7 @@ class ChromaStorage(VectorStorageBase):
         collection_name: str = "default",
         metadata: list[str] = ["type_name"],
         memory: bool = False,
-        path: str = "$test/vector",
+        path: str = "$/tests/vector",
     ):
         super().__init__()
         self._in_memory = memory
@@ -142,16 +141,6 @@ class ChromaStorage(VectorStorageBase):
     async def get_ids(self):
         ids_only_result = self.collection.get(include=[])
         return ids_only_result["ids"]
-
-    async def to_dataframe(self) -> pd.DataFrame:
-        data = self.collection.get(include=["documents", "metadatas", "embeddings"])
-        documents = [json.loads(doc) for doc in data["documents"]]
-        metadatas = data["metadatas"]
-        df = pd.DataFrame(documents)
-        if metadatas:
-            meta_df = pd.DataFrame(metadatas)
-            df = pd.concat([df, meta_df], axis=1)
-        return df
 
     async def save(self):
         # happens automatically

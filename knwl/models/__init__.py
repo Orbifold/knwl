@@ -9,11 +9,11 @@ from .KnwlInput import KnwlInput
 from .KnwlEntity import KnwlEntity
 from .KnwlBlob import KnwlBlob
 from .KnwlIngestion import KnwlIngestion
-from .GragParams import GragParams
+from .KnwlParams import KnwlParams
 from .KnwlKeywords import KnwlKeywords
 from .KnwlContext import KnwlContext
 from .KnwlText import KnwlText
 from .KnwlReference import KnwlReference
 from .KnwlModel import KnwlModel
 
-__all__ = ["KnwlNode", "KnwlEdge", "KnwlGraph", "KnwlExtraction", "KnwlDocument", "KnwlChunk", "KnwlInput",   "KnwlAnswer", "KnwlEntity", "KnwlBlob", "KnwlIngestion", "GragParams", "KnwlKeywords", "KnwlContext",  "KnwlText", "KnwlReference", "KnwlModel"]
+__all__ = ["KnwlNode", "KnwlEdge", "KnwlGraph", "KnwlExtraction", "KnwlDocument", "KnwlChunk", "KnwlInput",   "KnwlAnswer", "KnwlEntity", "KnwlBlob", "KnwlIngestion", "KnwlParams", "KnwlKeywords", "KnwlContext",  "KnwlText", "KnwlReference", "KnwlModel"]

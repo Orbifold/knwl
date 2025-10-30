@@ -7,6 +7,7 @@ from unittest.mock import patch, MagicMock
 
 import pytest
 from pydantic import ValidationError
+
 pytestmark = pytest.mark.basic
 
 from knwl.models import KnwlAnswer
@@ -279,7 +280,7 @@ async def test_limit_async_func_call_with_waiting():
     results = await asyncio.gather(*tasks)
     assert results == [0, 1]
 
- 
+
 def test_chunk_class():
     with pytest.raises(ValueError):
         KnwlChunk(content="", tokens=2, index=0, origin_id="doc1")
@@ -332,11 +333,11 @@ def test_get_full_path():
     assert p.endswith("knwl.llm")
     assert "data" in p
 
-    p = get_full_path("a/llm", "$test")
+    p = get_full_path("a/llm", "$/tests")
     assert p.endswith("a/llm")
     assert "tests" in p
 
-    p = get_full_path("$test/abc")
+    p = get_full_path("$/tests/abc")
     assert p.endswith("abc")
     assert "tests" in p
 
@@ -396,7 +397,7 @@ def test_get_full_path_non_string_input():
 
 
 def test_get_full_path_basic_file():
-    """Test basic file path resolution with default $data reference"""
+    """Test basic file path resolution with default $/data reference"""
     result = get_full_path("test.txt")
     assert result is not None
     assert result.endswith("test.txt")
@@ -404,23 +405,23 @@ def test_get_full_path_basic_file():
 
 
 def test_get_full_path_data_prefix():
-    """Test $data prefix resolution"""
-    result = get_full_path("$data/test.txt")
+    """Test $/data prefix resolution"""
+    result = get_full_path("$/data/test.txt")
     assert result is not None
     assert result.endswith("test.txt")
     assert "data" in result
 
 
 def test_get_full_path_root_prefix():
-    """Test $root prefix resolution"""
-    result = get_full_path("$root/test.txt")
+    """Test $/root prefix resolution"""
+    result = get_full_path("$/root/test.txt")
     assert result is not None
     assert result.endswith("test.txt")
 
 
 def test_get_full_path_test_prefix():
-    """Test $test prefix resolution"""
-    result = get_full_path("$test/test.txt")
+    """Test $/tests prefix resolution"""
+    result = get_full_path("$/tests/test.txt")
     assert result is not None
     assert result.endswith("test.txt")
     assert "tests" in result
@@ -436,23 +437,23 @@ def test_get_full_path_with_reference_path():
 
 
 def test_get_full_path_with_data_reference():
-    """Test with $data reference path"""
-    result = get_full_path("test.txt", "$data")
+    """Test with $/data reference path"""
+    result = get_full_path("test.txt", "$/data")
     assert result is not None
     assert result.endswith("test.txt")
     assert "data" in result
 
 
 def test_get_full_path_with_root_reference():
-    """Test with $root reference path"""
-    result = get_full_path("test.txt", "$root")
+    """Test with $/root reference path"""
+    result = get_full_path("test.txt", "$/root")
     assert result is not None
     assert result.endswith("test.txt")
 
 
 def test_get_full_path_with_test_reference():
-    """Test with $test reference path"""
-    result = get_full_path("test.txt", "$test")
+    """Test with $/tests reference path"""
+    result = get_full_path("test.txt", "$/tests")
     assert result is not None
     assert result.endswith("test.txt")
     assert "tests" in result
@@ -479,7 +480,7 @@ def test_get_full_path_create_dirs_false():
 
 def test_get_full_path_nested_path():
     """Test with nested directory structure"""
-    result = get_full_path("$test/subdir/nested/test.txt")
+    result = get_full_path("$/tests/subdir/nested/test.txt")
     assert result is not None
     assert result.endswith("subdir/nested/test.txt")
 
@@ -493,20 +494,20 @@ def test_get_full_path_absolute_result():
 
 def test_resolve_special_prefixes():
     """Test _resolve_special_prefixes helper function"""
-    # Test $test prefix
-    path, ref = _resolve_special_prefixes("$test/file.txt")
+    # Test $/tests prefix
+    path, ref = _resolve_special_prefixes("$/tests/file.txt")
     assert path == "./file.txt"
-    assert ref == "$test"
+    assert ref == "$/tests"
 
-    # Test $data prefix
-    path, ref = _resolve_special_prefixes("$data/file.txt")
+    # Test $/data prefix
+    path, ref = _resolve_special_prefixes("$/data/file.txt")
     assert path == "./file.txt"
-    assert ref == "$data"
+    assert ref == "$/data"
 
-    # Test $root prefix
-    path, ref = _resolve_special_prefixes("$root/file.txt")
+    # Test $/root prefix
+    path, ref = _resolve_special_prefixes("$/root/file.txt")
     assert path == "./file.txt"
-    assert ref == "$root"
+    assert ref == "$/root"
 
     # Test no prefix
     path, ref = _resolve_special_prefixes("file.txt")
@@ -516,17 +517,17 @@ def test_resolve_special_prefixes():
 
 def test_resolve_reference_path():
     """Test _resolve_reference_path helper function"""
-    # Test $data resolution
-    result = _resolve_reference_path("$data", create_dirs=False)
+    # Test $/data resolution
+    result = _resolve_reference_path("$/data", create_dirs=False)
     assert result is not None
     assert "data" in result
 
-    # Test $root resolution
-    result = _resolve_reference_path("$root", create_dirs=False)
+    # Test $/root resolution
+    result = _resolve_reference_path("$/root", create_dirs=False)
     assert result is not None
 
-    # Test $test resolution
-    result = _resolve_reference_path("$test", create_dirs=False)
+    # Test $/tests resolution
+    result = _resolve_reference_path("$/tests", create_dirs=False)
     assert result is not None
     assert "tests" in result
 
@@ -567,3 +568,21 @@ def test_ensure_directories_exist_error():
 
         with pytest.raises(OSError, match="Failed to create directories"):
             _ensure_directories_exist("/some/path/test.txt")
+
+
+def test_special_dirs():
+    p = get_full_path("$/root/xyz")
+    print(p)
+    assert p.endswith("xyz") and "knwl" in p and p.startswith("/")
+
+    p = get_full_path("$/user/abc")
+    print(p)
+    assert p.endswith("abc") and ".knwl" in p and p.startswith(os.path.expanduser("~"))
+
+    p = get_full_path("$/data/xyz")
+    print(p)
+    assert p.endswith("xyz") and p.startswith("/")
+
+    p = get_full_path("$/tests/xyz")
+    print(p)
+    assert p.endswith("xyz") and p.startswith("/")

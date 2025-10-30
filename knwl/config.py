@@ -4,13 +4,10 @@
 # ============================================================================================
 import copy
 
+from knwl.utils import get_full_path
+
 default_config = {
-    "api": {
-        "development": True,
-        "host": "0.0.0.0",
-        "port": 9000,
-    },
-    "logging": {"enabled": True, "level": "ERROR", "path": "$root/knwl.log"},
+    "logging": {"enabled": True, "level": "ERROR", "path": "$/user/default/knwl.log"},
     "chunking": {
         "default": "tiktoken",
         "tiktoken": {
@@ -100,31 +97,35 @@ default_config = {
         "default": "ollama",
         "ollama": {
             "class": "knwl.llm.ollama.OllamaClient",
-            "model": "o14",
-            "caching_service": "@/llm_caching/json",
+            "model": "gpt-oss:20b",
+            "caching_service": "@/llm_caching/user",
             "temperature": 0.1,
             "context_window": 32768,
         },
         "openai": {
             "class": "knwl.llm.openai.OpenAIClient",
             "model": "gpt-4o-mini",
-            "caching_service": "@/llm_caching/json",
+            "caching_service": "@/llm_caching/user",
             "temperature": 0.1,
             "context_window": 32768,
         },
         "gemma_small": {
             "class": "knwl.llm.ollama.OllamaClient",
             "model": "gemma3:4b",
-            "caching_service": "@/llm_caching/json",
+            "caching_service": "@/llm_caching/user",
             "temperature": 0.1,
             "context_window": 32768,
         },
     },
     "llm_caching": {
-        "default": "json",
-        "json": {
+        "default": "user",
+        "tests": {
             "class": "knwl.llm.json_llm_cache.JsonLLMCache",
-            "path": "$test/llm.json",
+            "path": "$/tests/llm.json",
+        },
+        "user": {
+            "class": "knwl.llm.json_llm_cache.JsonLLMCache",
+            "path": "$/user/default/llm_cache.json",
         },
     },
     "vector": {
@@ -132,20 +133,20 @@ default_config = {
         "chroma": {
             "class": "knwl.storage.chroma_storage.ChromaStorage",
             "memory": False,
-            "path": "$test/vector",
+            "path": "$/tests/vector",
             "collection_name": "default",
             "metadata": [],
         },
         "nodes": {
             "class": "knwl.storage.chroma_storage.ChromaStorage",
             "memory": False,
-            "path": "$test/graphrag",
+            "path": "$/tests/graphrag",
             "collection_name": "nodes",
         },
         "edges": {
             "class": "knwl.storage.chroma_storage.ChromaStorage",
             "memory": False,
-            "path": "$test/graphrag",
+            "path": "$/tests/graphrag",
             "collection_name": "edges",
         },
         "memory": {
@@ -165,7 +166,7 @@ default_config = {
             "class": "knwl.storage.networkx_storage.NetworkXGraphStorage",
             "format": "graphml",
             "memory": False,
-            "path": "$test/graph.graphml",
+            "path": "$/tests/graph.graphml",
         },
         "memory": {
             "class": "knwl.storage.networkx_storage.NetworkXGraphStorage",
@@ -177,30 +178,30 @@ default_config = {
         "default": "basic",
         "basic": {
             "class": "knwl.storage.json_storage.JsonStorage",
-            "path": "$data/data.json",
+            "path": "$/data/data.json",
         },
         "node_store": {
             "class": "knwl.storage.json_storage.JsonStorage",
-            "path": "$test/graphrag/node_store.json",
+            "path": "$/tests/graphrag/node_store.json",
         },
         "edge_store": {
             "class": "knwl.storage.json_storage.JsonStorage",
-            "path": "$test/graphrag/edge_store.json",
+            "path": "$/tests/graphrag/edge_store.json",
         },
         "document_store": {
             "class": "knwl.storage.json_storage.JsonStorage",
-            "path": "$test/graphrag/document_store.json",
+            "path": "$/tests/graphrag/document_store.json",
         },
         "chunk_store": {
             "class": "knwl.storage.json_storage.JsonStorage",
-            "path": "$test/graphrag/chunk_store.json",
+            "path": "$/tests/graphrag/chunk_store.json",
         },
     },
     "blob": {
         "default": "file_system",
         "file_system": {
             "class": "knwl.storage.file_storage.FileStorage",
-            "base_path": "$data/blobs",
+            "base_path": "$/data/blobs",
         },
     },
     "graph_rag": {
@@ -340,3 +341,109 @@ def get_config(*keys, default=None, config=None, override=None):
             if current is None:
                 return default
         return current
+
+
+def config_exists(*keys, config=None, override=None) -> bool:
+    """
+    Check if a configuration key path exists in the settings dictionary.
+
+    Args:
+        *keys: A variable number of string arguments representing the keys to access the nested configuration.
+        config: The configuration dictionary to use. If None, the global config will be used. Defaults to None.
+        override: An optional dictionary to override the default config for this lookup. Defaults to None.
+    """
+    return get_config(*keys, config=config, override=override) is not None
+
+
+def resolve_config(*keys, config=None, override=None) -> dict:
+    """
+    Resolve a configuration dictionary for a given service and its default variant.
+
+    Args:
+        *keys: A variable number of string arguments representing the keys to access the nested configuration.
+        config: The configuration dictionary to use. If None, the global config will be used. Defaults to None.
+        override: An optional dictionary to override the default config for this lookup. Defaults to None.
+    Returns:
+        dict: The resolved configuration dictionary for the specified service and its default variant.
+    service_config = get_config(*keys, config=config, override=override)
+    if service_config is None:
+        raise ValueError(f"resolve_config: No configuration found for {keys}")
+    return service_config
+    """
+    service_config = get_config(*keys, config=config, override=override)
+    if service_config is None:
+        return None
+    if isinstance(service_config, str):
+        if service_config.startswith("@/"):
+            return resolve_reference(service_config, config=config, override=override)
+        else:
+            return service_config
+    elif isinstance(service_config, dict):
+        if "default" in service_config:
+            default_variant = service_config["default"]
+            if default_variant in service_config:
+                service_config = service_config[default_variant]
+            else:
+                raise ValueError(
+                    f"resolve_config: Default variant '{default_variant}' not found in configuration for {keys}"
+                )
+
+        resolved = {}
+        for k, v in service_config.items():
+            if isinstance(v, str) and v.startswith("@/"):
+                resolved[k] = resolve_reference(v, config=config, override=override)
+            elif isinstance(v, str) and v.startswith("$/"):
+                resolved[k] = get_full_path(v)
+            else:
+                resolved[k] = v
+        return resolved
+    return service_config
+
+
+def resolve_reference(ref: str, config=None, override=None) -> dict:
+    """
+    Resolves iteratively a configuration reference string in the format '@/service/variant'.
+    That is, you get a JSON dictionary without any further references inside.
+
+    Args:
+        ref: The reference string to resolve (e.g., '@/llm/openai').
+        config: The configuration dictionary to use. If None, the global config will be used. Defaults to None.
+        override: An optional dictionary to override the default config for this lookup. Defaults to None.
+    Returns:
+        dict: The resolved configuration dictionary for the specified reference.
+    """
+    if not ref.startswith("@/"):
+        raise ValueError(f"resolve_reference: Invalid reference format: {ref}")
+    if ref == "@/":
+        # special case to get the whole config
+        if override is not None:
+            found = merge_configs(override, config or default_config)
+        else:
+            found = config or default_config
+    else:
+        ref_keys = [u for u in ref[2:].split("/") if u]
+        if len(ref_keys) == 1:
+            # fetch the default variant if only the service name is given
+            default_variant = get_config(
+                ref_keys[0], "default", config=config, override=override
+            )
+            if default_variant is not None:
+                ref_keys.append(default_variant)
+            else:
+                return None
+        found = get_config(*ref_keys, config=config, override=override)
+
+    # check if any of the values are itself a reference
+    if isinstance(found, dict):
+        resolved = {}
+        for k, v in found.items():
+            if isinstance(v, str) and v.startswith("@/"):
+                resolved[k] = resolve_reference(v, config=config, override=override)
+            elif isinstance(v, str) and v.startswith("$/"):
+                resolved[k] = get_full_path(v)
+            else:
+                resolved[k] = v
+        return resolved
+    elif isinstance(found, str) and found.startswith("@/"):
+        return resolve_reference(found, config=config, override=override)
+    return found

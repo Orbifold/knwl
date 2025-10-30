@@ -3,7 +3,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from knwl.models.GragParams import GragParams
+from knwl.models.KnwlParams import KnwlParams
 from knwl.utils import hash_with_prefix
 
 
@@ -16,8 +16,8 @@ class KnwlInput(BaseModel):
     )
     id: Optional[str] = Field(default=None)
 
-    params: Optional[GragParams] = Field(
-        default_factory=GragParams, description="Parameters for graph RAG processing."
+    params: Optional[KnwlParams] = Field(
+        default_factory=KnwlParams, description="Parameters for graph RAG processing."
     )
    
     @field_validator("text")

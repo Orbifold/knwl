@@ -3,6 +3,7 @@ from knwl.extraction.basic_graph_extraction import BasicGraphExtraction
 from knwl.logging import log
 from knwl.llm.llm_base import LLMBase
 from knwl.di import defaults
+from knwl.utils import answer_to_records
 
 @defaults("glean_graph_extraction")
 class GleanGraphExtraction(BasicGraphExtraction):
@@ -93,4 +94,4 @@ class GleanGraphExtraction(BasicGraphExtraction):
             if check_break_answer.strip().strip('"').strip("'").lower() != "yes":
                 break
 
-        return self.answer_to_records(accumulated_entities)
+        return answer_to_records(accumulated_entities)

@@ -94,6 +94,7 @@ def get_formatter(format_type: str = "terminal") -> FormatterBase:
         formatter = HTMLFormatter()
     elif format_type == "markdown":
         formatter = MarkdownFormatter()
+   
     else:
         raise ValueError(
             f"Unsupported format type: {format_type}. "
@@ -171,6 +172,7 @@ def render_knwl(obj: Any, format_type: str = "terminal", **options) -> None:
     formatter = get_formatter(format_type)
     formatter.render(obj, **options)
 
+
 def render_mermaid(obj: KnwlGraph, **options) -> None:
     """
     Render a KnwlGraph object as a Mermaid diagram.
@@ -183,6 +185,7 @@ def render_mermaid(obj: KnwlGraph, **options) -> None:
     if not isinstance(formatter, MarkdownFormatter):
         raise ValueError("Mermaid rendering is only supported in markdown format.")
     formatter.render_mermaid(obj, **options)
+
 
 def print_knwl(obj: Any, **options) -> None:
     """

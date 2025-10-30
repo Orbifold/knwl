@@ -18,3 +18,4 @@ def test_extraction():
     assert prompt.index("Text: This is a test") > -1
     print("")
     print(prompt)
+

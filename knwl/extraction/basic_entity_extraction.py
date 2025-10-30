@@ -1,6 +1,6 @@
 from knwl.extraction.entity_extraction_base import EntityExtractionBase
 from knwl.prompts import prompts
-from knwl.utils import parse_llm_record, split_string_by_multi_markers
+from knwl.utils import answer_to_records, parse_llm_record, split_string_by_multi_markers
 from knwl.llm.llm_base import LLMBase
 from knwl.di import defaults
 from knwl.models import KnwlEntity
@@ -42,23 +42,7 @@ class BasicEntityExtraction(EntityExtractionBase):
     def get_extraction_prompt(self, text, entity_types=None):
         return prompts.extraction.fast_entity_extraction(text, entity_types)
 
-    def answer_to_records(self, answer: str) -> list[list] | None:
-        if not answer or answer.strip() == "":
-            return None
-        parts = split_string_by_multi_markers(
-            answer,
-            [
-                prompts.constants.DEFAULT_RECORD_DELIMITER,
-                prompts.constants.DEFAULT_COMPLETION_DELIMITER,
-            ],
-        )
-        coll = []
-        for part in parts:
-            rec = parse_llm_record(part, prompts.constants.DEFAULT_TUPLE_DELIMITER)
-           
-            if rec:
-                coll.append(rec[1:])  # first element is always 'entity'
-        return coll
+    
 
     async def extract(
         self, text: str, entities: list[str] = None, chunk_id: str = None
@@ -92,7 +76,7 @@ class BasicEntityExtraction(EntityExtractionBase):
         )
         if not found or found.answer.strip() == "":
             return None
-        recs = self.answer_to_records(found.answer)
+        recs = answer_to_records(found.answer)
         if not recs:
             return None
         result = []
@@ -127,7 +111,7 @@ class BasicEntityExtraction(EntityExtractionBase):
         )
         if not found or found.answer.strip() == "":
             return None
-        return self.answer_to_records(found.answer)
+        return answer_to_records(found.answer)
 
     async def extract_json(self, text: str, entities: list[str] = None) -> dict | None:
         records = await self.extract_records(text, entities=entities)

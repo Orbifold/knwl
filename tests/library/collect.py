@@ -5,6 +5,7 @@
 # ============================================================================================
 import os
 import wikipediaapi
+import random
 
 library = {
     "mathematics": [
@@ -124,6 +125,9 @@ library = {
 
 
 async def fetch_page_text(page_title: str) -> str:
+    """
+    Fetches the text of a Wikipedia page given its title.
+    """
     wiki_wiki = wikipediaapi.Wikipedia(
         user_agent="Knwl (https://knwl.ai)",
         language="en",
@@ -134,6 +138,12 @@ async def fetch_page_text(page_title: str) -> str:
 
 
 async def collect_library():
+    """
+    Collects articles from Wikipedia and saves them as markdown files in the respective
+    category folders.
+
+    The `get_library_article` function fetches the articles as needed, this function fetches all in one go.
+    """
     current_dir = os.path.dirname(os.path.abspath(__file__))
     for cat in library:
         os.makedirs(os.path.join(current_dir, cat), exist_ok=True)
@@ -157,8 +167,10 @@ async def collect_library():
 
 
 async def get_random_library_article(category: str = None) -> str:
-    import random
-
+    """
+    Fetches a random article from the specified category in the local library cache or from Wikipedia if not cached.
+    If no category is specified, a random category is chosen.
+    """
     if category is None:
         category = random.choice(list(library.keys()))
     if category not in library:
@@ -168,6 +180,9 @@ async def get_random_library_article(category: str = None) -> str:
     return await get_library_article(category, article)
 
 async def get_library_article(category: str, title: str) -> str:
+    """
+    Fetches a specific article from the local library cache or from Wikipedia if not cached.
+    """
     current_dir = os.path.dirname(os.path.abspath(__file__))
 
     file_path = os.path.join(current_dir, category, f"{title.replace(' ', '_')}.md")
@@ -175,6 +190,7 @@ async def get_library_article(category: str, title: str) -> str:
         with open(file_path, "r", encoding="utf-8") as f:
             article = f.read()
     else:
+        os.makedirs(os.path.join(current_dir, category), exist_ok=True)
         article = await fetch_page_text(title)
         with open(
             file_path,
@@ -184,7 +200,7 @@ async def get_library_article(category: str, title: str) -> str:
             f.write(article)
     return article
 
+
 if __name__ == "__main__":
     import asyncio
-
-    asyncio.run(collect_library())
+    asyncio.run(collect_library()) # fetch and cache all articles

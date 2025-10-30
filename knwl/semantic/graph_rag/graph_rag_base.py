@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import List
 
 from knwl.framework_base import FrameworkBase
-from knwl.models import (GragParams, KnwlChunk, KnwlContext, KnwlGraph, KnwlInput, KnwlInput, )
+from knwl.models import (KnwlParams, KnwlChunk, KnwlContext, KnwlGraph, KnwlInput, KnwlInput, )
 from knwl.models.KnwlDocument import KnwlDocument
 from knwl.models.KnwlEdge import KnwlEdge
 from knwl.models.KnwlIngestion import KnwlIngestion
@@ -54,7 +54,7 @@ class GraphRAGBase(FrameworkBase, ABC):
         ...
         
     @abstractmethod
-    async def augment(self, input: str | KnwlInput , params: GragParams = None) -> KnwlContext | None:
+    async def augment(self, input: str | KnwlInput , params: KnwlParams = None) -> KnwlContext | None:
         """
         Retrieve context from the knowledge graph and augment the input text.
         All you need to answer questions or generate text with context.
@@ -62,21 +62,21 @@ class GraphRAGBase(FrameworkBase, ABC):
         ...
 
     @abstractmethod
-    async def nearest_nodes(self, query: str, query_param: GragParams) -> list[KnwlNode] | None:
+    async def nearest_nodes(self, query: str, query_param: KnwlParams) -> list[KnwlNode] | None:
         """
         Query nodes from the knowledge graph based on the input query and parameters.
         """
         ...
 
     @abstractmethod
-    async def nearest_edges(self, query: str, params: GragParams) -> list[KnwlEdge] | None:
+    async def nearest_edges(self, query: str, params: KnwlParams) -> list[KnwlEdge] | None:
         """
         Query edges from the knowledge graph based on the input query and parameters.
         """
         ...
 
     @abstractmethod
-    async def nearest_chunks(self, query: str, params: GragParams) -> list[KnwlChunk] | None:
+    async def nearest_chunks(self, query: str, params: KnwlParams) -> list[KnwlChunk] | None:
         """
         Query chunks based on the input query and parameters.
         This does not involve the graph directly but is part of the naive RAG pipeline.
