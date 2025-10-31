@@ -89,7 +89,7 @@ You can add arbitrary text and ingest it using the `add` method.
 """
 
 result = await knwl.add(
-    "Quantum topology is all about knot theory and how it applies to quantum physics."
+    "Quantum topology is all about knot theory and how it applies to quantum physics. Whether it's also underpinning quantum gravity remains to be seen, but it's a fascinating area of scientific exploration.",
 )
 # %%
 print_knwl(result)

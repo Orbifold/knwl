@@ -83,7 +83,7 @@ class BasicEntityExtraction(EntityExtractionBase):
         for record in recs:
             if len(record) < 3:
                 continue
-            
+            # first is 
             name = record[0]
             type_ = record[1].lower()
             description = record[2]

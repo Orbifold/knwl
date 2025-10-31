@@ -177,6 +177,23 @@ class Knwl:
         """
         return get_config(*keys)
 
+    async def extraction_prompt(
+        self, text: str, entity_types: Optional[list[str]] = None
+    ) -> str:
+        """
+        Get the extraction prompt for the given text and optional entity types.
+        You can use this prompt to test out whether your LLM is able to extract the desired entities.
+        """
+        from knwl.prompts.prompts import prompts
+
+        if entity_types is not None:
+            if not isinstance(entity_types, list):
+                raise ValueError("entity_types must be a list of strings.")
+            if not all(isinstance(et, str) for et in entity_types):
+                raise ValueError("entity_types must be a list of strings.")
+
+        return prompts.extraction.fast_graph_extraction(text, entity_types)
+
     async def _simple_ask(self, question: str) -> KnwlAnswer:
         """
         Simple LLM QA without knowledge graph.

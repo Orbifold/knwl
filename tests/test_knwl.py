@@ -1,6 +1,7 @@
 import os
 import pytest
 from knwl.config import get_config, resolve_reference
+from knwl.format import print_knwl
 from knwl.knwl import Knwl
 from knwl.storage.networkx_storage import NetworkXGraphStorage
 from faker import Faker
@@ -61,4 +62,6 @@ async def test_quick_start():
 
     # one edge
     assert await knwl.edge_count() == 1
- 
+
+
+

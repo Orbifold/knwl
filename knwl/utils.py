@@ -476,5 +476,5 @@ def answer_to_records( answer: str) -> list[list] | None:
         rec = parse_llm_record(part, prompts.constants.DEFAULT_TUPLE_DELIMITER)
         
         if rec:
-            coll.append(rec[1:])  # first element is always 'entity'
+            coll.append(rec) 
     return coll

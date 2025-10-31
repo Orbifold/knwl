@@ -67,11 +67,11 @@ _default_config = {
         },
     },
     "graph_extraction": {
-        "default": "basic",
-        "basic": {
+        "default": "ollama",
+        "ollama": {
             "class": "knwl.extraction.basic_graph_extraction.BasicGraphExtraction",
             "mode": "full",  # fast or full
-            "llm": "@/llm/openai",
+            "llm": "@/llm/ollama",
         },
     },
     "glean_graph_extraction": {
@@ -237,7 +237,7 @@ _default_config = {
             "class": "knwl.semantic.graph_rag.graph_rag.GraphRAG",
             "semantic_graph": "@/semantic_graph/user",
             "ragger": "@/rag_store/user",
-            "graph_extractor": "@/graph_extraction/basic",
+            "graph_extractor": "@/graph_extraction/ollama",
             "keywords_extractor": "@/keywords_extraction",
         },
     },
