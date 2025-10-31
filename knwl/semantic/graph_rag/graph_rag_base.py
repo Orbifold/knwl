@@ -2,7 +2,14 @@ from abc import ABC, abstractmethod
 from typing import List
 
 from knwl.framework_base import FrameworkBase
-from knwl.models import (KnwlParams, KnwlChunk, KnwlContext, KnwlGraph, KnwlInput, KnwlInput, )
+from knwl.models import (
+    KnwlParams,
+    KnwlChunk,
+    KnwlContext,
+    KnwlGraph,
+    KnwlInput,
+    KnwlInput,
+)
 from knwl.models.KnwlDocument import KnwlDocument
 from knwl.models.KnwlEdge import KnwlEdge
 from knwl.models.KnwlIngestion import KnwlIngestion
@@ -34,7 +41,9 @@ class GraphRAGBase(FrameworkBase, ABC):
         ...
 
     @abstractmethod
-    async def extract(self, input: str | KnwlInput | KnwlDocument, enable_chunking: bool = True) -> KnwlIngestion | None:
+    async def extract(
+        self, input: str | KnwlInput | KnwlDocument, enable_chunking: bool = True
+    ) -> KnwlIngestion | None:
         """
         Extract a knowledge graph from raw text or KnwlInput/KnwlDocument.
         This is the same as `ingest` but without embedding (consolidation).
@@ -42,9 +51,7 @@ class GraphRAGBase(FrameworkBase, ABC):
         ...
 
     @abstractmethod
-    async def extract_keywords(
-        self, input: str |  KnwlInput
-    ) -> KnwlKeywords | None:
+    async def extract_keywords(self, input: str | KnwlInput) -> KnwlKeywords | None:
         """
         Extract keywords from the input text.
         These keywords will be used to query the knowledge graph for relevant context.
@@ -52,9 +59,11 @@ class GraphRAGBase(FrameworkBase, ABC):
         The local keywords are specific entities, concepts, or details mentioned in the text.
         """
         ...
-        
+
     @abstractmethod
-    async def augment(self, input: str | KnwlInput , params: KnwlParams = None) -> KnwlContext | None:
+    async def augment(
+        self, input: str | KnwlInput, params: KnwlParams = None
+    ) -> KnwlContext | None:
         """
         Retrieve context from the knowledge graph and augment the input text.
         All you need to answer questions or generate text with context.
@@ -62,21 +71,27 @@ class GraphRAGBase(FrameworkBase, ABC):
         ...
 
     @abstractmethod
-    async def nearest_nodes(self, query: str, query_param: KnwlParams) -> list[KnwlNode] | None:
+    async def nearest_nodes(
+        self, query: str, query_param: KnwlParams
+    ) -> list[KnwlNode] | None:
         """
         Query nodes from the knowledge graph based on the input query and parameters.
         """
         ...
 
     @abstractmethod
-    async def nearest_edges(self, query: str, params: KnwlParams) -> list[KnwlEdge] | None:
+    async def nearest_edges(
+        self, query: str, params: KnwlParams
+    ) -> list[KnwlEdge] | None:
         """
         Query edges from the knowledge graph based on the input query and parameters.
         """
         ...
 
     @abstractmethod
-    async def nearest_chunks(self, query: str, params: KnwlParams) -> list[KnwlChunk] | None:
+    async def nearest_chunks(
+        self, query: str, params: KnwlParams
+    ) -> list[KnwlChunk] | None:
         """
         Query chunks based on the input query and parameters.
         This does not involve the graph directly but is part of the naive RAG pipeline.
@@ -163,13 +178,33 @@ class GraphRAGBase(FrameworkBase, ABC):
         ...
 
     @abstractmethod
-    async def edge_degree(self, edge_id: str) -> int:
+    async def edge_degree(self, edge_id: str) -> int: ...
+
+    @abstractmethod
+    async def assign_edge_degrees(self, edges: list[KnwlEdge]) -> list[int]: ...
+
+    @abstractmethod
+    async def get_semantic_endpoints(
+        self, edge_ids: list[str]
+    ) -> dict[str, tuple[str, str]]: ...
+
+    @abstractmethod
+    async def node_exists(self, node_id: str) -> bool:
+        """
+        Check if a node with the given Id exists in the knowledge graph.
+        """
         ...
 
     @abstractmethod
-    async def assign_edge_degrees(self, edges: list[KnwlEdge]) -> list[int]:
+    async def node_count(self) -> int:
+        """
+        Get the total number of nodes in the knowledge graph.
+        """
         ...
 
     @abstractmethod
-    async def get_semantic_endpoints(self, edge_ids: list[str]) -> dict[str, tuple[str, str]]:
+    async def edge_count(self) -> int:
+        """
+        Get the total number of edges in the knowledge graph.
+        """
         ...

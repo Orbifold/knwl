@@ -1,5 +1,5 @@
 import pytest
-from knwl.config import get_config, merge_configs
+from knwl.config import get_config, merge_configs, reset_active_config, resolve_dict, set_active_config
 from knwl.config import resolve_reference, resolve_config
 
 pytestmark = pytest.mark.basic
@@ -18,11 +18,11 @@ def test_config_get():
         get_config("nonexistent", default="default_value", config=config)
         == "default_value"
     )
-    assert get_config("llm", "ollama", "model") == "o14"
+    assert get_config("llm", "ollama", "model") == "gpt-oss:20b"
     assert get_config("llm", "ollama", "temperature") == 0.1
     assert get_config("llm", "ollama", "context_window") == 32768
-    assert get_config("llm", "ollama", "caching_service") == "@/llm_caching/json"
-    assert get_config("llm_caching", "json", "path") == "$/tests/llm.json"
+    assert get_config("llm", "ollama", "caching_service") == "@/llm_caching/user"
+    assert get_config("llm_caching", "user", "path") == "$/user/default/llm_cache.json"
     assert get_config("nonexistent", default="default_value") == "default_value"
     assert get_config("llm", "nonexistent", default={"key": "value"}) == {
         "key": "value"
@@ -48,7 +48,7 @@ def test_config_get():
         )
         == 0.56
     )
-    assert get_config("@/llm/ollama/model") == "o14"
+    assert get_config("@/llm/ollama/model") == "gpt-oss:20b"
     assert get_config("@/a/b", override=config) == {"c": 1}
     assert get_config("@/a/b/", override=config) == {"c": 1}
     # should fetch the default if the reference is only the service name
@@ -121,3 +121,34 @@ def test_resolve_config():
 
     result = resolve_config("@/abc/c", override=config)
     assert result == {"y": 4}
+
+
+def test_resolve_dict():
+
+    d = {"a": {"default": "u", "u": {"k": 4}}}
+    r = resolve_dict(d)
+    assert r == {"a": {"k": 4}}
+
+    d = {"a": {"default": "u", "u": {"k": "$/user/r"}}}
+    r = resolve_dict(d)
+    assert ".knwl" in r["a"]["k"]
+
+    d = {
+        "a": {"default": "u", "u": {"k": "@/b"}},
+        "b": {"default": "data", "data": {"d": 56}},
+    }
+    r = resolve_dict(d, d)
+    assert r["a"] == {"k": {"d": 56}}
+    assert r["b"] == {"d": 56}
+
+
+
+def test_active_config():
+    dumb = {"a":6}
+    set_active_config(dumb)
+    assert get_config("a") == 6
+    assert get_config("@/llm") is None
+    assert get_config("nonexistent", default=10) == 10
+    assert get_config("a", override= {"a":12}) == 12
+    reset_active_config()
+    assert get_config("@/llm") is not None

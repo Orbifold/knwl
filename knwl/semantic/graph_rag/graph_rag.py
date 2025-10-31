@@ -115,17 +115,12 @@ class GraphRAG(GraphRAGBase):
     async def ingest(
         self,
         input: str | KnwlInput | KnwlDocument,
-        store_source: bool = False,
-        enable_chunking: bool = True,
-        store_chunks: bool = False,
     ) -> KnwlGraph | None:
         """
         Ingest raw text or KnwlInput/KnwlDocument and convert to knowledge graph.
         See also the `extract` method which does the same without storing anything.
         """
-        result: KnwlIngestion = await self.extract(
-            input, enable_chunking=enable_chunking
-        )
+        result: KnwlIngestion = await self.extract(input)
         if result.graph is None:
             log.warn("GraphRAG: No knowledge graph was extracted to ingest.")
             return None
@@ -157,9 +152,10 @@ class GraphRAG(GraphRAGBase):
         """
 
         if self.ragger is None:
-            raise ValueError(
+            log.warn(
                 "GraphRAG: attempt to chunk but no ragger (ChunkingBase or RagBase instance) is provided."
             )
+            return [KnwlChunk(content=document.content, origin_id=document.id)]
         if isinstance(self.ragger, ChunkingBase):
             chunker = cast(ChunkingBase, self.ragger)
             return await chunker.chunk(document.content, document.id)
@@ -172,7 +168,7 @@ class GraphRAG(GraphRAGBase):
             )
 
     async def extract(
-        self, input: str | KnwlInput | KnwlDocument, enable_chunking: bool = True
+        self, input: str | KnwlInput | KnwlDocument
     ) -> KnwlIngestion | None:
         """
         Extract a knowledge graph from raw text or KnwlInput/KnwlDocument.
@@ -199,20 +195,9 @@ class GraphRAG(GraphRAGBase):
         # ============================================================================================
         # Chunking
         # ============================================================================================
-        if enable_chunking:
-            result.chunks = await self.chunking(document_to_ingest)
-        else:
-            origin_id = (
-                input.id
-                if (isinstance(input, KnwlInput) or isinstance(input, KnwlDocument))
-                else None
-            )
-            result.chunks = [
-                KnwlChunk(
-                    content=document_to_ingest.content,
-                    origin_id=origin_id,
-                )
-            ]
+
+        result.chunks = await self.chunking(document_to_ingest)
+
         # ============================================================================================
         # Extract knowledge graph from chunks
         # ============================================================================================
@@ -272,7 +257,7 @@ class GraphRAG(GraphRAGBase):
         return result
 
     async def augment(
-        self, input: str | KnwlInput , params: KnwlParams = None
+        self, input: str | KnwlInput, params: KnwlParams = None
     ) -> KnwlContext | None:
         """
         Retrieve context from the knowledge graph and augment the input text.
@@ -419,9 +404,7 @@ class GraphRAG(GraphRAGBase):
                     f"GraphRAG: provided ragger of type '{type(self.ragger)}' is not supported."
                 )
 
-    async def extract_keywords(
-        self, input: str | KnwlInput 
-    ) -> KnwlKeywords | None:
+    async def extract_keywords(self, input: str | KnwlInput) -> KnwlKeywords | None:
         if self.keywords_extractor is None:
             raise ValueError(
                 "GraphRAG: attempt to extract keywords but no keywords_extractor is provided."
@@ -437,3 +420,21 @@ class GraphRAG(GraphRAGBase):
                 "GraphRAG: input must be of type str, KnwlInput, or KnwlInput."
             )
         return await self.keywords_extractor.extract(text)
+
+    async def node_exists(self, node_id: str) -> bool:
+        """
+        Check if a node with the given Id exists in the knowledge graph.
+        """
+        return await self.semantic_graph.node_exists(node_id)
+
+    async def node_count(self) -> int:
+        """
+        Get the total number of nodes in the knowledge graph.
+        """
+        return await self.semantic_graph.node_count()
+
+    async def edge_count(self) -> int:
+        """
+        Get the total number of edges in the knowledge graph.
+        """
+        return await self.semantic_graph.edge_count()

@@ -6,10 +6,10 @@ from hashlib import md5
 from unittest.mock import patch, MagicMock
 
 import pytest
-from pydantic import ValidationError
 
 pytestmark = pytest.mark.basic
 
+from knwl.config import resolve_dict
 from knwl.models import KnwlAnswer
 from knwl.models.KnwlChunk import KnwlChunk
 from knwl.models.KnwlDocument import KnwlDocument
@@ -331,15 +331,15 @@ def test_args_hash():
 def test_get_full_path():
     p = get_full_path("knwl.llm")
     assert p.endswith("knwl.llm")
-    assert "data" in p
+    assert ".knwl" in p
 
     p = get_full_path("a/llm", "$/tests")
     assert p.endswith("a/llm")
-    assert "tests" in p
+    assert "/tests" in p
 
     p = get_full_path("$/tests/abc")
     assert p.endswith("abc")
-    assert "tests" in p
+    assert "/tests" in p
 
 
 def test_hash():
@@ -401,7 +401,7 @@ def test_get_full_path_basic_file():
     result = get_full_path("test.txt")
     assert result is not None
     assert result.endswith("test.txt")
-    assert "data" in result
+    assert ".knwl" in result
 
 
 def test_get_full_path_data_prefix():
@@ -574,15 +574,25 @@ def test_special_dirs():
     p = get_full_path("$/root/xyz")
     print(p)
     assert p.endswith("xyz") and "knwl" in p and p.startswith("/")
+    if os.path.exists(p):
+        os.rmdir(p)
 
     p = get_full_path("$/user/abc")
     print(p)
     assert p.endswith("abc") and ".knwl" in p and p.startswith(os.path.expanduser("~"))
+    if os.path.exists(p):
+            os.rmdir(p)
 
     p = get_full_path("$/data/xyz")
     print(p)
     assert p.endswith("xyz") and p.startswith("/")
-
+    if os.path.exists(p):
+        os.rmdir(p)
+        
     p = get_full_path("$/tests/xyz")
     print(p)
     assert p.endswith("xyz") and p.startswith("/")
+    if os.path.exists(p):
+        os.rmdir(p)
+
+        

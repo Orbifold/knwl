@@ -2,6 +2,7 @@ import asyncio
 import pytest
 
 from knwl import services
+from knwl.format import print_knwl
 from knwl.models import KnwlEdge, KnwlGraph, KnwlNode
 from knwl.semantic.graph.semantic_graph import SemanticGraph
 from knwl.storage import NetworkXGraphStorage
@@ -179,3 +180,26 @@ async def test_merge_graph():
     assert g.node_exists(maxwell_statistics.id)
     assert g.edge_exists(edge1.id)
     print(g_merged.get_node_descriptions())
+
+
+@pytest.mark.asyncio
+async def test_node_by_name():
+    g = get_service("semantic_graph", "memory")
+    await g.clear()
+    n1 = KnwlNode(
+        name="Jung",
+        description="Individuation is a process of psychological integration.",
+        type="Theory",
+    )
+    n2 = KnwlNode(
+        name="Jung",
+        description="Carl Gustav Jung was a Swiss psychiatrist and psychoanalyst who founded analytical psychology.",
+        type="Person",
+    )
+    await g.embed_node(n1)
+    await g.embed_node(n2)
+    found = await g.get_nodes_by_name("Jung")
+    assert found is not None and len(found) == 2
+    first = found[0]
+    assert first.id == n1.id
+    print_knwl(first)

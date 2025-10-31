@@ -66,6 +66,30 @@ from knwl.services import services
 chunker = services.get_service("chunking", "tiktoken-large")
 ```
 
+If you have lots of configurations to override, you can also replace the active or base configuration entirely using the `set_active_config` function from `knwl.config`:
+
+```python
+from knwl.config import set_active_config
+new_config = {
+  "chunking": {
+    "default": "tiktoken-large",
+    "tiktoken": {
+      "class": "knwl.chunking.TiktokenChunking",
+      "model": "gpt-4o-mini",
+      "chunk_size": 1024,
+      "chunk_overlap": 128
+    },
+    "tiktoken-large": {
+      "class": "knwl.chunking.TiktokenChunking",
+      "model": "gpt-4o-mini",
+      "chunk_size": 2048,
+      "chunk_overlap": 256
+    }
+  }
+}
+set_active_config(new_config)
+```
+
 If you want this configuration to be the default for all chunking services, you can change the "default" key in the config to point to "tiktoken-large":
 
 ```json

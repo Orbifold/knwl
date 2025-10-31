@@ -6,7 +6,13 @@ import copy
 
 from knwl.utils import get_full_path
 
-default_config = {
+"""
+Default configuration for Knwl services.
+The "default" refers both to the fact that it defines defaults and the "default" space underneath the user's home directory.
+That is, you have out of the box a '~/.knwl/user/default' space where all user data is stored unless otherwise specified.
+If you use the `Knwl` utility class, you can specify a different space when adding or asking.
+"""
+_default_config = {
     "logging": {"enabled": True, "level": "ERROR", "path": "$/user/default/knwl.log"},
     "chunking": {
         "default": "tiktoken",
@@ -18,19 +24,19 @@ default_config = {
         },
     },
     "chunk_store": {
-        "default": "basic",
-        "basic": {
+        "default": "user",
+        "user": {
             "class": "knwl.semantic.rag.chunk_store.ChunkStore",
             "chunker": "@/chunking/tiktoken",
-            "chunk_embeddings": "@/vector/chunks",
-            "chunk_storage": "@/json/chunk_store",
+            "chunk_embeddings": "@/vector/user_chunks",
+            "chunk_storage": "@/json/user_chunks",
         },
     },
     "document_store": {
-        "default": "basic",
-        "basic": {
+        "default": "user",
+        "user": {
             "class": "knwl.semantic.rag.document_store.DocumentStore",
-            "document_storage": "@/json/document_store",
+            "document_storage": "@/json/user_documents",
         },
     },
     "summarization": {
@@ -41,7 +47,7 @@ default_config = {
         },
         "ollama": {
             "class": "knwl.summarization.ollama.OllamaSummarization",
-            "llm": "@/llm/gemma_small",
+            "llm": "@/llm/ollama",
             "max_tokens": 150,
             "chunker": "@/chunking/tiktoken",
         },
@@ -77,12 +83,12 @@ default_config = {
         },
     },
     "semantic_graph": {
-        "default": "memory",
-        "local": {
+        "default": "user",
+        "user": {
             "class": "knwl.semantic.graph.semantic_graph.SemanticGraph",
-            "graph_store": "@/graph/nx",  # the topology
-            "node_embeddings": "@/vector/nodes",  # the node embeddings
-            "edge_embeddings": "@/vector/edges",  # the edge embeddings
+            "graph_store": "@/graph/user",  # the topology
+            "node_embeddings": "@/vector/user_nodes",  # the node embeddings
+            "edge_embeddings": "@/vector/user_edges",  # the edge embeddings
             "summarization": "@/summarization/ollama",  # how to summarize long texts
         },
         "memory": {
@@ -137,17 +143,23 @@ default_config = {
             "collection_name": "default",
             "metadata": [],
         },
-        "nodes": {
+        "user_nodes": {
             "class": "knwl.storage.chroma_storage.ChromaStorage",
             "memory": False,
-            "path": "$/tests/graphrag",
+            "path": "$/user/default/vectors",
             "collection_name": "nodes",
         },
-        "edges": {
+        "user_edges": {
             "class": "knwl.storage.chroma_storage.ChromaStorage",
             "memory": False,
-            "path": "$/tests/graphrag",
+            "path": "$/user/default/vectors",
             "collection_name": "edges",
+        },
+        "user_chunks": {
+            "class": "knwl.storage.chroma_storage.ChromaStorage",
+            "memory": False,
+            "path": "$/user/default/vectors",
+            "collection_name": "chunks",
         },
         "memory": {
             "class": "knwl.storage.chroma_storage.ChromaStorage",
@@ -161,12 +173,12 @@ default_config = {
         },
     },
     "graph": {
-        "default": "nx",
-        "nx": {
+        "default": "user",
+        "user": {
             "class": "knwl.storage.networkx_storage.NetworkXGraphStorage",
             "format": "graphml",
             "memory": False,
-            "path": "$/tests/graph.graphml",
+            "path": "$/user/default/graph.graphml",
         },
         "memory": {
             "class": "knwl.storage.networkx_storage.NetworkXGraphStorage",
@@ -196,6 +208,14 @@ default_config = {
             "class": "knwl.storage.json_storage.JsonStorage",
             "path": "$/tests/graphrag/chunk_store.json",
         },
+        "user_documents": {
+            "class": "knwl.storage.json_storage.JsonStorage",
+            "path": "$/user/default/documents.json",
+        },
+        "user_chunks": {
+            "class": "knwl.storage.json_storage.JsonStorage",
+            "path": "$/user/default/chunks.json",
+        },
     },
     "blob": {
         "default": "file_system",
@@ -205,29 +225,58 @@ default_config = {
         },
     },
     "graph_rag": {
-        "default": "local",
-        "local": {
+        "default": "user",
+        "memory": {
             "class": "knwl.semantic.graph_rag.graph_rag.GraphRAG",
             "semantic_graph": "@/semantic_graph/memory",
             "ragger": "@/rag_store",
             "graph_extractor": "@/graph_extraction/basic",
             "keywords_extractor": "@/keywords_extraction",
         },
+        "user": {
+            "class": "knwl.semantic.graph_rag.graph_rag.GraphRAG",
+            "semantic_graph": "@/semantic_graph/user",
+            "ragger": "@/rag_store/user",
+            "graph_extractor": "@/graph_extraction/basic",
+            "keywords_extractor": "@/keywords_extraction",
+        },
     },
     "rag_store": {
-        "default": "basic",
-        "basic": {
+        "default": "user",
+        "user": {
             "class": "knwl.semantic.rag.rag_store.RagStore",
-            "document_store": "@/document_store",
-            "chunk_store": "@/chunk_store",
+            "document_store": "@/document_store/user",
+            "chunk_store": "@/chunk_store/user",
             "chunker": "@/chunking/tiktoken",
             "auto_chunk": True,
         },
     },
 }
 
+_active_config = copy.deepcopy(_default_config)
 
-def merge_configs(override: dict, default_config: dict) -> dict:
+
+def set_active_config(new_config: dict):
+    """
+    Set a new active configuration dictionary.
+    This overrides the whole default configuration and can be a better solution then overriding if too many settings need to be changed.
+
+    Args:
+        new_config (dict): The new active configuration dictionary to set.
+    """
+    global _active_config
+    _active_config = new_config
+
+
+def reset_active_config():
+    """
+    Reset the active configuration to the default configuration.
+    """
+    global _active_config
+    _active_config = copy.deepcopy(_default_config)
+
+
+def merge_configs(override: dict, base_config: dict) -> dict:
     """
     Recursively merge two configuration dictionaries.
 
@@ -237,16 +286,16 @@ def merge_configs(override: dict, default_config: dict) -> dict:
 
     Args:
         override (dict): The configuration dictionary containing values to override defaults.
-            Can be None or empty, in which case the default_config is returned unchanged.
-        default_config (dict): The base configuration dictionary that will be updated with
+            Can be None or empty, in which case the base_config is returned unchanged.
+        base_config (dict): The base configuration dictionary that will be updated with
             override values. This dictionary is modified in place.
 
     Returns:
-        dict: The merged configuration dictionary (same object as default_config after modification).
+        dict: The merged configuration dictionary (same object as base_config after modification).
 
     Raises:
         ValueError: If override is not None and not a dictionary.
-        ValueError: If default_config is not None and not a dictionary.
+        ValueError: If base_config is not None and not a dictionary.
 
     Examples:
         ```python
@@ -276,22 +325,22 @@ def merge_configs(override: dict, default_config: dict) -> dict:
         ```
     """
     if override is None:
-        return default_config
+        return base_config
     if not isinstance(override, dict):
         raise ValueError("merge_configs: override must be a dictionary")
-    if default_config is None:
+    if base_config is None:
         return override
-    if not isinstance(default_config, dict):
-        raise ValueError("merge_configs: default_config must be a dictionary")
+    if not isinstance(base_config, dict):
+        raise ValueError("merge_configs: base_config must be a dictionary")
 
     for key, value in override.items():
         if isinstance(value, dict):
             # get node or create one
-            node = default_config.setdefault(key, {})
+            node = base_config.setdefault(key, {})
             merge_configs(value, node)
         else:
-            default_config[key] = value
-    return default_config
+            base_config[key] = value
+    return base_config
 
 
 def get_config(*keys, default=None, config=None, override=None):
@@ -310,7 +359,7 @@ def get_config(*keys, default=None, config=None, override=None):
         ```
     """
     # the config should not be changed outside
-    cloned_config = copy.deepcopy(config or default_config)
+    cloned_config = copy.deepcopy(config or _active_config)
     if len(keys) == 0:
         return cloned_config
     if override is not None:
@@ -320,6 +369,8 @@ def get_config(*keys, default=None, config=None, override=None):
         if isinstance(keys[0], str) and keys[0].startswith("@/"):
             ref_keys = [u for u in keys[0][2:].split("/") if u]
             if len(ref_keys) == 1:
+                if ref_keys[0] not in cloned_config:
+                    return default
                 # fetch the default variant if only the service name is given
                 default_variant = cloned_config.get(ref_keys[0], {}).get(
                     "default", None
@@ -355,9 +406,51 @@ def config_exists(*keys, config=None, override=None) -> bool:
     return get_config(*keys, config=config, override=override) is not None
 
 
+def resolve_dict(d: dict, config: dict = None) -> dict:
+    """
+    Resolves a configuration dictionary by handling default variants, reference strings, and nested dictionaries.
+
+    If the dictionary contains a "default" key, replaces the dictionary with the variant specified by the "default" value.
+    Recursively resolves:
+    - Strings starting with "@/": treated as references and resolved via `resolve_reference`.
+    - Strings starting with "$/": resolved to full paths via `get_full_path`.
+    - Nested dictionaries: resolved recursively.
+
+    Args:
+        d (dict): The configuration dictionary to resolve.
+
+    Returns:
+        dict: The resolved configuration dictionary.
+
+    Raises:
+        ValueError: If the "default" variant specified is not found in the dictionary.
+    """
+    if "default" in d:
+        default_variant = d["default"]
+        if default_variant in d:
+            d = d[default_variant]
+        else:
+            raise ValueError(
+                f"resolve_dict: default variant '{default_variant}' not found in configuration."
+            )
+
+    resolved = {}
+    for k, v in d.items():
+        if isinstance(v, str) and v.startswith("@/"):
+            resolved[k] = resolve_reference(v, config=config)
+        elif isinstance(v, str) and v.startswith("$/"):
+            resolved[k] = get_full_path(v)
+        elif isinstance(v, dict):
+            resolved[k] = resolve_dict(v, config=config)
+        else:
+            resolved[k] = v
+    return resolved
+
+
 def resolve_config(*keys, config=None, override=None) -> dict:
     """
-    Resolve a configuration dictionary for a given service and its default variant.
+    Resolve a configuration for a given service and its default variant.
+    You can use '@/' to resolve the whole config if needed.
 
     Args:
         *keys: A variable number of string arguments representing the keys to access the nested configuration.
@@ -417,9 +510,9 @@ def resolve_reference(ref: str, config=None, override=None) -> dict:
     if ref == "@/":
         # special case to get the whole config
         if override is not None:
-            found = merge_configs(override, config or default_config)
+            found = merge_configs(override, config or _active_config)
         else:
-            found = config or default_config
+            found = config or _active_config
     else:
         ref_keys = [u for u in ref[2:].split("/") if u]
         if len(ref_keys) == 1:
@@ -446,4 +539,38 @@ def resolve_reference(ref: str, config=None, override=None) -> dict:
         return resolved
     elif isinstance(found, str) and found.startswith("@/"):
         return resolve_reference(found, config=config, override=override)
+    if found.startswith("$/"):
+        return get_full_path(found)
     return found
+
+
+def get_active_config() -> dict:
+    """
+    Get a deep copy of the default configuration dictionary.
+
+    Returns:
+        dict: A deep copy of the default configuration dictionary.
+    """
+    return copy.deepcopy(_active_config)
+
+
+def get_space_config(space_name: str = "default") -> dict:
+    """
+    Get the configuration dictionary adjusted for a specific user space.
+    """
+    if space_name is None or len(str(space_name).strip()) == 0:
+        raise ValueError("get_space_config: space_name cannot be empty")
+
+    base_config = get_active_config()
+    space_path = f"$/user/{space_name}"
+
+    # replace everywhere the $/user/default with the space path
+    def replace_space_path(d):
+        for k, v in d.items():
+            if isinstance(v, dict):
+                replace_space_path(v)
+            elif isinstance(v, str) and "$/user/default" in v:
+                d[k] = v.replace("$/user/default", space_path)
+
+    replace_space_path(base_config)
+    return base_config

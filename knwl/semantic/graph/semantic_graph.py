@@ -186,6 +186,8 @@ class SemanticGraph(SemanticGraphBase):
                 data["data"] = json.loads(data["data"])
             except Exception:
                 pass
+        self.fix_lists_in_data(data)
+
         return KnwlNode(**data)
 
     async def get_edge_by_id(self, id: str) -> KnwlEdge | None:
@@ -201,7 +203,24 @@ class SemanticGraph(SemanticGraphBase):
                 data["data"] = json.loads(data["data"])
             except Exception:
                 pass
+        self.fix_lists_in_data(data)
+
         return KnwlEdge(**data)
+
+    def fix_lists_in_data(self, data: dict):
+        """
+        Ensure that any list fields in the data dictionary are properly formatted as lists.
+        This is particularly useful when data is stored in formats that may convert lists to strings.
+        """
+        for key, value in data.items():
+            if isinstance(value, str) and value.startswith("[") and value.endswith("]"):
+                try:
+                    import ast
+
+                    data[key] = ast.literal_eval(value)
+                except Exception:
+                    pass
+        return data
 
     async def node_exists(self, id: KnwlNode | str) -> bool:
         if isinstance(id, KnwlNode):
@@ -387,6 +406,18 @@ class SemanticGraph(SemanticGraphBase):
         found = await self._graph_store.get_attached_edges(nodes)
         return [KnwlEdge(**e) for e in found]
 
+    async def get_nodes_by_name(self, name: str) -> list[KnwlNode] | None:
+        if name is None or len(name.strip()) == 0:
+            return None
+        found = await self._graph_store.get_nodes_by_name(name)
+        if found is None or len(found) == 0:
+            return None
+        nodes = []
+        for n in found:
+            self.fix_lists_in_data(n)
+            nodes.append(KnwlNode(**n))
+        return nodes
+    
     async def node_degree(self, node_id: str) -> int:
         return await self.graph.node_degree(node_id)
 

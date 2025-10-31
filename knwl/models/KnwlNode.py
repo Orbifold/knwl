@@ -43,7 +43,7 @@ class KnwlNode(BaseModel):
         default="",
         description="The content or description which normally comes from the extracted text. This can be used for embedding purposes, together with the name and the type",
     )
-    chunk_ids: list[str] = Field(
+    chunk_ids: Optional[list[str]] = Field(
         default_factory=list,
         description="The chunk identifiers associated with the knowledge node.",
     )

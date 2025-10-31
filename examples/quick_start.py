@@ -4,24 +4,30 @@
 # ============================================================================================
 # %%
 """
+==============================================================================================
 Knwl comes with a predefined set of default configurations that allow you to get started. You don't need to install anything beyond the package dependencies (ie. `uv sync`).
 
 Of course, somewhere down the line you need a LLM service and the default is OpenAI. As such, you need to set the `OPENAI_API_KEY` environment variable to your OpenAI API key. If you have Ollama installed you can also use Ollama, see below.
 
 The `Kwnl` class is a utility class that wraps various functionalities without having to instantiate or configure anything. It's useful for quick experiments and prototyping, but the full power of Knwl is unleashed when you start configuring your own services, spaces, and strategies.
+==============================================================================================
 """
+import json
 from knwl import Knwl, print_knwl
 
 knwl = Knwl()
 # %%
 """
-You can ask questions directly and this uses the default LLM configured:
+==============================================================================================
+You can ask questions directly and this uses the default LLM configured.
+==============================================================================================
 """
 a = await knwl.ask("DNA is the essence of life.")
 print_knwl(a)  # pretty print the KnwlAnswer
 print(a.answer)  # just print the answer string
 
 """
+The above prints something like:
 ╭───────────────────────────────── KnwlAnswer ─────────────────────────────────╮
 │                                                                              │
 │   messages      [1 items]                                                    │
@@ -39,9 +45,21 @@ print(a.answer)  # just print the answer string
 │                                                                              │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 """
+
+
+"""
+==============================================================================================
+How was this question answered? You can inspect the configuration used:
+- @/llm shows the default LLM configuration
+- the LLM service can have multiple models and variations
+==============================================================================================
+"""
+print_knwl("@/llm")
 # %%
 """
-In order to use a knowledge graph you need to ingest data to build the graph. You can do this using the `add` method:
+==============================================================================================
+In order to use a knowledge graph you need to ingest data to build the graph. You can do this using the `add` method.
+==============================================================================================
 """
 
 result = await knwl.add(
@@ -69,3 +87,6 @@ print_knwl(result)
 │ node|>7a ─[mathematics]→ node|>66                                            │
 ╰────────────────────────────── 2 nodes, 1 edges ──────────────────────────────╯
 """
+
+
+# %%

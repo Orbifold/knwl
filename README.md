@@ -1,18 +1,23 @@
-# KNWL
+# Knwl
 
 A flexible Graph RAG package with advanced ingestion and augmentation strategies.
 
+
+**Kwnl** is short for 'knowledge' but could just as well stand for '*know well*'(as in knowing your knowledge well), '*knowledge network workflow library*', '*knwledge notes with linking*', '*keep notes, wiki and links*', '*knwoledge network and wisdom library*' or '*keep notes, write and learn*'.
+
 ## Features
 
-- **Four Graph RAG Strategies**: Local, Global, Naive, and Hybrid query modes for flexible knowledge retrieval
+- **Five Graph RAG Strategies**: Local, Global, Naive, Self and Hybrid query modes for flexible knowledge retrieval
 - **Dependency Injection Framework**: Decorator-based DI system (`@service`, `@singleton_service`, `@inject_config`) for clean, configurable architecture
 - **Extensively Tested**: Comprehensive test suite covering all components and strategies
 - **No External Services Required**: Runs with lightweight local implementations (Ollama, NetworkX, JSON storage) out of the box
 - **Protocol-Based & Extensible**: Override base classes and configure via JSON to customize LLMs, storage, chunking, extraction, and more
-- **FastAPI Integration**: REST API with uvicorn server for production deployments
-- **MCP Services**: Model Context Protocol support for tool integration
 - **Semantic Search**: Vector-based similarity search for nodes, edges, and chunks
 - **Classic RAG**: Traditional retrieval-augmented generation with chunk-based context
+- **Rich Output Formatting**: Beautiful terminal, HTML, and Markdown renderers for all models using Rich and custom formatters.
+- **Graph Visualization**: the default graph store is saved as GraphML which can be visualized with tools like Gephi, yEd or Cytoscape.
+
+![](./journal/images/GraphIngestion.png)
 
 ## Architecture
 

@@ -1,4 +1,4 @@
-# KNWL
+# Knwl
 
 Conceptually speaking, knwl is a knowledge management extension (package, tool API) designed to help you organize and retrieve information efficiently. It leverages advanced AI techniques to provide insights based on your unique knowledge base and input.
 

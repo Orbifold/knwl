@@ -344,4 +344,22 @@ class SemanticGraphBase(FrameworkBase, ABC):
 
     @abstractmethod
     async def get_semantic_endpoints(self, edge_ids: list[str]) -> dict[str, tuple[str, str]]:
+        """
+        Returns the names of the source and target nodes for the given edge Id's.
+        """
         ...
+
+    @abstractmethod
+    async def get_nodes_by_name(self, name: str) -> list[KnwlNode] | None:
+        """
+        The id of the node uniquely identifies it, but sometimes it's useful to get a node by its name.
+        This means that this method may return multiple nodes with the same name.
+
+        Args:
+            name (str): The name of the node to retrieve.
+
+        Returns:
+            KnwlNode | None: The node if found, None otherwise.
+        """
+        ...
+
