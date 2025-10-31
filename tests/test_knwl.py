@@ -43,7 +43,7 @@ async def test_quick_start():
         "Photosynthesis is the process by which green plants and some other organisms use sunlight to synthesize foods from carbon dioxide and water.",
         id="fact2",
     )
-     # two nodes should be present now
+    # two nodes should be present now
     assert await knwl.node_count() == 2
 
     # you can take the node returned from add_fact as an alternative
@@ -58,6 +58,7 @@ async def test_quick_start():
         target_name=photosynthesis_node.name,
         relation="Both are fundamental natural processes.",
     )
-   
+
     # one edge
     assert await knwl.edge_count() == 1
+ 

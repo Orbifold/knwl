@@ -35,7 +35,7 @@ class KnwlNode(BaseModel):
         frozen=True,
         description="The type name of the knowledge node for (de)serialization purposes.",
     )
-    id: str = Field(
+    id: Optional[str] = Field(
         default=None,
         description="The unique identifier of the knowledge node, automatically generated from name and type",
     )

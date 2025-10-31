@@ -82,6 +82,7 @@ class Knwl:
         name: str,
         content: str,
         id: Optional[str] = None,
+        type: Optional[str] = "Fact",
     ) -> KnwlNode:
         """
         Add a single node-fact to the knowledge graph.
@@ -91,6 +92,7 @@ class Knwl:
             id=id,
             name=name,
             description=content,
+            type=type,
         )
         return await self.grag.embed_node(node)
 
@@ -121,37 +123,52 @@ class Knwl:
 
     async def connect(
         self,
-        source_name: str,
-        target_name: str,
-        relation: str,
+        source_name: Optional[str] = None,
+        target_name: Optional[str] = None,
+        source_id: Optional[str] = None,
+        target_id: Optional[str] = None,
+        relation: Optional[str] = "Relation",
     ) -> KnwlEdge:
         """
         Connect two nodes in the knowledge graph with a relation.
         This is a simplified method of the `semantic_graph` API.
         """
-        if source_name is None or target_name is None:
-            raise ValueError("Source and target node names must be provided.")
-        if str(source_name).strip() == "" or str(target_name).strip() == "":
-            raise ValueError("Source and target node names must be non-empty.")
-        if source_name == target_name:
-            raise ValueError("Source and target nodes must be different.")
 
-        sources = await self.grag.semantic_graph.get_nodes_by_name(source_name)
-        targets = await self.grag.semantic_graph.get_nodes_by_name(target_name)
-        if len(sources) == 0:
-            raise ValueError(f"No nodes found with name '{source_name}'.")
-        if len(targets) == 0:
-            raise ValueError(f"No nodes found with name '{target_name}'.")
-        # for convenience, just take the first found node with the given name
-        source = sources[0]
-        target = targets[0]
+        # the id's have precedence over names
+        if source_id is not None:
+            if source_name is not None:
+                raise ValueError("Provide either source_id or source_name, not both.")
+        else:
+            if source_name is None:
+                raise ValueError("Either source_id or source_name must be provided.")
+            else:
+                sources = await self.grag.semantic_graph.get_nodes_by_name(source_name)
+                if len(sources) == 0:
+                    raise ValueError(f"No nodes found with name '{source_name}'.")
+                source = sources[0]
+        if target_id is not None:
+            if target_name is not None:
+                raise ValueError("Provide either target_id or target_name, not both.")
+        else:
+            if target_name is None:
+                raise ValueError("Either target_id or target_name must be provided.")
+            else:
+                targets = await self.grag.semantic_graph.get_nodes_by_name(target_name)
+                if len(targets) == 0:
+                    raise ValueError(f"No nodes found with name '{target_name}'.")
+                target = targets[0]
+
+        if source.id == target.id:
+            raise ValueError("Cannot connect a node to itself.")
         edge = KnwlEdge(
             source_id=source.id,
             target_id=target.id,
             description=relation,
             type="Relation",
         )
-        return await self.grag.semantic_graph.embed_edge(edge) # embed, not upsert!, this is a semantic store
+        return await self.grag.semantic_graph.embed_edge(
+            edge
+        )  # embed, not upsert!, this is a semantic store
 
     async def get_config(self, *keys):
         """

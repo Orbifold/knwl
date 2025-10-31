@@ -31,7 +31,7 @@ class NetworkXGraphStorage(GraphStorageBase):
 
     """
 
-    graph: nx.MultiGraph
+    graph: nx.MultiDiGraph
 
     def __init__(self, path: str = "memory", format: str = "graphml"):
         super().__init__()
@@ -401,10 +401,10 @@ class NetworkXGraphStorage(GraphStorageBase):
         return EdgeSpecs(id=None, source_id=None, target_id=None, edge_data={})
 
     @staticmethod
-    def load(file_name) -> nx.Graph | None:
+    def load(file_name) -> nx.MultiDiGraph | None:
         try:
             if os.path.exists(file_name):
-                return nx.read_graphml(file_name)
+                return nx.read_graphml(file_name, force_multigraph=True)
         except Exception as e:
             log.error(f"Error loading graph from {file_name}: {e}")
             return None
@@ -662,7 +662,7 @@ class NetworkXGraphStorage(GraphStorageBase):
         edge_data["type"] = edge_type
 
         # Check if edge already exists with same type
-        existing_edges = self.graph.get_edge_data(source_id, target_id)
+        existing_edges = self.graph.get_edge_data(source_id, target_id, key=None)
         existing_edge_key = None
 
         if existing_edges:
@@ -680,7 +680,7 @@ class NetworkXGraphStorage(GraphStorageBase):
 
         # Remove existing edge if found (for update)
         if existing_edge_key is not None:
-            self.graph.remove_edge(source_id, target_id, key=existing_edge_key)
+            self.graph.remove_edge(source_id, target_id, key=edge_type)
 
         # Add the edge with type as key
         self.graph.add_edge(source_id, target_id, key=edge_type, **edge_data)

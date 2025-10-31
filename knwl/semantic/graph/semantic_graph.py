@@ -246,6 +246,7 @@ class SemanticGraph(SemanticGraphBase):
             return None
         edges = []
         for e in found:
+            self.fix_lists_in_data(e)
             edges.append(KnwlEdge(**e))
         return edges
 

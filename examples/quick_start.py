@@ -55,10 +55,36 @@ How was this question answered? You can inspect the configuration used:
 ==============================================================================================
 """
 print_knwl("@/llm")
+
 # %%
 """
 ==============================================================================================
-In order to use a knowledge graph you need to ingest data to build the graph. You can do this using the `add` method.
+You can add single facts to the knowledge graph using the `add_fact` method.
+There is no need to specify the id since this is a hash of the name the type.
+The type is also optional and defaults to "Unknown".
+==============================================================================================
+"""
+await knwl.add_fact(
+    "gravity",
+    "Gravity is a universal force that attracts two bodies toward each other.",
+    type="Fact",
+)
+
+await knwl.add_fact(
+    "photosynthesis",
+    "Photosynthesis is the process by which green plants and some other organisms use sunlight to synthesize foods from carbon dioxide and water.",
+    type="Fact",
+)
+await knwl.connect(
+    source_name="gravity",
+    target_name="photosynthesis",
+    relation="Both are fundamental natural processes.",
+)
+# %%
+"""
+==============================================================================================
+Of course, you typically do not create a KG manually like this.
+You can add arbitrary text and ingest it using the `add` method.
 ==============================================================================================
 """
 
