@@ -2,7 +2,7 @@ from typing import Any
 
 from knwl.config import get_config
 from knwl.logging import log
-from knwl.utils import hash_args
+from knwl.utils import get_full_path, hash_args
 import inspect
 
 
@@ -145,6 +145,15 @@ class Services:
             raise ValueError("Service name must be provided.")
         if hasattr(service_name, "__dict__"):
             return service_name  # already an instance
+        if isinstance(service_name, str) and service_name.startswith("@/"):
+            ref_keys = [u for u in service_name[2:].split("/") if u]
+            if len(ref_keys) == 1:
+                # fetch the default variant if only the service name is given
+                variant_name = get_config(ref_keys[0], "default", override=override)
+            else:
+                variant_name = ref_keys[1]
+            service_name = ref_keys[0]
+
         specs = self.get_service_specs(service_name, variant_name, override=override)
 
         service_name = specs["service_name"]
@@ -235,6 +244,9 @@ class Services:
                     else:
                         # whatever value
                         param = value_ref
+                elif isinstance(param_value, str) and param_value.startswith("$/"):
+                    # it's a path reference
+                    param = get_full_path(param_value)
                 else:
                     param = param_value
                 valid_kwargs[param_name] = param
@@ -287,6 +299,7 @@ def get_service(service_name: str, variant_name: str = None, override=None) -> o
     return services.get_service(
         service_name, variant_name=variant_name, override=override
     )
+
 
 def create_service(
     service_name: str, variant_name: str = None, override=None

@@ -16,6 +16,7 @@ A flexible Graph RAG package with advanced ingestion and augmentation strategies
 - **Classic RAG**: Traditional retrieval-augmented generation with chunk-based context
 - **Rich Output Formatting**: Beautiful terminal, HTML, and Markdown renderers for all models using Rich and custom formatters.
 - **Graph Visualization**: the default graph store is saved as GraphML which can be visualized with tools like Gephi, yEd or Cytoscape.
+- **Any LLM**: Easily swap LLM implementations (Ollama, OpenAI, Anthropic, etc.) via configuration. 
 
 ![](./journal/images/GraphIngestion.png)
 

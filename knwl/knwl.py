@@ -22,10 +22,17 @@ class Knwl:
     The default configuration behind this API stores everything under the user's home directory in a '.knwl' folder. There is an extensive configuration and dependency injection system behind Knwl that can be used to customize its behavior, but this class abstracts most of that away for simple use cases. It's an invitation to explore the rest of Knwl's capabilities.
     """
 
-    def __init__(self, namespace: str = "default"):
+    def __init__(
+        self,
+        namespace: str = "default",
+        llm: Optional[str] = None,
+        model: Optional[str] = None,
+    ):
         """
         Initialize Knwl with optionally the name of knowledge space.
         """
+        self._llm_provider = llm or "openai"
+        self._model = model
         self._llm = None
         self._namespace = namespace
         self._config = get_space_config(namespace)
@@ -58,7 +65,16 @@ class Knwl:
         Get the LLM client used by Knwl.
         """
         if self._llm is None:
-            self._llm = services.get_service("llm")
+            try:
+                if self._model:
+                    config = {"llm": {f"{self._llm_provider}": {"model": self._model}}}
+                    self._llm = services.get_service(
+                        f"@/llm/{self._llm_provider}", override=config
+                    )
+                else:
+                    self._llm = services.get_service(f"@/llm/{self._llm_provider}") # use the model defined in config
+            except Exception:
+                print(f"Error initializing LLM provider '{self._llm_provider}'.")
         return self._llm
 
     async def add(self, input: str | KnwlInput) -> KnwlIngestion:

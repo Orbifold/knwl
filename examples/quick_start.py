@@ -116,3 +116,22 @@ print_knwl(result)
 
 
 # %%
+"""
+==============================================================================================
+Kwnl allows you to use namespaces for different knowledge spaces.
+==============================================================================================
+"""
+knwl = Knwl("geography")
+a = await knwl.ask("What is the capital of Tanzania?")
+print_knwl(a)
+
+# %%
+"""
+==============================================================================================
+You can also specify different LLM providers and models.
+==============================================================================================
+"""
+knwl = Knwl("swa", llm="openai", model="gpt-5-nano")
+a = await knwl.ask("What is the capital of Tanzania?")
+print_knwl(a)
+# %%

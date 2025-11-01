@@ -163,7 +163,7 @@ _default_config = {
             "class": "knwl.llm.anthropic.AnthropicClient",
             "model": "claude-sonnet-4-5-20250929", # Sonnet 4.5 model
             "caching_service": "@/llm_caching/user",
-            "temperature": 0.1,
+            "temperature": 0.1,            
             "context_window": 4096,  # Max tokens for response (lower to avoid streaming requirement)
         },
     },

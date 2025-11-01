@@ -65,3 +65,9 @@ async def test_quick_start():
 
 
 
+@pytest.mark.asyncio
+async def test_knwl_ask():
+    from knwl import Knwl, print_knwl
+    knwl = Knwl("swa", llm="ollama")
+    a = await knwl.ask("What is the capital of Tanzania?")
+    print_knwl(a)
