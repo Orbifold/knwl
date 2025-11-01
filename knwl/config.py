@@ -159,12 +159,12 @@ _default_config = {
             "temperature": 0.1,
             "context_window": 32768,
         },
-        "gemma_small": {
-            "class": "knwl.llm.ollama.OllamaClient",
-            "model": "gemma3:4b",
+        "anthropic": {
+            "class": "knwl.llm.anthropic.AnthropicClient",
+            "model": "claude-sonnet-4-5-20250929", # Sonnet 4.5 model
             "caching_service": "@/llm_caching/user",
             "temperature": 0.1,
-            "context_window": 32768,
+            "context_window": 4096,  # Max tokens for response (lower to avoid streaming requirement)
         },
     },
     "llm_caching": {

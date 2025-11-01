@@ -13,7 +13,6 @@ from knwl.models.KnwlEdge import KnwlEdge
 from knwl.models.KnwlGraph import KnwlGraph
 from knwl.models.KnwlNode import KnwlNode
 from knwl.models.KnwlParams import AugmentationStrategy
-from types import MappingProxyType
 
 
 class Knwl:
@@ -23,25 +22,25 @@ class Knwl:
     The default configuration behind this API stores everything under the user's home directory in a '.knwl' folder. There is an extensive configuration and dependency injection system behind Knwl that can be used to customize its behavior, but this class abstracts most of that away for simple use cases. It's an invitation to explore the rest of Knwl's capabilities.
     """
 
-    def __init__(self, space: str = "default"):
+    def __init__(self, namespace: str = "default"):
         """
         Initialize Knwl with optionally the name of knowledge space.
         """
         self._llm = None
-        self._space = space
-        self._config = get_space_config(space)
+        self._namespace = namespace
+        self._config = get_space_config(namespace)
         set_active_config(self._config)  # override the whole config
         self.grag: GraphRAG = (
             GraphRAG()
         )  # grag is not a typo but an acronym for Graph RAG
 
     @property
-    def space(self):
+    def namespace(self):
         """
         Get the current knowledge space name.
-        This is the directory under which the knowledge graph and config are stored, typically '~/.knwl/<space>'.
+        This is the directory under which the knowledge graph and config are stored, typically '~/.knwl/<namespace>'.
         """
-        return self._space
+        return self._namespace
 
     @property
     def config(self):
