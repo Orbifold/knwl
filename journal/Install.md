@@ -44,4 +44,19 @@ Alternatively, since Knwl uses `uv` as its package manager, you should use:
 uv sync
 ```
 
-This achieves the same result but uses `uv`'s workflow instead of pip.
+This achieves the same result but uses `uv`'s workflow instead of pip. Note the uv installs dev dependencies by default when using `uv sync`. Things like `pytest` will be installed automatically.
+
+You can install additional groups of dependencies, for instance, to install the `neo4j` and `dev` groups, you can run:
+
+```bash
+uv sync --group "neo4j,dev"
+```
+
+or to install all optional groups:
+
+```bash
+uv sync --all-groups
+```
+
+## Dependency Groups
+

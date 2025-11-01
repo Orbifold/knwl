@@ -1,7 +1,6 @@
 __pycache__
 *.egg-info
-dickens/
-book.txt
+ 
 .idea/
 dist/
 .venv
@@ -20,3 +19,4 @@ workdir/
 .env.local
 .env.*.local
 tests/library/**/*.md
+benchmarks/results/

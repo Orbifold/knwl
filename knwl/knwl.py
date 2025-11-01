@@ -72,18 +72,26 @@ class Knwl:
                         f"@/llm/{self._llm_provider}", override=config
                     )
                 else:
-                    self._llm = services.get_service(f"@/llm/{self._llm_provider}") # use the model defined in config
+                    self._llm = services.get_service(
+                        f"@/llm/{self._llm_provider}"
+                    )  # use the model defined in config
             except Exception:
                 print(f"Error initializing LLM provider '{self._llm_provider}'.")
         return self._llm
 
-    async def add(self, input: str | KnwlInput) -> KnwlIngestion:
+    async def add(self, input: str | KnwlInput) -> KnwlGraph:
         """
         Add input to be processed by Knwl, i.e. ingest the given text or KnwlInput object.
         """
         if isinstance(input, str):
             input = KnwlInput(text=input)
         return await self.grag.ingest(input)
+
+    async def ingest(self, input: str | KnwlInput) -> KnwlGraph:
+        """
+        This is an alias for `add()`.
+        """
+        return await self.add(input)
 
     async def ask(
         self, question: str, strategy: AugmentationStrategy = None
