@@ -129,7 +129,7 @@ async def test_edge_degree(test_storage):
 
 
 @pytest.mark.asyncio
-async def test_get_node_edges(test_storage):
+async def test_get_nodes_edges(test_storage):
     await test_storage.upsert_node("node1", {"description": "value1"})
     await test_storage.upsert_node("node2", {"description": "value2"})
     await test_storage.upsert_node("node3", {"description": "value3"})
@@ -218,18 +218,18 @@ async def test_get_node_by_name(test_storage):
     await test_storage.upsert_node(node3)
 
     # Test get_node_by_name for "Node1"
-    result = await test_storage.get_node_by_name("Node1")
+    result = await test_storage.get_nodes_by_name("Node1")
     assert len(result) == 2
     assert set([n["name"] for n in result]) == {"Node1"}
     assert set([n["type"] for n in result]) == {"A", "B"}
 
     # Test get_node_by_name for "Node2"
-    result = await test_storage.get_node_by_name("Node2")
+    result = await test_storage.get_nodes_by_name("Node2")
     assert len(result) == 1
     assert result[0]["id"] == node2.id
 
     # Test get_node_by_name for a non-existent node name
-    result = await test_storage.get_node_by_name("NonExistentNode")
+    result = await test_storage.get_nodes_by_name("NonExistentNode")
     assert result == []
 
 

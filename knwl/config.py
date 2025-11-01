@@ -13,7 +13,13 @@ That is, you have out of the box a '~/.knwl/user/default' space where all user d
 If you use the `Knwl` utility class, you can specify a different space when adding or asking.
 """
 _default_config = {
-    "logging": {"enabled": True, "level": "ERROR", "path": "$/user/default/knwl.log"},
+    "blob": {
+        "default": "file_system",
+        "file_system": {
+            "class": "knwl.storage.file_storage.FileStorage",
+            "base_path": "$/data/blobs",
+        },
+    },
     "chunking": {
         "default": "tiktoken",
         "tiktoken": {
@@ -39,71 +45,109 @@ _default_config = {
             "document_storage": "@/json/user_documents",
         },
     },
-    "summarization": {
-        "default": "ollama",
-        "concat": {
-            "class": "knwl.summarization.concat.SimpleConcatenation",
-            "max_tokens": 500,
-        },
-        "ollama": {
-            "class": "knwl.summarization.ollama.OllamaSummarization",
-            "llm": "@/llm/ollama",
-            "max_tokens": 150,
-            "chunker": "@/chunking/tiktoken",
-        },
-    },
     "entity_extraction": {
         "default": "basic",
         "basic": {
             "class": "knwl.extraction.basic_entity_extraction.BasicEntityExtraction",
-            "llm": "@/llm/openai",
-        },
-    },
-    "keywords_extraction": {
-        "default": "basic",
-        "basic": {
-            "class": "knwl.extraction.basic_keywords_extraction.BasicKeywordsExtraction",
-            "llm": "@/llm/ollama",
+            "llm": "@/llm",
         },
     },
     "graph_extraction": {
-        "default": "ollama",
-        "ollama": {
+        "default": "full",
+        "full": {
             "class": "knwl.extraction.basic_graph_extraction.BasicGraphExtraction",
             "mode": "full",  # fast or full
-            "llm": "@/llm/ollama",
+            "llm": "@/llm",
+        },
+        "full": {
+            "class": "knwl.extraction.basic_graph_extraction.BasicGraphExtraction",
+            "mode": "fast",  # fast or full
+            "llm": "@/llm",
         },
     },
     "glean_graph_extraction": {
         "default": "max3",
         "max3": {
             "class": "knwl.extraction.glean_graph_extraction.GleanGraphExtraction",
-            "llm": "@/llm/ollama",
+            "llm": "@/llm",
             "max_glean": 3,
         },
     },
-    "semantic_graph": {
+    "graph": {
         "default": "user",
         "user": {
-            "class": "knwl.semantic.graph.semantic_graph.SemanticGraph",
-            "graph_store": "@/graph/user",  # the topology
-            "node_embeddings": "@/vector/user_nodes",  # the node embeddings
-            "edge_embeddings": "@/vector/user_edges",  # the edge embeddings
-            "summarization": "@/summarization/ollama",  # how to summarize long texts
+            "class": "knwl.storage.networkx_storage.NetworkXGraphStorage",
+            "format": "graphml",
+            "memory": False,
+            "path": "$/user/default/graph.graphml",
         },
         "memory": {
-            "class": "knwl.semantic.graph.semantic_graph.SemanticGraph",
-            "graph_store": "@/graph/memory",  # the topology
-            "node_embeddings": "@/vector/memory",  # the node embeddings
-            "edge_embeddings": "@/vector/memory",  # the edge embeddings
-            "summarization": "@/summarization/ollama",  # how to summarize long texts
+            "class": "knwl.storage.networkx_storage.NetworkXGraphStorage",
+            "format": "graphml",
+            "memory": True,
+        },
+    },
+    "graph_rag": {
+        "default": "user",
+        "memory": {
+            "class": "knwl.semantic.graph_rag.graph_rag.GraphRAG",
+            "semantic_graph": "@/semantic_graph/memory",
+            "ragger": "@/rag_store",
+            "graph_extractor": "@/graph_extraction/basic",
+            "keywords_extractor": "@/keywords_extraction",
+        },
+        "user": {
+            "class": "knwl.semantic.graph_rag.graph_rag.GraphRAG",
+            "semantic_graph": "@/semantic_graph/user",
+            "ragger": "@/rag_store/user",
+            "graph_extractor": "@/graph_extraction",
+            "keywords_extractor": "@/keywords_extraction",
+        },
+    },
+    "json": {
+        "default": "basic",
+        "basic": {
+            "class": "knwl.storage.json_storage.JsonStorage",
+            "path": "$/data/data.json",
+        },
+        "node_store": {
+            "class": "knwl.storage.json_storage.JsonStorage",
+            "path": "$/tests/graphrag/node_store.json",
+        },
+        "edge_store": {
+            "class": "knwl.storage.json_storage.JsonStorage",
+            "path": "$/tests/graphrag/edge_store.json",
+        },
+        "document_store": {
+            "class": "knwl.storage.json_storage.JsonStorage",
+            "path": "$/tests/graphrag/document_store.json",
+        },
+        "chunk_store": {
+            "class": "knwl.storage.json_storage.JsonStorage",
+            "path": "$/tests/graphrag/chunk_store.json",
+        },
+        "user_documents": {
+            "class": "knwl.storage.json_storage.JsonStorage",
+            "path": "$/user/default/documents.json",
+        },
+        "user_chunks": {
+            "class": "knwl.storage.json_storage.JsonStorage",
+            "path": "$/user/default/chunks.json",
+        },
+    },
+    "keywords_extraction": {
+        "default": "basic",
+        "basic": {
+            "class": "knwl.extraction.basic_keywords_extraction.BasicKeywordsExtraction",
+            "llm": "@/llm",
         },
     },
     "llm": {
         "default": "ollama",
         "ollama": {
             "class": "knwl.llm.ollama.OllamaClient",
-            "model": "gpt-oss:20b",
+            "model1": "gpt-oss:20b",
+            "model": "qwen2.5:14b",
             "caching_service": "@/llm_caching/user",
             "temperature": 0.1,
             "context_window": 32768,
@@ -132,6 +176,47 @@ _default_config = {
         "user": {
             "class": "knwl.llm.json_llm_cache.JsonLLMCache",
             "path": "$/user/default/llm_cache.json",
+        },
+    },
+    "logging": {"enabled": True, "level": "ERROR", "path": "$/user/default/knwl.log"},
+    "rag_store": {
+        "default": "user",
+        "user": {
+            "class": "knwl.semantic.rag.rag_store.RagStore",
+            "document_store": "@/document_store/user",
+            "chunk_store": "@/chunk_store/user",
+            "chunker": "@/chunking/tiktoken",
+            "auto_chunk": True,
+        },
+    },
+    "semantic_graph": {
+        "default": "user",
+        "user": {
+            "class": "knwl.semantic.graph.semantic_graph.SemanticGraph",
+            "graph_store": "@/graph/user",  # the topology
+            "node_embeddings": "@/vector/user_nodes",  # the node embeddings
+            "edge_embeddings": "@/vector/user_edges",  # the edge embeddings
+            "summarization": "@/summarization",  # how to summarize long texts
+        },
+        "memory": {
+            "class": "knwl.semantic.graph.semantic_graph.SemanticGraph",
+            "graph_store": "@/graph/memory",  # the topology
+            "node_embeddings": "@/vector/memory",  # the node embeddings
+            "edge_embeddings": "@/vector/memory",  # the edge embeddings
+            "summarization": "@/summarization",  # how to summarize long texts
+        },
+    },
+    "summarization": {
+        "default": "llm",
+        "concat": {
+            "class": "knwl.summarization.concat.SimpleConcatenation",
+            "max_tokens": 500,
+        },
+        "llm": {
+            "class": "knwl.summarization.ollama.OllamaSummarization",
+            "llm": "@/llm",
+            "max_tokens": 150,
+            "chunker": "@/chunking/tiktoken",
         },
     },
     "vector": {
@@ -170,85 +255,6 @@ _default_config = {
             "class": "knwl.storage.chroma_storage.ChromaStorage",
             "memory": True,
             "collection_name": "chunks",
-        },
-    },
-    "graph": {
-        "default": "user",
-        "user": {
-            "class": "knwl.storage.networkx_storage.NetworkXGraphStorage",
-            "format": "graphml",
-            "memory": False,
-            "path": "$/user/default/graph.graphml",
-        },
-        "memory": {
-            "class": "knwl.storage.networkx_storage.NetworkXGraphStorage",
-            "format": "graphml",
-            "memory": True,
-        },
-    },
-    "json": {
-        "default": "basic",
-        "basic": {
-            "class": "knwl.storage.json_storage.JsonStorage",
-            "path": "$/data/data.json",
-        },
-        "node_store": {
-            "class": "knwl.storage.json_storage.JsonStorage",
-            "path": "$/tests/graphrag/node_store.json",
-        },
-        "edge_store": {
-            "class": "knwl.storage.json_storage.JsonStorage",
-            "path": "$/tests/graphrag/edge_store.json",
-        },
-        "document_store": {
-            "class": "knwl.storage.json_storage.JsonStorage",
-            "path": "$/tests/graphrag/document_store.json",
-        },
-        "chunk_store": {
-            "class": "knwl.storage.json_storage.JsonStorage",
-            "path": "$/tests/graphrag/chunk_store.json",
-        },
-        "user_documents": {
-            "class": "knwl.storage.json_storage.JsonStorage",
-            "path": "$/user/default/documents.json",
-        },
-        "user_chunks": {
-            "class": "knwl.storage.json_storage.JsonStorage",
-            "path": "$/user/default/chunks.json",
-        },
-    },
-    "blob": {
-        "default": "file_system",
-        "file_system": {
-            "class": "knwl.storage.file_storage.FileStorage",
-            "base_path": "$/data/blobs",
-        },
-    },
-    "graph_rag": {
-        "default": "user",
-        "memory": {
-            "class": "knwl.semantic.graph_rag.graph_rag.GraphRAG",
-            "semantic_graph": "@/semantic_graph/memory",
-            "ragger": "@/rag_store",
-            "graph_extractor": "@/graph_extraction/basic",
-            "keywords_extractor": "@/keywords_extraction",
-        },
-        "user": {
-            "class": "knwl.semantic.graph_rag.graph_rag.GraphRAG",
-            "semantic_graph": "@/semantic_graph/user",
-            "ragger": "@/rag_store/user",
-            "graph_extractor": "@/graph_extraction/ollama",
-            "keywords_extractor": "@/keywords_extraction",
-        },
-    },
-    "rag_store": {
-        "default": "user",
-        "user": {
-            "class": "knwl.semantic.rag.rag_store.RagStore",
-            "document_store": "@/document_store/user",
-            "chunk_store": "@/chunk_store/user",
-            "chunker": "@/chunking/tiktoken",
-            "auto_chunk": True,
         },
     },
 }
@@ -539,7 +545,7 @@ def resolve_reference(ref: str, config=None, override=None) -> dict:
         return resolved
     elif isinstance(found, str) and found.startswith("@/"):
         return resolve_reference(found, config=config, override=override)
-    if found.startswith("$/"):
+    if str(found).startswith("$/"):
         return get_full_path(found)
     return found
 

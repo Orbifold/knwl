@@ -8,7 +8,7 @@ from knwl.models import KnwlAnswer
 from knwl.di import service, inject_config, defaults
 from knwl.logging import log
 
-@defaults("llm", "ollama")
+@defaults("@/llm/ollama")
 class OllamaClient(LLMBase):
     def __init__(
         self,

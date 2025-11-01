@@ -4,7 +4,7 @@ from knwl.llm.llm_base import LLMBase
 from knwl.prompts import prompts
 from knwl.summarization.summarization_base import SummarizationBase
 
-@defaults("summarization", "ollama")
+@defaults("summarization")
 class OllamaSummarization(SummarizationBase):
     """
     Summarization using the Ollama LLM service.

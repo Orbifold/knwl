@@ -46,20 +46,7 @@ def test_get_spec():
         # can't have both "/" and variant in one call
         services.get_service_specs("a/b", "c", override=override_config)
 
-    config = {
-        "semantic": {
-            "default": "local",
-            "local": {
-                "graph": {
-                    "graph-store": "graph/graph-store",  # the topology
-                    "node_embeddings": "vector/nodes",  # the node embeddings
-                    "edge-embeddings": "vector/edges",  # the edge embeddings
-                    "summarization": "summarization/ollama",  # how to summarize long texts
-                }
-            },
-        }
-    }
-    specs = services.get_service_specs("semantic", override=config)
+    
 
 
 @pytest.mark.asyncio

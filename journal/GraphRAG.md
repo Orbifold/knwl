@@ -11,3 +11,7 @@ You also have the flexibility to discard things like extracting knowledge graphs
 
 
 <img src="./images/GraphIngestion.png" alt="Graph Ingestion Output" width="500">
+
+<img src="./images/Topology.png" alt="Small part of the Wikipedia article on topology" width="500">
+
+
