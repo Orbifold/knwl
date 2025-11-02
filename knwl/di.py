@@ -26,10 +26,11 @@ Example usage:
 
 import functools
 import inspect
-from typing import Any, Dict, List, Optional, Callable, Union
-from knwl.services import services
+from typing import Any, Dict, Optional, Callable, Union
+
 from knwl.config import get_config
 from knwl.logging import log
+from knwl.services import services
 
 
 def _get_override_value(override_dict: Dict, config_key: str, default=None):
@@ -69,62 +70,26 @@ class DIContainer:
         self._config_registry: Dict[str, Dict] = {}
         self._defaults_registry: Dict[str, Dict] = {}
 
-    def register_service_injection(
-        self,
-        func_name: str,
-        service_name: str,
-        variant_name: Optional[str] = None,
-        param_name: Optional[str] = None,
-        singleton: bool = False,
-        override: Optional[Dict] = None,
-    ):
+    def register_service_injection(self, func_name: str, service_name: str, variant_name: Optional[str] = None, param_name: Optional[str] = None, singleton: bool = False, override: Optional[Dict] = None, ):
         """Register a service injection for a function."""
         if func_name not in self._service_registry:
             self._service_registry[func_name] = {}
 
         injection_key = param_name or service_name
-        self._service_registry[func_name][injection_key] = {
-            "service_name": service_name,
-            "variant_name": variant_name,
-            "singleton": singleton,
-            "override": override,
-        }
+        self._service_registry[func_name][injection_key] = {"service_name": service_name, "variant_name": variant_name, "singleton": singleton, "override": override, }
 
-    def register_config_injection(
-        self,
-        func_name: str,
-        config_mapping: Union[Dict[str, str], list[str]],
-        param_name: Optional[str] = None,
-        override: Optional[Dict] = None,
-    ):
+    def register_config_injection(self, func_name: str, config_mapping: Union[Dict[str, str], list[str]], param_name: Optional[str] = None, override: Optional[Dict] = None, ):
         """Register config value injections for a function."""
         if isinstance(config_mapping, dict):
             # New format: {config_key: param_name}
-            self._config_registry[func_name] = {
-                "config_mapping": config_mapping,
-                "override": override,
-            }
+            self._config_registry[func_name] = {"config_mapping": config_mapping, "override": override, }
         else:
             # Legacy format: list of config keys
-            self._config_registry[func_name] = {
-                "config_keys": config_mapping,
-                "param_name": param_name,
-                "override": override,
-            }
+            self._config_registry[func_name] = {"config_keys": config_mapping, "param_name": param_name, "override": override, }
 
-    def register_defaults_injection(
-        self,
-        func_name: str,
-        service_name: str,
-        variant_name: Optional[str] = None,
-        override: Optional[Dict] = None,
-    ):
+    def register_defaults_injection(self, func_name: str, service_name: str, variant_name: Optional[str] = None, override: Optional[Dict] = None, ):
         """Register defaults injection from a service configuration."""
-        self._defaults_registry[func_name] = {
-            "service_name": service_name,
-            "variant_name": variant_name,
-            "override": override,
-        }
+        self._defaults_registry[func_name] = {"service_name": service_name, "variant_name": variant_name, "override": override, }
 
     def safe_bind_partial(self, func: Callable, *args, **kwargs):
         """
@@ -151,10 +116,7 @@ class DIContainer:
         filtered_kwargs = {k: v for k, v in kwargs.items() if k in valid_params}
 
         # Check if function accepts **kwargs (VAR_KEYWORD)
-        has_var_keyword = any(
-            param.kind == inspect.Parameter.VAR_KEYWORD
-            for param in sig.parameters.values()
-        )
+        has_var_keyword = any(param.kind == inspect.Parameter.VAR_KEYWORD for param in sig.parameters.values())
 
         if has_var_keyword:
             # If function accepts **kwargs, include all kwargs
@@ -177,32 +139,17 @@ class DIContainer:
         # Inject services
         if func_name in self._service_registry:
             for param_name, service_info in self._service_registry[func_name].items():
-                if (
-                    param_name not in bound_args.arguments
-                    or bound_args.arguments[param_name] is None
-                ):
+                if (param_name not in bound_args.arguments or bound_args.arguments[param_name] is None):
                     try:
                         if service_info["singleton"]:
-                            # note that this means that accessing the singletong via injection or directly via `get_service` results in the same instance
-                            service_instance = services.get_service(
-                                service_info["service_name"],
-                                variant_name=service_info["variant_name"],
-                                override=service_info["override"],
-                            )
+                            # note that this means that accessing the singleton via injection or directly via `get_service` results in the same instance
+                            service_instance = services.get_service(service_info["service_name"], variant_name=service_info["variant_name"], override=service_info["override"], )
                         else:
-                            service_instance = services.create_service(
-                                service_info["service_name"],
-                                variant_name=service_info["variant_name"],
-                                override=service_info["override"],
-                            )
+                            service_instance = services.create_service(service_info["service_name"], variant_name=service_info["variant_name"], override=service_info["override"], )
                         bound_args.arguments[param_name] = service_instance
-                        log.debug(
-                            f"Injected service '{service_info['service_name']}' as '{param_name}' into {func.__name__}"
-                        )
+                        log.debug(f"Injected service '{service_info['service_name']}' as '{param_name}' into {func.__name__}")
                     except Exception as e:
-                        log(
-                            f"Failed to inject service '{service_info['service_name']}': {e}"
-                        )
+                        log(f"Failed to inject service '{service_info['service_name']}': {e}")
                         raise
 
         # Inject config values
@@ -214,25 +161,16 @@ class DIContainer:
                 # New format: {config_key: param_name}
                 config_mapping = config_info["config_mapping"]
                 for config_key, param_name in config_mapping.items():
-                    if (
-                        param_name not in bound_args.arguments
-                        or bound_args.arguments[param_name] is None
-                    ):
+                    if (param_name not in bound_args.arguments or bound_args.arguments[param_name] is None):
                         try:
                             # Check if there's an override for this config key
-                            override_value = _get_override_value(
-                                override, config_key, None
-                            )
+                            override_value = _get_override_value(override, config_key, None)
                             if override_value is not None:
                                 config_value = override_value
-                                log.debug(
-                                    f"Using override value for config '{config_key}' as '{param_name}' into {func.__name__}"
-                                )
+                                log.debug(f"Using override value for config '{config_key}' as '{param_name}' into {func.__name__}")
                             else:
                                 config_value = get_config(*config_key.split("."))
-                                log(
-                                    f"Injected config '{config_key}' as '{param_name}' into {func.__name__}"
-                                )
+                                log.debug(f"Injected config '{config_key}' as '{param_name}' into {func.__name__}")
 
                             bound_args.arguments[param_name] = config_value
                         except Exception as e:
@@ -245,38 +183,25 @@ class DIContainer:
 
                 # Validate param_name usage
                 if custom_param_name and len(config_keys) > 1:
-                    raise ValueError(
-                        "param_name can only be used with a single config key"
-                    )
+                    raise ValueError("param_name can only be used with a single config key")
 
                 for i, config_key in enumerate(config_keys):
                     # Use custom param_name for single config key, otherwise use last part of config key
                     if custom_param_name and len(config_keys) == 1:
                         param_name = custom_param_name
                     else:
-                        param_name = config_key.split(".")[
-                            -1
-                        ]  # Use last part as param name
+                        param_name = config_key.split(".")[-1]  # Use last part as param name
 
-                    if (
-                        param_name not in bound_args.arguments
-                        or bound_args.arguments[param_name] is None
-                    ):
+                    if (param_name not in bound_args.arguments or bound_args.arguments[param_name] is None):
                         try:
                             # Check if there's an override for this config key
-                            override_value = _get_override_value(
-                                override, config_key, None
-                            )
+                            override_value = _get_override_value(override, config_key, None)
                             if override_value is not None:
                                 config_value = override_value
-                                log.debug(
-                                    f"Using override value for config '{config_key}' as '{param_name}' into {func.__name__}"
-                                )
+                                log.debug(f"Using override value for config '{config_key}' as '{param_name}' into {func.__name__}")
                             else:
                                 config_value = get_config(*config_key.split("."))
-                                log.debug(
-                                    f"Injected config '{config_key}' as '{param_name}' into {func.__name__}"
-                                )
+                                log.debug(f"Injected config '{config_key}' as '{param_name}' into {func.__name__}")
 
                             bound_args.arguments[param_name] = config_value
                         except Exception as e:
@@ -294,19 +219,13 @@ class DIContainer:
             if variant_name is None:
                 variant_name = get_config(service_name, "default", override=override)
                 if variant_name is None:
-                    log.debug(
-                        f"No default variant found for service '{service_name}', skipping defaults injection"
-                    )
+                    log.debug(f"No default variant found for service '{service_name}', skipping defaults injection")
                     return bound_args.arguments
 
             # Get the service configuration
-            service_config = get_config(
-                service_name, variant_name, default=None, override=override
-            )
+            service_config = get_config(service_name, variant_name, default=None, override=override)
             if service_config is None:
-                (
-                    f"No configuration found for service '{service_name}/{variant_name}', skipping defaults injection"
-                )
+                log.debug(f"No configuration found for service '{service_name}/{variant_name}', skipping defaults injection")
                 return bound_args.arguments
 
             # Get the function's parameter names (excluding 'self')
@@ -325,69 +244,40 @@ class DIContainer:
                     continue
                 # Handle explicit "None" string to set parameter to None
                 # This allows disabling a default by setting it to "None" in config
-                if (
-                    bound_args.arguments[param_name] is not None
-                    and str(bound_args.arguments[param_name]).strip().lower() == "none"
-                ):
+                if (bound_args.arguments[param_name] is not None and str(bound_args.arguments[param_name]).strip().lower() == "none"):
                     bound_args.arguments[param_name] = None
                     continue
                 # Only inject if the parameter is not already provided
-                if (
-                    param_name not in bound_args.arguments
-                    or bound_args.arguments[param_name] is None
-                ):
+                if (param_name not in bound_args.arguments or bound_args.arguments[param_name] is None):
                     try:
                         if param_value is None:
                             continue
-                        elif isinstance(param_value, str) and (
-                            param_value.strip() == ""
-                            or param_value.strip().lower() == "none"
-                        ):
+                        elif isinstance(param_value, str) and (param_value.strip() == "" or param_value.strip().lower() == "none"):
                             # Skip empty string values
                             continue
                         # Handle service references (e.g., "@/llm/openai")
-                        elif isinstance(param_value, str) and param_value.startswith(
-                            "@/"
-                        ):
+                        elif isinstance(param_value, str) and param_value.startswith("@/"):
                             # Parse the service reference
                             ref_parts = param_value[2:].split("/")
                             if len(ref_parts) >= 1:
                                 ref_service_name = ref_parts[0]
-                                ref_variant_name = (
-                                    ref_parts[1] if len(ref_parts) > 1 else None
-                                )
-
-                                # Instantiate the referenced service
-                                service_instance = services.get_service(
-                                    ref_service_name,
-                                    variant_name=ref_variant_name,
-                                    override=override,
-                                )
+                                ref_variant_name = (ref_parts[1] if len(ref_parts) > 1 else None)
+                                # fetch the singleton
+                                service_instance = services.get_service(ref_service_name, variant_name=ref_variant_name, override=override, )
                                 bound_args.arguments[param_name] = service_instance
-                                (
-                                    f"Injected service reference '{param_value}' as '{param_name}' into {func.__name__}"
-                                )
+                                log.debug(f"Injected service reference '{param_value}' as '{param_name}' into {func.__name__}")
                         else:
                             # Direct value injection
                             bound_args.arguments[param_name] = param_value
-                            log.debug(
-                                f"Injected default '{param_name}' = '{param_value}' into {func.__name__}"
-                            )
+                            log.debug(f"Injected default '{param_name}' = '{param_value}' into {func.__name__}")
                     except Exception as e:
-                        log.error(
-                            f"Failed to inject default '{param_name}' from service '{service_name}/{variant_name}': {e}"
-                        )
+                        log.error(f"Failed to inject default '{param_name}' from service '{service_name}/{variant_name}': {e}")
                         raise
 
         return bound_args.arguments
 
 
-def service(
-    service_name: str,
-    variant: Optional[str] = None,
-    param_name: Optional[str] = None,
-    override: Optional[Dict] = None,
-):
+def service(service_name: str, variant: Optional[str] = None, param_name: Optional[str] = None, override: Optional[Dict] = None, ):
     """
     Decorator to inject a service instance into a function parameter.
 
@@ -405,14 +295,7 @@ def service(
 
     def decorator(func: Callable) -> Callable:
         func_name = f"{func.__module__}.{func.__qualname__}"
-        container.register_service_injection(
-            func_name,
-            service_name,
-            variant,
-            param_name,
-            singleton=False,
-            override=override,
-        )
+        container.register_service_injection(func_name, service_name, variant, param_name, singleton=False, override=override, )
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -431,12 +314,7 @@ def service(
     return decorator
 
 
-def singleton_service(
-    service_name: str,
-    variant: Optional[str] = None,
-    param_name: Optional[str] = None,
-    override: Optional[Dict] = None,
-):
+def singleton_service(service_name: str, variant: Optional[str] = None, param_name: Optional[str] = None, override: Optional[Dict] = None, ):
     """
     Decorator to inject a singleton service instance into a function parameter.
 
@@ -456,14 +334,7 @@ def singleton_service(
 
     def decorator(func: Callable) -> Callable:
         func_name = f"{func.__module__}.{func.__qualname__}"
-        container.register_service_injection(
-            func_name,
-            service_name,
-            variant,
-            param_name,
-            singleton=True,
-            override=override,
-        )
+        container.register_service_injection(func_name, service_name, variant, param_name, singleton=True, override=override, )
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -482,12 +353,7 @@ def singleton_service(
     return decorator
 
 
-def inject_config(
-    config_keys_or_mapping: Union[str, Dict[str, str], list[str]],
-    *additional_config_keys: str,
-    param_name: Optional[str] = None,
-    override: Optional[Dict] = None,
-):
+def inject_config(config_keys_or_mapping: Union[str, Dict[str, str], list[str]], *additional_config_keys: str, param_name: Optional[str] = None, override: Optional[Dict] = None, ):
     """
     Decorator to inject configuration values into function or class constructor parameters.
 
@@ -535,23 +401,17 @@ def inject_config(
             original_init = original_class.__init__
 
             # Get the fully qualified name for the __init__ method
-            init_func_name = (
-                f"{original_class.__module__}.{original_class.__qualname__}.__init__"
-            )
+            init_func_name = (f"{original_class.__module__}.{original_class.__qualname__}.__init__")
 
             # Process the config keys and parameter mapping
             if isinstance(config_keys_or_mapping, dict):
                 config_mapping = config_keys_or_mapping
                 if additional_config_keys:
-                    raise ValueError(
-                        "Cannot use additional config keys with dictionary format"
-                    )
+                    raise ValueError("Cannot use additional config keys with dictionary format")
                 if param_name:
                     raise ValueError("Cannot use param_name with dictionary format")
             elif isinstance(config_keys_or_mapping, (list, tuple)):
-                config_keys = list(config_keys_or_mapping) + list(
-                    additional_config_keys
-                )
+                config_keys = list(config_keys_or_mapping) + list(additional_config_keys)
                 config_mapping = {key: key.split(".")[-1] for key in config_keys}
             else:
                 config_keys = [config_keys_or_mapping] + list(additional_config_keys)
@@ -559,21 +419,15 @@ def inject_config(
 
                 if param_name:
                     if len(config_keys) > 1:
-                        raise ValueError(
-                            "param_name can only be used with a single config key"
-                        )
+                        raise ValueError("param_name can only be used with a single config key")
                     config_mapping[config_keys[0]] = param_name
 
             # Register the config injection for the __init__ method
-            container.register_config_injection(
-                init_func_name, config_mapping, param_name, override
-            )
+            container.register_config_injection(init_func_name, config_mapping, param_name, override)
 
             @functools.wraps(original_init)
             def wrapped_init(self, *args, **kwargs):
-                injected_args = container.inject_dependencies(
-                    original_init, self, *args, **kwargs
-                )
+                injected_args = container.inject_dependencies(original_init, self, *args, **kwargs)
 
                 # Handle **kwargs properly
                 if "kwargs" in injected_args:
@@ -596,15 +450,11 @@ def inject_config(
             if isinstance(config_keys_or_mapping, dict):
                 config_mapping = config_keys_or_mapping
                 if additional_config_keys:
-                    raise ValueError(
-                        "Cannot use additional config keys with dictionary format"
-                    )
+                    raise ValueError("Cannot use additional config keys with dictionary format")
                 if param_name:
                     raise ValueError("Cannot use param_name with dictionary format")
             elif isinstance(config_keys_or_mapping, (list, tuple)):
-                config_keys = list(config_keys_or_mapping) + list(
-                    additional_config_keys
-                )
+                config_keys = list(config_keys_or_mapping) + list(additional_config_keys)
                 config_mapping = {key: key.split(".")[-1] for key in config_keys}
             else:
                 config_keys = [config_keys_or_mapping] + list(additional_config_keys)
@@ -612,20 +462,14 @@ def inject_config(
 
                 if param_name:
                     if len(config_keys) > 1:
-                        raise ValueError(
-                            "param_name can only be used with a single config key"
-                        )
+                        raise ValueError("param_name can only be used with a single config key")
                     config_mapping[config_keys[0]] = param_name
 
-            container.register_config_injection(
-                func_name, config_mapping, param_name, override
-            )
+            container.register_config_injection(func_name, config_mapping, param_name, override)
 
             @functools.wraps(func_or_class)
             def wrapper(*args, **kwargs):
-                injected_args = container.inject_dependencies(
-                    func_or_class, *args, **kwargs
-                )
+                injected_args = container.inject_dependencies(func_or_class, *args, **kwargs)
 
                 # Handle **kwargs properly
                 if "kwargs" in injected_args:
@@ -640,11 +484,7 @@ def inject_config(
     return decorator
 
 
-def defaults(
-    service_name: str,
-    variant: Optional[str] = None,
-    override: Optional[Dict] = None,
-):
+def defaults(service_name: str, variant: Optional[str] = None, override: Optional[Dict] = None, ):
     """
     Decorator to inject default values from a service configuration into class constructor parameters.
 
@@ -689,20 +529,14 @@ def defaults(
             original_init = original_class.__init__
 
             # Get the fully qualified name for the __init__ method
-            init_func_name = (
-                f"{original_class.__module__}.{original_class.__qualname__}.__init__"
-            )
+            init_func_name = (f"{original_class.__module__}.{original_class.__qualname__}.__init__")
 
             # Register the defaults injection for the __init__ method
-            container.register_defaults_injection(
-                init_func_name, service_name, variant, override
-            )
+            container.register_defaults_injection(init_func_name, service_name, variant, override)
 
             @functools.wraps(original_init)
             def wrapped_init(self, *args, **kwargs):
-                injected_args = container.inject_dependencies(
-                    original_init, self, *args, **kwargs
-                )
+                injected_args = container.inject_dependencies(original_init, self, *args, **kwargs)
 
                 # Handle **kwargs properly
                 if "kwargs" in injected_args:
@@ -722,15 +556,11 @@ def defaults(
             func_name = f"{func_or_class.__module__}.{func_or_class.__qualname__}"
 
             # Register the defaults injection
-            container.register_defaults_injection(
-                func_name, service_name, variant, override
-            )
+            container.register_defaults_injection(func_name, service_name, variant, override)
 
             @functools.wraps(func_or_class)
             def wrapper(*args, **kwargs):
-                injected_args = container.inject_dependencies(
-                    func_or_class, *args, **kwargs
-                )
+                injected_args = container.inject_dependencies(func_or_class, *args, **kwargs)
 
                 # Handle **kwargs properly
                 if "kwargs" in injected_args:
@@ -789,13 +619,9 @@ def inject_services(**service_specs):
                 singleton = spec.get("singleton", False)
                 override = spec.get("override")
             else:
-                raise ValueError(
-                    f"Invalid service specification for {param_name}: {spec}"
-                )
+                raise ValueError(f"Invalid service specification for {param_name}: {spec}")
 
-            container.register_service_injection(
-                func_name, service_name, variant, param_name, singleton, override
-            )
+            container.register_service_injection(func_name, service_name, variant, param_name, singleton, override)
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -838,26 +664,14 @@ class ServiceProvider:
         pass
 
     @staticmethod
-    def create_service(
-        service_name: str,
-        variant: Optional[str] = None,
-        override: Optional[Dict] = None,
-    ):
+    def create_service(service_name: str, variant: Optional[str] = None, override: Optional[Dict] = None, ):
         """Create a new service instance (not singleton)."""
-        return services.create_service(
-            service_name, variant_name=variant, override=override
-        )
+        return services.create_service(service_name, variant_name=variant, override=override)
 
     @staticmethod
-    def get_service(
-        service_name: str,
-        variant: Optional[str] = None,
-        override: Optional[Dict] = None,
-    ):
+    def get_service(service_name: str, variant: Optional[str] = None, override: Optional[Dict] = None, ):
         """Get a singleton service instance."""
-        return services.get_service(
-            service_name, variant_name=variant, override=override
-        )
+        return services.get_service(service_name, variant_name=variant, override=override)
 
     @staticmethod
     def clear_singletons():
@@ -883,19 +697,8 @@ def auto_inject(func: Callable) -> Callable:
 
     # Auto-detect services based on parameter names
     for param_name, param in sig.parameters.items():
-        if param.default is None and param_name in [
-            "llm",
-            "vector",
-            "graph",
-            "json",
-            "summarization",
-            "chunking",
-            "entity_extraction",
-            "graph_extraction",
-        ]:
-            container.register_service_injection(
-                func_name, param_name, None, param_name, singleton=True, override=None
-            )
+        if param.default is None and param_name in ["llm", "vector", "graph", "json", "summarization", "chunking", "entity_extraction", "graph_extraction", ]:
+            container.register_service_injection(func_name, param_name, None, param_name, singleton=True, override=None)
 
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
@@ -913,18 +716,7 @@ def auto_inject(func: Callable) -> Callable:
 
 
 # Export the DI container for advanced usage
-__all__ = [
-    "service",
-    "singleton_service",
-    "inject_config",
-    "defaults",
-    "inject_services",
-    "auto_inject",
-    "ServiceProvider",
-    "DIContainer",
-    "container",
-]
-
+__all__ = ["service", "singleton_service", "inject_config", "defaults", "inject_services", "auto_inject", "ServiceProvider", "DIContainer", "container", ]
 
 # Global DI container instance
 container = DIContainer()

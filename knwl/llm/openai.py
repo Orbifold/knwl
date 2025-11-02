@@ -76,7 +76,7 @@ class OpenAIClient(LLMBase):
             messages = [{"role": "user", "content": messages}]
         # Check cache first
         if self.caching_service is not None:
-            cached = await self.caching_service.get(messages, "ollama", self.model)
+            cached = await self.caching_service.get(messages, "openai", self.model)
             if cached is not None:
                 return cached
         start_time = time.time()

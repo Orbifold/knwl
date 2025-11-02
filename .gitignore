@@ -20,3 +20,4 @@ workdir/
 .env.*.local
 tests/library/**/*.md
 benchmarks/results/
+benchmarks/knwl_data/

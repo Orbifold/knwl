@@ -14,11 +14,11 @@ import asyncio
 # Configuration
 # ============================================================================================
 models = {
-    # "ollama": ["qwen2.5:7b", "qwen2.5:14b", "qwen2.5:32b"],
+    # "ollama": ["qwen2.5:7b"],
+    "ollama": ["qwen2.5:7b", "qwen2.5:14b", "qwen2.5:32b"],
     "openai": ["gpt-5-mini"],
 }
-
-namespace = "benchmark"
+ 
 
 strategy = "local"  # Augmentation strategy: local, global, hybrid, naive, self, none
 
@@ -30,21 +30,8 @@ facts = {
 
 
 async def run():
-    for provider, model_list in models.items():
-        for model in model_list:
-            print(
-                f"Running benchmark for provider '{provider}' with model '{model}'..."
-            )
-            benchmark = Benchmark(
-                provider=provider,
-                model=model,
-                strategy=strategy,
-                namespace=namespace,
-            )
-            await benchmark.ingest(facts)
-            print(
-                f"Completed benchmark for provider '{provider}' with model '{model}'.\n"
-            )
+    benchmark = Benchmark(models=models, facts=facts, strategy=strategy)
+    await benchmark.ingest()
 
 
 asyncio.run(run())

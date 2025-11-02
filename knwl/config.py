@@ -3,6 +3,7 @@
 # By enabling/disabling certain features here, you can change the behavior of knwl.
 # ============================================================================================
 import copy
+import os
 
 from knwl.utils import get_full_path
 
@@ -59,7 +60,7 @@ _default_config = {
             "mode": "full",  # fast or full
             "llm": "@/llm",
         },
-        "full": {
+        "fast": {
             "class": "knwl.extraction.basic_graph_extraction.BasicGraphExtraction",
             "mode": "fast",  # fast or full
             "llm": "@/llm",
@@ -151,6 +152,7 @@ _default_config = {
             "caching_service": "@/llm_caching/user",
             "temperature": 0.1,
             "context_window": 32768,
+            "singleton": False,
         },
         "openai": {
             "class": "knwl.llm.openai.OpenAIClient",
@@ -161,9 +163,9 @@ _default_config = {
         },
         "anthropic": {
             "class": "knwl.llm.anthropic.AnthropicClient",
-            "model": "claude-sonnet-4-5-20250929", # Sonnet 4.5 model
+            "model": "claude-sonnet-4-5-20250929",  # Sonnet 4.5 model
             "caching_service": "@/llm_caching/user",
-            "temperature": 0.1,            
+            "temperature": 0.1,
             "context_window": 4096,  # Max tokens for response (lower to avoid streaming requirement)
         },
     },
@@ -560,15 +562,23 @@ def get_active_config() -> dict:
     return copy.deepcopy(_active_config)
 
 
-def get_space_config(space_name: str = "default") -> dict:
+def get_custom_config(
+    namespace: str = "default", llm_provider: str = None, llm_model: str = None
+) -> dict:
     """
-    Get the configuration dictionary adjusted for a specific user space.
+    Get the configuration dictionary adjusted for a specific namespace, LLM provider and LLM model.
+    If the namespace is an absolute path (starts with '/'), it will be used as is for storage paths.
+    If no LLM provider or model is given, the default ones from the active config will be used.
     """
-    if space_name is None or len(str(space_name).strip()) == 0:
-        raise ValueError("get_space_config: space_name cannot be empty")
+    if namespace is None or len(str(namespace).strip()) == 0:
+        raise ValueError("get_custom_config: namespace cannot be empty.")
 
     base_config = get_active_config()
-    space_path = f"$/user/{space_name}"
+    if namespace.startswith("/"):  # absolute path
+        os.makedirs(namespace, exist_ok=True)
+        space_path = namespace
+    else:
+        space_path = f"$/user/{namespace}"
 
     # replace everywhere the $/user/default with the space path
     def replace_space_path(d):
@@ -578,5 +588,30 @@ def get_space_config(space_name: str = "default") -> dict:
             elif isinstance(v, str) and "$/user/default" in v:
                 d[k] = v.replace("$/user/default", space_path)
 
+    # replace the LLM provider and model if given
+    def replace_default_provider(d):
+        llm_config = d.get("llm", {})
+        if llm_provider in llm_config:
+            base_config["llm"]["default"] = llm_provider
+        else:
+            raise ValueError(
+                f"get_custom_config: LLM provider '{llm_provider}' not found in configuration."
+            )
+
+    def replace_default_model(d):
+        llm_config = d.get("llm", {})
+        provider_config = llm_config.get(llm_provider, {})
+        if "model" in provider_config:
+            provider_config["model"] = llm_model
+
+        else:
+            raise ValueError(
+                f"get_custom_config: LLM model setting not found for provider '{llm_provider}'."
+            )
+
     replace_space_path(base_config)
+    if llm_provider is not None:
+        replace_default_provider(base_config)
+    if llm_model is not None:
+        replace_default_model(base_config)
     return base_config

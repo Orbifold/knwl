@@ -3,7 +3,7 @@ from typing import Optional
 from knwl import services, KnwlIngestion, KnwlInput, GraphRAG, KnwlAnswer
 from knwl.config import (
     get_config,
-    get_space_config,
+    get_custom_config,
     resolve_config,
     resolve_dict,
     set_active_config,
@@ -13,7 +13,7 @@ from knwl.models.KnwlEdge import KnwlEdge
 from knwl.models.KnwlGraph import KnwlGraph
 from knwl.models.KnwlNode import KnwlNode
 from knwl.models.KnwlParams import AugmentationStrategy
-
+from knwl.services import Services
 
 class Knwl:
     """
@@ -35,11 +35,11 @@ class Knwl:
         self._model = model
         self._llm = None
         self._namespace = namespace
-        self._config = get_space_config(namespace)
+        self._config = get_custom_config(namespace, llm_provider=llm, llm_model=model)
         set_active_config(self._config)  # override the whole config
-        self.grag: GraphRAG = (
-            GraphRAG()
-        )  # grag is not a typo but an acronym for Graph RAG
+        # tricky thing here: if you use multiple Knwl instances they will share the singletons if accessed via a single global Services instance
+        services = Services()
+        self.grag: GraphRAG = services.create_service("graph_rag")  # grag is not a typo but an acronym for Graph RAG
 
     @property
     def namespace(self):
