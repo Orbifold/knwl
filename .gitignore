@@ -1,13 +1,23 @@
 __pycache__
 *.egg-info
-dickens/
-book.txt
+ 
 .idea/
 dist/
-venv
-tests/workdir/**/*
+.venv
+tests/data/**/*
 .coverage
 **/.DS_Store
 workdir/
 .idea
 .vscode
+**/*.log
+.pytest_cache/
+/data/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+tests/library/**/*.md
+benchmarks/results/
+benchmarks/knwl_data/

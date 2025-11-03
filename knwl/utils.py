@@ -8,10 +8,8 @@ import string
 from functools import wraps
 from hashlib import md5
 from typing import Any, Union, List
+from datetime import datetime
 
-
-
-from .logging import logger
 
 CATEGORY_KEYWORD_EXTRACTION = "Keywords Extraction"
 CATEGORY_NAIVE_QUERY = "Naive Query"
@@ -27,17 +25,16 @@ def get_endpoint_ids(key: str) -> tuple[str | None, str | None]:
     return found.split(",")[0], found.split(",")[1]
 
 
-def unique_strings(ar: List[str] | List[List[str]]) -> List[str]:
+def unique_strings(ar: list[str] | list[list[str]]) -> list[str]:
     if ar is None:
         return []
     if len(ar) == 0:
         return []
     if isinstance(ar[0], list):
-        ar = [item for sublist in ar for item in sublist]
+        ar = [item for sublist in ar for item in sublist if item is not None]
         return list(set(ar))
     else:
         return list(set(ar))
-
 
 
 def get_json_body(content: str) -> Union[str, None]:
@@ -57,7 +54,7 @@ def get_json_body(content: str) -> Union[str, None]:
             if stack:
                 stack.pop()
                 if not stack:
-                    return content[start: i + 1]
+                    return content[start : i + 1]
     if start != -1 and stack:
         return content[start:]
     else:
@@ -75,34 +72,7 @@ def random_name(length=8):
         str: A randomly generated name of the specified length.
     """
     letters = string.ascii_lowercase
-    return ''.join(random.choice(letters) for i in range(length))
-
-
-def convert_response_to_json(response: str) -> dict:
-    """
-    If there is a JSON-like thing in the response, it gets extracted.
-
-    Nothing magical here, simply trying to fetch it via a regex.
-
-    Args:
-        response (str): The response string containing the JSON data.
-
-    Returns:
-        dict: The parsed JSON data as a dictionary.
-
-    Raises:
-        AssertionError: If the JSON string cannot be located in the response.
-        json.JSONDecodeError: If the JSON string cannot be parsed into a dictionary.
-    """
-    json_str = get_json_body(response)
-    assert json_str is not None, f"Unable to parse JSON from response: {
-    response}"
-    try:
-        data = json.loads(json_str)
-        return data
-    except json.JSONDecodeError as e:
-        logger.error(f"Failed to parse JSON: {json_str}")
-        raise e from None
+    return "".join(random.choice(letters) for i in range(length))
 
 
 def hash_args(*args):
@@ -118,7 +88,7 @@ def hash_args(*args):
     return md5(str(args).encode()).hexdigest()
 
 
-def hash_with_prefix(content, prefix: str = ""):
+def hash_with_prefix(content: Any, prefix: str = ""):
     """
     Computes an MD5 hash of the given content and returns it as a string with an optional prefix.
 
@@ -129,6 +99,12 @@ def hash_with_prefix(content, prefix: str = ""):
     Returns:
         str: The MD5 hash of the content, optionally prefixed.
     """
+    if isinstance(content, dict):
+        content = json.dumps(content, sort_keys=True)
+    elif hasattr(content, "model_dump_json"):
+        content = content.model_dump_json()
+    else:
+        content = str(content)
     return prefix + md5(content.encode()).hexdigest()
 
 
@@ -230,9 +206,8 @@ def split_string_by_multi_markers(content: str, markers: list[str]) -> list[str]
         return [content]
     if content == "":
         return [""]
-    results = re.split("|".join(re.escape(marker)
-                                for marker in markers), content)
-    return [r.strip().replace("\"", "") for r in results if r.strip()]
+    results = re.split("|".join(re.escape(marker) for marker in markers), content)
+    return [r.strip().replace('"', "") for r in results if r.strip()]
 
 
 def clean_str(input: Any) -> str:
@@ -272,5 +247,234 @@ def save_data_to_file(data, file_name):
         json.dump(data, f, ensure_ascii=False, indent=4)
 
 
+def get_project_info() -> dict:
+    """
+    Retrieves project information from the `pyproject.toml` file.
+    """
+    import toml
+
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    pyproject_path = os.path.join(current_dir, "..", "pyproject.toml")
+    with open(pyproject_path, "r") as file:
+        pyproject_data = toml.load(file)
+    version = pyproject_data["project"]["version"]
+    name = pyproject_data["project"]["name"]
+    author = pyproject_data["project"]["authors"][0]
+    description = pyproject_data["project"]["description"]
+    return {
+        "name": name,
+        "version": version,
+        "author": author,
+        "description": description,
+    }
 
 
+def merge_dictionaries(source: dict, destination: dict) -> dict:
+    for key, value in source.items():
+        if isinstance(value, dict):
+            # get node or create one
+            node = destination.setdefault(key, {})
+            merge_dictionaries(value, node)
+        else:
+            destination[key] = value
+    return destination
+
+
+def get_full_path(
+    file_path: str, reference_path: str = None, create_dirs: bool = True
+) -> str | None:
+    """
+    Resolves a file path to its full absolute path, supporting special path prefixes.
+
+    Special prefixes:
+    - $/data: Resolves to the project's data directory
+    - $/root: Resolves to the project root directory
+    - $/tests: Resolves to the test data directory
+    - "$/user": Resolves to the user's Knwl directory (e.g., ~/.knwl)
+
+    Args:
+        file_path (str): The file path to resolve. Can use special prefixes.
+        reference_path (str, optional): Base directory or special prefix to resolve relative to.
+        create_dirs (bool): Whether to create directories if they don't exist.
+
+    Returns:
+        str | None: The resolved absolute path, or None if file_path is None.
+
+    Raises:
+        ValueError: If file_path is not a string or reference_path format is invalid.
+        FileNotFoundError: If reference_path is not absolute when required.
+        OSError: If directory creation fails.
+    """
+    if file_path is None:
+        return None
+
+    if not isinstance(file_path, str):
+        raise ValueError("File path must be a string")
+
+    # Handle special "test" shorthand
+    if file_path.lower() == "test":
+        timestamp = round(datetime.now().timestamp())
+        return get_full_path(f"test_{timestamp}.json", "$/tests", create_dirs)
+
+    # Process special prefixes
+    file_path, resolved_reference = _resolve_special_prefixes(file_path)
+    if resolved_reference:
+        reference_path = resolved_reference
+
+    # Resolve reference path to absolute directory
+    if reference_path is not None:
+        reference_path = _resolve_reference_path(reference_path, create_dirs)
+    else:
+        # Default to $/user directory
+        reference_path = _resolve_reference_path("$/user", create_dirs)
+
+    # Construct final path
+    full_path = os.path.join(reference_path, file_path)
+
+    # Create directories if needed
+    if create_dirs:
+        _ensure_directories_exist(full_path)
+
+    return os.path.abspath(full_path)
+
+
+def _resolve_special_prefixes(file_path: str) -> tuple[str, str | None]:
+    """Resolve special prefixes in file path and return cleaned path and reference."""
+    prefix_map = {
+        "$/tests": ("$/tests", 7),
+        "$/data": ("$/data", 6),
+        "$/root": ("$/root", 6),
+        "$/user": ("$/user", 6),
+    }
+
+    for prefix, (ref_path, prefix_len) in prefix_map.items():
+        if file_path.startswith(prefix):
+            rest = file_path[prefix_len:]
+            if rest.startswith("/"):
+                rest = "." + rest
+            return rest, ref_path
+
+    return file_path, None
+
+
+def _resolve_reference_path(reference_path: str, create_dirs: bool) -> str:
+    """Resolve reference path to absolute directory path."""
+    if not isinstance(reference_path, str):
+        raise ValueError("Reference path must be a string")
+
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+
+    special_paths = {
+        "$/data": os.path.join(current_dir, "..", "data"),
+        "$/root": os.path.join(current_dir, ".."),
+        "$/user": os.path.join(os.path.expanduser("~"), ".knwl"),
+        "$/tests": os.path.join(current_dir, "..", "tests", "data"),
+    }
+
+    if reference_path in special_paths:
+        resolved_path = os.path.abspath(special_paths[reference_path])
+    else:
+        if not os.path.isabs(reference_path):
+            raise FileNotFoundError(
+                f"Reference path must be absolute: {reference_path}"
+            )
+        resolved_path = reference_path
+
+    if create_dirs and not os.path.exists(resolved_path):
+        try:
+            os.makedirs(resolved_path, exist_ok=True)
+        except OSError as e:
+            raise OSError(f"Failed to create directory {resolved_path}: {e}")
+
+    return resolved_path
+
+
+def _ensure_directories_exist(full_path: str) -> None:
+    """Ensure parent directories exist for the given path."""
+    try:
+        # Check if path appears to be a file (has extension) or directory
+        if "." in os.path.basename(full_path) and not full_path.endswith(("/", "\\")):
+            # It's a file, create parent directory
+            parent_dir = os.path.dirname(full_path)
+            if parent_dir and not os.path.exists(parent_dir):
+                os.makedirs(parent_dir, exist_ok=True)
+        else:
+            # It's a directory, create it
+            if not os.path.exists(full_path):
+                os.makedirs(full_path, exist_ok=True)
+    except OSError as e:
+        raise OSError(f"Failed to create directories for {full_path}: {e}")
+
+
+def parse_llm_record(rec: str, delimiter: str = "|") -> list[str] | None:
+    """
+    Parses a record string formatted with custom delimiters and returns a list of its components.
+
+    The expected format of the record string is:
+    ("type"<|>"entity1"<|>"entity2"<|>"context"<|>"tags"<|>score)
+
+    Args:
+        rec (str): The record string to be parsed.
+
+    Returns:
+        list[str]|None: A list containing the components of the record if parsing is successful,
+                        otherwise None if the format is incorrect.
+    """
+    if rec is None or rec.strip() == "":
+        return None
+    record = re.search(r"\((.*)\)", rec)
+    if record is None:
+        raise ValueError(f"Given text is likely not an LLM record: {rec}")
+    record = record.group(1)
+    parts = split_string_by_multi_markers(record, [delimiter])
+
+    return parts
+
+
+def is_entity(record: list[str]):
+    """
+    Check if the given record represents an entity.
+
+    Args:
+        record (list[str]): A list of strings representing a record.
+
+    Returns:
+        bool: True if the record is an entity, False otherwise.
+    """
+    if record is None:
+        return False
+    return len(record) >= 4 and record[0] == "entity"
+
+
+def is_relationship(record: list[str]):
+    """
+    Determines if the given record attributes represent a relationship.
+
+    Args:
+        record_attributes (list[str]): A list of strings representing the attributes of a record.
+
+    Returns:
+        bool: True if the record attributes represent a relationship, False otherwise.
+    """
+    if record is None:
+        return False
+    return len(record) >= 5 and record[0] == "relationship"
+
+def answer_to_records( answer: str) -> list[list] | None:
+    from knwl.prompts import prompts
+    if not answer or answer.strip() == "":
+        return None
+    parts = split_string_by_multi_markers(
+        answer,
+        [
+            prompts.constants.DEFAULT_RECORD_DELIMITER,
+            prompts.constants.DEFAULT_COMPLETION_DELIMITER,
+        ],
+    )
+    coll = []
+    for part in parts:
+        rec = parse_llm_record(part, prompts.constants.DEFAULT_TUPLE_DELIMITER)
+        
+        if rec:
+            coll.append(rec) 
+    return coll

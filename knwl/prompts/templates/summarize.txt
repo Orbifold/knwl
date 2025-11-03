@@ -1,0 +1,11 @@
+You are a helpful assistant responsible for generating a comprehensive summary of the data provided below.
+Given a list of descriptions or content pieces that are not tied to specific entities, please consolidate them into a single, coherent summary.
+Make sure to include information collected from all the descriptions and resolve any contradictions by providing a balanced perspective.
+The summary should be written in third person and capture the main themes, concepts, and information present across all descriptions.
+
+#######
+-Data-
+Description List: 
+{text}
+#######
+Output:
