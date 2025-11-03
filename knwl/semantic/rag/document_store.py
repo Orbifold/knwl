@@ -19,6 +19,8 @@ class DocumentStore(DocumentBase):
     ):
         super().__init__()
         self.document_storage: StorageBase = document_storage
+        if self.document_storage is None:
+            raise ValueError(f"DocumentStore: document_storage is required.")
 
     async def upsert(self, obj: str | KnwlDocument) -> str:
         if isinstance(obj, str):

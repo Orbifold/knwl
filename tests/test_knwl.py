@@ -5,6 +5,7 @@ from knwl.format import print_knwl
 from knwl.knwl import Knwl
 from knwl.storage.networkx_storage import NetworkXGraphStorage
 from faker import Faker
+pytestmark = pytest.mark.llm
 
 fake = Faker()
 

@@ -8,6 +8,7 @@ from knwl.semantic.graph_rag.graph_rag import GraphRAG
 from knwl.semantic.graph_rag.strategies.hybrid_strategy import HybridGragStrategy
 from knwl.semantic.graph_rag.strategies.local_strategy import LocalGragStrategy
 from knwl.utils import get_full_path
+pytestmark = pytest.mark.llm
 
 from tests.library.collect import get_library_article
 

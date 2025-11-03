@@ -136,12 +136,12 @@ async def test_memory_only():
 @pytest.mark.asyncio
 async def test_polymorphic(test_store):
     id = await test_store.upsert("simple string data")
-    assert test_store.exists(id)
+    assert await test_store.exists(id)
     found = await test_store.get_by_id(id)
     assert found == "simple string data"
     val = random.random()
     id2 = await test_store.upsert(val)
-    assert test_store.exists(id2)
+    assert await test_store.exists(id2)
     found2 = await test_store.get_by_id(id2)
     assert found2 == val
 

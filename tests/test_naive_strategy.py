@@ -8,6 +8,7 @@ from knwl.semantic.graph_rag.graph_rag import GraphRAG
 from knwl.semantic.graph_rag.strategies.naive_strategy import NaiveGragStrategy
 from knwl.utils import get_full_path
 import os
+pytestmark = pytest.mark.llm
 
 from tests.library.collect import get_library_article
 

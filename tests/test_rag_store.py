@@ -3,6 +3,7 @@ import pytest
 from knwl.models.KnwlDocument import KnwlDocument
 from knwl.semantic.rag.rag_store import RagStore
 from tests.library.collect import get_library_article
+pytestmark = pytest.mark.llm
 
 
 @pytest.mark.asyncio

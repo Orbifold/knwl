@@ -25,6 +25,8 @@ class StorageAdapter:
             storage = [storage]
 
         for store in storage:
+            if store is None:
+                continue
             if isinstance(store, KeyValueStorageBase):
                 return await store.upsert(StorageAdapter.to_key_value(obj))
             elif isinstance(store, BlobStorageBase):

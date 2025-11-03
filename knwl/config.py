@@ -164,7 +164,7 @@ _default_config = {
             "class": "knwl.llm.anthropic.AnthropicClient",
             "model": "claude-sonnet-4-5-20250929",  # Sonnet 4.5 model
             "caching_service": "@/llm_caching/user",
-            "temperature": 0.1,            
+            "temperature": 0.1,
             "context_window": 4096,  # Max tokens for response (lower to avoid streaming requirement)
         },
     },
@@ -281,6 +281,13 @@ def reset_active_config():
     """
     global _active_config
     _active_config = copy.deepcopy(_default_config)
+
+
+def reset_config():
+    """
+    This is an alias for `reset_active_config` to reset the active configuration to the default configuration.
+    """
+    reset_active_config()
 
 
 def merge_configs(override: dict, base_config: dict) -> dict:

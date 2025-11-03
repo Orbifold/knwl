@@ -3,6 +3,7 @@ import pytest
 from knwl.format import print_knwl
 from knwl.models import KnwlInput, KnwlParams
 from knwl.semantic.graph_rag.strategies.self_strategy import SelfGragStrategy
+pytestmark = pytest.mark.llm
 
 
 @pytest.mark.asyncio

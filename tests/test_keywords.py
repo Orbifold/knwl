@@ -2,6 +2,7 @@ import pytest
 
 from knwl.extraction.basic_keywords_extraction import BasicKeywordsExtraction
 from knwl.format import print_knwl
+pytestmark = pytest.mark.llm
 
 
 @pytest.mark.asyncio
