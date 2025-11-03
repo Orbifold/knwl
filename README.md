@@ -274,3 +274,10 @@ In the `examples/` directory, you can find various scripts demonstrating KNWL's 
 Use VSCode Interactive Python for best experience but you can also run this script directly.
 See https://code.visualstudio.com/docs/python/jupyter-support-py for more details.
 
+
+## Model Evaluation and Benchmarks
+
+In the `benchmarks` directory, you can find evaluation scripts and benchmark datasets to assess Knwl's performance across different graph RAG strategies and configurations. These benchmarks help in understanding the effectiveness of various retrieval methods and the overall system efficiency. Main insights include:
+
+- bigger models take longer to ingest data and do not perform better
+- reasoning models do not improved graph extraction quality.
