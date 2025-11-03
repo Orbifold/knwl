@@ -2,23 +2,33 @@
 
 A flexible Graph RAG package with advanced ingestion and augmentation strategies.
 
+<div style="text-align: center;">
+    <img style="border: 1px solid #ccc; border-radius: 4px; padding: 4px; margin: auto; width: 100%;" src="./journal/images/Swirl.jpg" alt="Knwl visualization via yFiles.">
+</div>
+
 
 **Kwnl** is short for 'knowledge' but could just as well stand for '*know well*'(as in knowing your knowledge well), '*knowledge network workflow library*', '*knwledge notes with linking*', '*keep notes, wiki and links*', '*knwoledge network and wisdom library*' or '*keep notes, write and learn*'.
 
 ## Features
 
 - **Five Graph RAG Strategies**: Local, Global, Naive, Self and Hybrid query modes for flexible knowledge retrieval
-- **Dependency Injection Framework**: Decorator-based DI system (`@service`, `@singleton_service`, `@inject_config`) for clean, configurable architecture
+- **Dependency Injection Framework**: Decorator-based DI system (`@service`, `@singleton_service`, `@inject_config`, `defaults`) for clean, configurable architecture
 - **Extensively Tested**: Comprehensive test suite covering all components and strategies
-- **No External Services Required**: Runs with lightweight local implementations (Ollama, NetworkX, JSON storage) out of the box
+- **No External Services Required**: Runs with lightweight local implementations (Ollama, NetworkX, JSON storage) out of the box. Great for experiments while fully open for enterprise-grade integrations with Qdrant, Neo4j, LangGraph, etc.
 - **Protocol-Based & Extensible**: Override base classes and configure via JSON to customize LLMs, storage, chunking, extraction, and more
 - **Semantic Search**: Vector-based similarity search for nodes, edges, and chunks
-- **Classic RAG**: Traditional retrieval-augmented generation with chunk-based context
+- **Classic RAG**: includes traditional retrieval-augmented generation with chunk-based context
 - **Rich Output Formatting**: Beautiful terminal, HTML, and Markdown renderers for all models using Rich and custom formatters.
-- **Graph Visualization**: the default graph store is saved as GraphML which can be visualized with tools like Gephi, yEd or Cytoscape.
+- **Graph Visualization**: the default graph store is saved as GraphML which can be visualized with tools like Gephi, yEd or Cytoscape. Equally open to graph databases and advanced graph visualization (Bloom, yFiles, Ogma, etc.)
 - **Any LLM**: Easily swap LLM implementations (Ollama, OpenAI, Anthropic, etc.) via configuration. 
 
-![](./journal/images/GraphIngestion.png)
+<div style="text-align: center;">
+    <img style="border: 1px solid #ccc; border-radius: 4px; padding: 4px; margin: auto; width: 500px;" src="./journal/images/GraphIngestion.png" alt="Small part of the Wikipedia article on topology" width="500">
+</div>
+
+<div style="text-align: center;">
+    <img style="border: 1px solid #ccc; border-radius: 4px; padding: 4px; margin: auto; width: 500px;" src="./journal/images/Legal.jpg" alt="Belgian Fiscal Law KG" width="500">
+</div>
 
 ## Architecture
 
@@ -281,3 +291,18 @@ In the `benchmarks` directory, you can find evaluation scripts and benchmark dat
 
 - bigger models take longer to ingest data and do not perform better
 - reasoning models do not improved graph extraction quality.
+
+## License
+
+Knwl is released under the MIT License. See LICENSE for details.
+
+## Consulting & Support
+For consulting, support, or custom development services around Knwl, please contact the author at info@orbifold.net or visit https://orbifold.net/contact.
+
+Orbifold Consulting, based in Belgium, specialises in delivering comprehensive technical and strategic consulting services to a global clientele across diverse industries and sectors. Our firm provides tailored solutions that empower businesses to navigate and thrive in today's dynamic market landscape. With a commitment to excellence and innovation, Orbifold Consulting ensures that each client receives personalised strategies and expert guidance to achieve their unique business objectives effectively and sustainably.
+
+With over 25 years of experience as an independent consulting firm, we specialise in merging business acumen with scientific expertise to create customised software solutions. Our unique and innovative approaches leverage cutting-edge tools and technologies to meet the specific needs of our clients. We are committed to delivering excellence through bespoke solutions that drive efficiency, innovation, and success. By consistently staying ahead of industry trends and advancements, we ensure our clients receive the highest quality service and support.
+Orbifold Consulting excels in translating cutting-edge technologies into actionable business insights, empowering companies to embrace graph technology and AI to drive innovation. Our expertise lies in guiding organisations through the complexities of technological adoption, ensuring seamless integration and optimal utilisation of advanced solutions to achieve strategic goals. We are committed to fostering a culture of innovation, helping businesses not only adapt to but also thrive in an increasingly digital landscape. Through our comprehensive world-wide consulting services, we enable clients to harness the full potential of advanced AI, paving the way for sustained growth and competitive advantage.
+
+As a vendor-neutral organisation, we are committed to selecting the optimal technology for each project, ensuring tailored solutions that drive innovation from ideation to implementation. We position ourselves as your strategic innovation partners, dedicated to delivering excellence at every stage of your project’s lifecycle.
+

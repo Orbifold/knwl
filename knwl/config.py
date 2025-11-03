@@ -147,8 +147,7 @@ _default_config = {
         "default": "ollama",
         "ollama": {
             "class": "knwl.llm.ollama.OllamaClient",
-            "model1": "gpt-oss:20b",
-            "model": "qwen2.5:14b",
+            "model": "qwen2.5:7b",
             "caching_service": "@/llm_caching/user",
             "temperature": 0.1,
             "context_window": 32768,

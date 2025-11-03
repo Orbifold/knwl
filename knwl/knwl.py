@@ -31,10 +31,11 @@ class Knwl:
         """
         Initialize Knwl with optionally the name of knowledge space.
         """
-        self._llm_provider = llm or "openai"
+        self._llm_provider = llm  
         self._model = model
         self._llm = None
         self._namespace = namespace
+        
         self._config = get_custom_config(namespace, llm_provider=llm, llm_model=model)
         set_active_config(self._config)  # override the whole config
         # tricky thing here: if you use multiple Knwl instances they will share the singletons if accessed via a single global Services instance
