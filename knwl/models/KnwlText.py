@@ -33,3 +33,4 @@ class KnwlText(BaseModel):
 
     def to_row(self):
         return "\t".join([self.origin_id or "", self.text])
+ 

@@ -152,3 +152,12 @@ class KnwlEdge(BaseModel):
             return edge.source_id
         else:
             raise ValueError(f"Node {node_id} is not an endpoint of edge {edge.id}")
+
+    def to_text(self) -> str:
+        return f"""
+Type: {self.type}
+Source: {self.source_name}
+Target: {self.target_name}
+Description: {self.description}
+Keywords: {', '.join(self.keywords) if self.keywords else 'None'}
+    """
