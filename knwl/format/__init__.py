@@ -94,7 +94,7 @@ def get_formatter(format_type: str = "terminal") -> FormatterBase:
         formatter = HTMLFormatter()
     elif format_type == "markdown":
         formatter = MarkdownFormatter()
-   
+
     else:
         raise ValueError(
             f"Unsupported format type: {format_type}. "
@@ -216,7 +216,11 @@ def print_knwl(obj: Any, **options) -> None:
     if obj is None:
         print("print_knwl of None")
         return
-    render_knwl(obj, format_type="terminal", **options)
+    elif isinstance(obj,str):
+        print(obj)
+        return
+    else:
+        render_knwl(obj, format_type="terminal", **options)
 
 
 # Convenience exports

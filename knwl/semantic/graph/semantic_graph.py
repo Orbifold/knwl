@@ -405,7 +405,11 @@ class SemanticGraph(SemanticGraphBase):
         if not len(nodes):
             return []
         found = await self._graph_store.get_attached_edges(nodes)
-        return [KnwlEdge(**e) for e in found]
+        coll = []
+        for e in found:
+            self.fix_lists_in_data(e)
+            coll.append(KnwlEdge(**e))
+        return coll
 
     async def get_nodes_by_name(self, name: str) -> list[KnwlNode] | None:
         if name is None or len(name.strip()) == 0:
@@ -418,7 +422,7 @@ class SemanticGraph(SemanticGraphBase):
             self.fix_lists_in_data(n)
             nodes.append(KnwlNode(**n))
         return nodes
-    
+
     async def node_degree(self, node_id: str) -> int:
         return await self.graph.node_degree(node_id)
 

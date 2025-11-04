@@ -37,9 +37,17 @@ class ChromaStorage(VectorStorageBase):
                 f"The Chroma path '{self._path}' contains a '.' but should be a directory, not a file."
             )
         if not self._in_memory and self._path is not None:
-            self._path = get_full_path(self._path)
-            self.client = chromadb.PersistentClient(path=self._path)
-
+            try:
+                self._path = get_full_path(self._path)
+                self.client = chromadb.PersistentClient(path=self._path)
+            except Exception as e:
+                log(e)
+                print(
+                    f"Error initializing ChromaDB at path '{self._path}'. Falling back to in-memory storage."
+                )
+                self.client = chromadb.Client()
+                self._in_memory = True
+                self._path = None
         else:
             self.client = chromadb.Client()
 
@@ -116,7 +124,7 @@ class ChromaStorage(VectorStorageBase):
                 # auto-extract metadata
                 metadata = {k: value.get(k) for k in self._metadata if k in value}
                 if metadata == {}:
-                    metadata = None # chroma doesn't like empty metadata
+                    metadata = None  # chroma doesn't like empty metadata
                 self.collection.upsert(
                     ids=key,
                     documents=str_value,

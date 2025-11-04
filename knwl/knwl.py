@@ -1,10 +1,11 @@
 import copy
+import json
 from typing import Optional
-from knwl import services, KnwlIngestion, KnwlInput, GraphRAG, KnwlAnswer
+
+from knwl import prompts, services, KnwlInput, GraphRAG, KnwlAnswer, KnwlContext
 from knwl.config import (
     get_config,
     get_custom_config,
-    resolve_config,
     resolve_dict,
     set_active_config,
 )
@@ -12,8 +13,9 @@ from knwl.llm.llm_base import LLMBase
 from knwl.models.KnwlEdge import KnwlEdge
 from knwl.models.KnwlGraph import KnwlGraph
 from knwl.models.KnwlNode import KnwlNode
-from knwl.models.KnwlParams import AugmentationStrategy
 from knwl.services import Services
+from knwl.utils import get_project_info
+
 
 class Knwl:
     """
@@ -31,16 +33,20 @@ class Knwl:
         """
         Initialize Knwl with optionally the name of knowledge space.
         """
-        self._llm_provider = llm  
+        self._llm_provider = (
+            llm or "ollama"
+        )  # makes Ollama the default LLM provider within this class, but not for Kwnl as a framework
         self._model = model
         self._llm = None
         self._namespace = namespace
-        
+
         self._config = get_custom_config(namespace, llm_provider=llm, llm_model=model)
         set_active_config(self._config)  # override the whole config
         # tricky thing here: if you use multiple Knwl instances they will share the singletons if accessed via a single global Services instance
         services = Services()
-        self.grag: GraphRAG = services.create_service("graph_rag")  # grag is not a typo but an acronym for Graph RAG
+        self.grag: GraphRAG = services.create_service(
+            "graph_rag"
+        )  # grag is not a typo but an acronym for Graph RAG
 
     @property
     def namespace(self):
@@ -94,12 +100,35 @@ class Knwl:
         """
         return await self.add(input)
 
-    async def ask(
-        self, question: str, strategy: AugmentationStrategy = None
-    ) -> KnwlAnswer:
-        """ """
-        if strategy is None:
+    async def augment(self, question: str | KnwlInput) -> KnwlContext | None:
+        if isinstance(question, str):
+            input = KnwlInput(text=question)
+        elif isinstance(question, KnwlInput):
+            input = question
+        else:
+            raise TypeError(f"Invalid input type for Knwl.ask: '{type(question)}'.")
+
+        return await self.grag.augment(input)
+
+    async def ask(self, question: str | KnwlInput) -> KnwlAnswer:
+
+        if isinstance(question, str):
+            input = KnwlInput(text=question)
+        elif isinstance(question, KnwlInput):
+            input = question
+        else:
+            raise TypeError(f"Invalid input type for Knwl.ask: '{type(question)}'.")
+        if input.params.strategy is None:
             return await self._simple_ask(question)
+        else:
+            augmentation = await self.grag.augment(input)
+            if augmentation is None:
+                return KnwlAnswer.none()
+            prompt = prompts.rag.grag_ask(
+                question=input.text, augmentation=augmentation
+            )
+            found = await self.llm.ask(prompt)
+            return found
 
     async def add_fact(
         self,
@@ -225,3 +254,10 @@ class Knwl:
         """
         found = await self.llm.ask(question)
         return found or KnwlAnswer.none()
+
+    def __repr__(self) -> str:
+        info = get_project_info()
+        return f"{info['name']} v{info['version']} - Knwl instance (namespace={self._namespace})"
+
+    def __str__(self) -> str:
+        return self.__repr__()

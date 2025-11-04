@@ -1,10 +1,13 @@
 import os
+
 import pytest
-from knwl.config import get_config, resolve_reference
+from faker import Faker
+
+from knwl.config import resolve_reference
 from knwl.format import print_knwl
 from knwl.knwl import Knwl
 from knwl.storage.networkx_storage import NetworkXGraphStorage
-from faker import Faker
+
 pytestmark = pytest.mark.llm
 
 fake = Faker()
@@ -18,11 +21,7 @@ async def test_quick_start():
     knwl = Knwl(name_space)
 
     # add a fact
-    await knwl.add_fact(
-        "gravity",
-        "Gravity is a universal force that attracts two bodies toward each other.",
-        id="fact1",
-    )
+    await knwl.add_fact("gravity", "Gravity is a universal force that attracts two bodies toward each other.", id="fact1", )
     # where is the graph stored?
     actual_graphml_path = resolve_reference("@/graph/user/path")
     print(f"GraphML path: {actual_graphml_path}")
@@ -40,11 +39,7 @@ async def test_quick_start():
     # Note: you can go and double-click the graphml file to open it in a graph viewer like yEd to visualize the graph.
 
     # add another fact
-    await knwl.add_fact(
-        "photosynthesis",
-        "Photosynthesis is the process by which green plants and some other organisms use sunlight to synthesize foods from carbon dioxide and water.",
-        id="fact2",
-    )
+    await knwl.add_fact("photosynthesis", "Photosynthesis is the process by which green plants and some other organisms use sunlight to synthesize foods from carbon dioxide and water.", id="fact2", )
     # two nodes should be present now
     assert await knwl.node_count() == 2
 
@@ -55,14 +50,40 @@ async def test_quick_start():
     found = await knwl.get_nodes_by_name("photosynthesis")
     assert len(found) == 1
     photosynthesis_node = found[0]
-    await knwl.connect(
-        source_name=gravity_node.name,
-        target_name=photosynthesis_node.name,
-        relation="Both are fundamental natural processes.",
-    )
+    await knwl.connect(source_name=gravity_node.name, target_name=photosynthesis_node.name, relation="Both are fundamental natural processes.", )
 
     # one edge
     assert await knwl.edge_count() == 1
+
+    # Augmentation will fetch the gravity node, despite that it does not directly relate to photosynthesis
+    # Obviously, this 1-hop result would not happen with classic RAG since the vector similarity is too low
+    augmentation = await knwl.augment("What is photosynthesis?")
+    print_knwl(augmentation)
+
+    """
+    ╭───────────────────────────────── 🎯 Context ─────────────────────────────────╮
+    │                                                                              │
+    │                                                                              │
+    │ 💬 Question: Plants, Light energy, Carbon dioxide, Oxygen production,        │
+    │ Chlorophyll                                                                  │
+    │                                                                              │
+    │                                                                              │
+    │ 🔵 Nodes:                                                                    │
+    │                                                                              │
+    │   Name             Type   Description                                        │
+    │  ──────────────────────────────────────────────────────────────────────────  │
+    │   photosynthesis   Fact   Photosynthesis is the process by which green       │
+    │                           plants and some other organisms use sunlight to    │
+    │                           synthesize foods from carbon dioxide and water.    │
+    │   gravity          Fact   Gravity is a universal force that attracts two     │
+    │                           bodies toward each other.                          │
+    │                                                                              │
+    ╰───────────────────────── 0 chunks, 2 nodes, 1 edges ─────────────────────────╯
+    
+    """
+
+    a = await knwl.ask("What is photosynthesis?")
+    print_knwl(a.answer)
 
 
 

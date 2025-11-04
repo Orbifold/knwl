@@ -12,6 +12,7 @@ Given the query, list both high-level and low-level keywords. High-level keyword
 - The JSON should have two keys:
   - "high_level_keywords" for overarching concepts or themes.
   - "low_level_keywords" for specific entities or details.
+- Do not output markdown or any formatting, only JSON.
 
 ######################
 -Examples-

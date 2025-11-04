@@ -62,7 +62,7 @@ class GraphRAGBase(FrameworkBase, ABC):
 
     @abstractmethod
     async def augment(
-        self, input: str | KnwlInput, params: KnwlParams = None
+        self, input: str | KnwlInput
     ) -> KnwlContext | None:
         """
         Retrieve context from the knowledge graph and augment the input text.

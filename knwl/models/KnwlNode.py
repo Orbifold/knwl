@@ -125,3 +125,17 @@ class KnwlNode(BaseModel):
     @staticmethod
     def hash_keys(name: str, type: str) -> str:
         return hash_with_prefix(name + " " + type, prefix="node|>")
+
+    def __repr__(self) -> str:
+        return f"<KnwlNode, name={self.name}, type={self.type})>"
+
+    def __str__(self) -> str:
+        return self.__repr__()
+
+    def to_text(self) -> str:
+        return f"""
+Type: {self.type}
+Name: {self.name}
+Description: {self.description}
+Keywords: {', '.join(self.keywords) if self.keywords else 'None'}
+    """

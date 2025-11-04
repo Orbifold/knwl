@@ -41,4 +41,5 @@ class KnwlReference(BaseModel):
     @staticmethod
     def hash_keys(content: str) -> str:
         return hash_with_prefix(content, prefix="grag-ref|>")
- 
+
+    
