@@ -1,4 +1,5 @@
 import copy
+from curses import version
 import json
 from typing import Optional
 
@@ -14,7 +15,7 @@ from knwl.models.KnwlEdge import KnwlEdge
 from knwl.models.KnwlGraph import KnwlGraph
 from knwl.models.KnwlNode import KnwlNode
 from knwl.services import Services
-from knwl.utils import get_project_info
+
 
 
 class Knwl:
@@ -256,8 +257,9 @@ class Knwl:
         return found or KnwlAnswer.none()
 
     def __repr__(self) -> str:
-        info = get_project_info()
-        return f"{info['name']} v{info['version']} - Knwl instance (namespace={self._namespace})"
+        from importlib.metadata import version
+        knwl_version = version("knwl")
+        return f"Knwl v{knwl_version} - Knwl instance (namespace={self._namespace})"
 
     def __str__(self) -> str:
         return self.__repr__()

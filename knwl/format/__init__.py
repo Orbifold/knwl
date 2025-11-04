@@ -47,6 +47,7 @@ Design:
     - Rich library for beautiful terminal output
 """
 
+import json
 from typing import Any, Optional
 
 from knwl.format.formatter_base import (
@@ -216,8 +217,16 @@ def print_knwl(obj: Any, **options) -> None:
     if obj is None:
         print("print_knwl of None")
         return
-    elif isinstance(obj,str):
-        print(obj)
+    elif isinstance(obj, str):
+        # this allows to print config references like "print_knwl(@/llm)" to see the default LLM config
+        if obj.strip().startswith("@/"):
+            from knwl.config import resolve_config
+            try:
+                print(json.dumps(resolve_config(obj.strip()), indent=2))
+            except Exception as e:
+                print(f"Error resolving config: {e}")
+        else:
+            print(obj)
         return
     else:
         render_knwl(obj, format_type="terminal", **options)

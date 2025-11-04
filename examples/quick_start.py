@@ -12,7 +12,6 @@ Of course, somewhere down the line you need a LLM service and the default is Ope
 The `Kwnl` class is a utility class that wraps various functionalities without having to instantiate or configure anything. It's useful for quick experiments and prototyping, but the full power of Knwl is unleashed when you start configuring your own services, spaces, and strategies.
 ==============================================================================================
 """
-import json
 from knwl import Knwl, print_knwl
 
 knwl = Knwl()
@@ -46,7 +45,7 @@ The above prints something like:
 ╰──────────────────────────────────────────────────────────────────────────────╯
 """
 
-
+# %%
 """
 ==============================================================================================
 How was this question answered? You can inspect the configuration used:
@@ -134,4 +133,42 @@ You can also specify different LLM providers and models.
 knwl = Knwl("swa", llm="openai", model="gpt-5-nano")
 a = await knwl.ask("What is the capital of Tanzania?")
 print_knwl(a)
+# %%
+"""
+==============================================================================================
+Classic RAG does not find information that is not vector-similar to the question.
+However, Knwl's graph RAG can find related information via graph connections.
+Below we create two nodes and connect them. Despite that "gravity" is not related to "photosynthesis" in a vector space,
+the graph connection allows Knwl to find and use the gravity fact when answering a question about photosynthesis.
+This is the most basic (but powerful) demonstration how graph RAG can improve over classic RAG.
+==============================================================================================
+"""
+
+knwl = Knwl()
+
+# add a fact
+await knwl.add_fact("gravity", "Gravity is a universal force that attracts two bodies toward each other.", id="fact1", )
+
+assert (await knwl.node_exists("fact1")) is True
+
+# add another fact
+await knwl.add_fact("photosynthesis", "Photosynthesis is the process by which green plants and some other organisms use sunlight to synthesize foods from carbon dioxide and water.", id="fact2", )
+
+# you can take the node returned from add_fact as an alternative
+found = await knwl.get_nodes_by_name("gravity")
+gravity_node = found[0]
+found = await knwl.get_nodes_by_name("photosynthesis")
+photosynthesis_node = found[0]
+# connect the two nodes
+await knwl.connect(source_name=gravity_node.name, target_name=photosynthesis_node.name, relation="Both are fundamental natural processes.", )
+
+# Augmentation will fetch the gravity node, despite that it does not directly relate to photosynthesis
+# Obviously, this 1-hop result would not happen with classic RAG since the vector similarity is too low
+augmentation = await knwl.augment("What is photosynthesis?")
+# pretty print the augmentation result
+print_knwl(augmentation)
+
+# graph RAG question-answer
+a = await knwl.ask("What is photosynthesis?")
+print_knwl(a.answer)
 # %%

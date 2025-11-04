@@ -250,6 +250,8 @@ def save_data_to_file(data, file_name):
 def get_project_info() -> dict:
     """
     Retrieves project information from the `pyproject.toml` file.
+    Important: the toml file is not available after packaging (PyPI), so this function
+    should only be used during development.
     """
     import toml
 
