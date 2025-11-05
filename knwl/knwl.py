@@ -217,7 +217,7 @@ class Knwl:
             source_id=source.id,
             target_id=target.id,
             description=relation,
-            type="Relation",
+            type=relation,
         )
         return await self.grag.semantic_graph.embed_edge(
             edge
@@ -259,7 +259,14 @@ class Knwl:
         Returns True if the node was deleted, False if it did not exist.
         """
         return await self.grag.delete_node_by_id(node_id)
-
+    async def get_edges_between_nodes(
+        self, source_id: str, target_id: str
+    ) -> list[KnwlEdge]:
+        """
+        Get all edges between two nodes by their Ids from the knowledge graph.
+        """
+        return await self.grag.get_edges_between_nodes(source_id, target_id)
+    
     async def _simple_ask(self, question: str) -> KnwlAnswer:
         """
         Simple LLM QA without knowledge graph.

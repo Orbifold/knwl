@@ -324,6 +324,12 @@ class SemanticGraphBase(FrameworkBase, ABC):
             list[KnwlEdge]: A list of KnwlEdge objects attached to the given nodes.
         """
         ...
+    @abstractmethod
+    async def get_edges_between_nodes(self, source_id: str, target_id: str) -> list[KnwlEdge]:
+        """
+        Retrieve edges between two nodes by their IDs from the knowledge graph.
+        """
+        ...
 
     @abstractmethod
     async def node_degree(self, node_id: str) -> int: ...

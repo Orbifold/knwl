@@ -5,6 +5,7 @@ import pytest
 
 from knwl.models.KnwlNode import KnwlNode
 from knwl.storage.networkx_storage import NetworkXGraphStorage
+
 pytestmark = pytest.mark.basic
 
 
@@ -260,3 +261,19 @@ async def test_remove_edge_with_tuple(test_storage):
     await test_storage.remove_edge(n1, n2)
 
     assert not await test_storage.edge_exists(n1, n2)
+
+
+@pytest.mark.asyncio
+async def test_get_edges():
+    g = NetworkXGraphStorage(memory=True)
+    n1 = await g.upsert_node(KnwlNode(name="Node 1", type="A"))
+    n2 = await g.upsert_node(KnwlNode(name="Node 2", type="K"))
+    e1 = await g.upsert_edge(n1, n2, {"type": "relates_to"})
+    e2 = await g.upsert_edge(n1, n2, {"type": "connected_to"})
+
+    edges = await g.get_edges_between_nodes(n1["id"], n2["id"])
+    assert len(edges) == 2
+    assert edges[0]["id"] == e1["id"]
+    assert edges[0]["type"] == "relates_to"
+    assert edges[1]["id"] == e2["id"]
+    assert edges[1]["type"] == "connected_to"

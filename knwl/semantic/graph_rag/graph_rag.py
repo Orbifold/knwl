@@ -275,7 +275,12 @@ class GraphRAG(GraphRAGBase):
         # return await asyncio.gather(*[self.graph_storage.get_node_edges(n.name) for n in nodes])
 
         return await self.semantic_graph.get_attached_edges(nodes)
-
+    async def get_edges_between_nodes(self, source_id: str, target_id: str) -> list[KnwlEdge]:
+        """
+        Retrieve edges between two nodes by their IDs from the knowledge graph.
+        """
+        return await self.semantic_graph.get_edges_between_nodes(source_id, target_id)
+    
     async def get_chunk_by_id(self, chunk_id: str) -> KnwlChunk | None:
         """
         Retrieve a chunk by its Id from the chunk storage.

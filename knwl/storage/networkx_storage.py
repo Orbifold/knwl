@@ -603,6 +603,16 @@ class NetworkXGraphStorage(GraphStorageBase):
                 return found
         raise ValueError(f"Edge with id {edge_id} not found")
 
+    async def get_edges_between_nodes(
+        self, source_id: str, target_id: str
+    ) -> list[dict]:
+        edges = []
+        for u, v, data in self.graph.edges(data=True):
+            if u == source_id and v == target_id:
+                edge_data = {"source_id": u, "target_id": v, **data}
+                edges.append(edge_data)
+        return edges
+
     async def upsert_edge(self, source_node_id, target_node_id=None, edge_data=None):
         # Parse edge specifications
         specs = NetworkXGraphStorage.get_edge_specs(source_node_id, target_node_id)
@@ -625,7 +635,7 @@ class NetworkXGraphStorage(GraphStorageBase):
                 edge_data = {}
         else:
             # Merge provided edge_data with specs.edge_data, giving priority to provided data
-            merged_data = {**specs.edge_data, **self.get_payload(edge_data)}
+            merged_data = {**(specs.edge_data or {}), **self.get_payload(edge_data)}
             edge_data = merged_data
             edge_type = edge_data.get("type", "Unknown")
 

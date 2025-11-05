@@ -124,3 +124,27 @@ async def test_knwl_nodes():
     assert not await k.node_exists(id)
     found = await k.get_node_by_id(id)
     assert found is None    
+
+@pytest.mark.asyncio
+async def test_knwl_edges():
+    k = Knwl()
+    name1 = fake.word()
+    content1 = fake.sentence()
+    id1 = str(fake.random_number(digits=5))
+    n1 = await k.add_fact(name1, content1, id=id1)
+
+    name2 = fake.word()
+    content2 = fake.sentence()
+    id2 = str(fake.random_number(digits=5))
+    n2 = await k.add_fact(name2, content2, id=id2)
+
+    relation = "related_to"
+    e = await k.connect(source_name=n1.name, target_name=n2.name, relation=relation)
+    assert e.source_id == n1.id
+    assert e.target_id == n2.id
+    assert e.type == relation
+
+    edges = await k.get_edges_between_nodes(n1.id, n2.id)
+    assert len(edges) == 1
+    assert edges[0].source_id == n1.id
+    assert edges[0].target_id == n2.id

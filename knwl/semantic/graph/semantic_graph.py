@@ -410,7 +410,23 @@ class SemanticGraph(SemanticGraphBase):
             self.fix_lists_in_data(e)
             coll.append(KnwlEdge(**e))
         return coll
+    async def get_edges_between_nodes(self, source_id: str, target_id: str) -> list[KnwlEdge]:
+        """
+        Retrieve edges between two nodes by their IDs from the knowledge graph.
 
+        Args:
+            source_id (str): The unique identifier of the source node.
+            target_id (str): The unique identifier of the target node.
+        Returns:
+            list[KnwlEdge]: A list of KnwlEdge objects representing the edges between the two nodes.
+        """
+        found = await self._graph_store.get_edges_between_nodes(source_id, target_id)
+        coll = []
+        for e in found:
+            self.fix_lists_in_data(e)
+            coll.append(KnwlEdge(**e))
+        return coll
+    
     async def get_nodes_by_name(self, name: str) -> list[KnwlNode] | None:
         if name is None or len(name.strip()) == 0:
             return None
