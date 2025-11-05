@@ -17,7 +17,6 @@ from knwl.models.KnwlNode import KnwlNode
 from knwl.services import Services
 
 
-
 class Knwl:
     """
     This class defines an easy to use gateway to create and consume a knowledge graph.
@@ -248,6 +247,12 @@ class Knwl:
 
         return prompts.extraction.fast_graph_extraction(text, entity_types)
 
+    async def get_node_by_id(self, node_id: str) -> KnwlNode | None:
+        """
+        Get a node by its Id from the knowledge graph.
+        """
+        return await self.grag.get_node_by_id(node_id)
+
     async def _simple_ask(self, question: str) -> KnwlAnswer:
         """
         Simple LLM QA without knowledge graph.
@@ -258,6 +263,7 @@ class Knwl:
 
     def __repr__(self) -> str:
         from importlib.metadata import version
+
         knwl_version = version("knwl")
         return f"Knwl v{knwl_version} - Knwl instance (namespace={self._namespace})"
 

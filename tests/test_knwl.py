@@ -21,7 +21,11 @@ async def test_quick_start():
     knwl = Knwl(name_space)
 
     # add a fact
-    await knwl.add_fact("gravity", "Gravity is a universal force that attracts two bodies toward each other.", id="fact1", )
+    await knwl.add_fact(
+        "gravity",
+        "Gravity is a universal force that attracts two bodies toward each other.",
+        id="fact1",
+    )
     # where is the graph stored?
     actual_graphml_path = resolve_reference("@/graph/user/path")
     print(f"GraphML path: {actual_graphml_path}")
@@ -39,7 +43,11 @@ async def test_quick_start():
     # Note: you can go and double-click the graphml file to open it in a graph viewer like yEd to visualize the graph.
 
     # add another fact
-    await knwl.add_fact("photosynthesis", "Photosynthesis is the process by which green plants and some other organisms use sunlight to synthesize foods from carbon dioxide and water.", id="fact2", )
+    await knwl.add_fact(
+        "photosynthesis",
+        "Photosynthesis is the process by which green plants and some other organisms use sunlight to synthesize foods from carbon dioxide and water.",
+        id="fact2",
+    )
     # two nodes should be present now
     assert await knwl.node_count() == 2
 
@@ -50,7 +58,11 @@ async def test_quick_start():
     found = await knwl.get_nodes_by_name("photosynthesis")
     assert len(found) == 1
     photosynthesis_node = found[0]
-    await knwl.connect(source_name=gravity_node.name, target_name=photosynthesis_node.name, relation="Both are fundamental natural processes.", )
+    await knwl.connect(
+        source_name=gravity_node.name,
+        target_name=photosynthesis_node.name,
+        relation="Both are fundamental natural processes.",
+    )
 
     # one edge
     assert await knwl.edge_count() == 1
@@ -86,10 +98,25 @@ async def test_quick_start():
     print_knwl(a.answer)
 
 
-
 @pytest.mark.asyncio
 async def test_knwl_ask():
-    from knwl import Knwl, print_knwl
     knwl = Knwl("swa", llm="ollama")
     a = await knwl.ask("What is the capital of Tanzania?")
     print_knwl(a)
+
+
+@pytest.mark.asyncio
+async def test_knwl_nodes():
+    k = Knwl()
+    name = fake.word()
+    content = fake.sentence()
+    id = str(fake.random_number(digits=5))
+    n = await k.add_fact(name, content, id=id)
+    assert n.id == id
+    assert n.name == name
+    assert n.description == content
+    assert  await k.node_exists(id)
+    found = await k.get_node_by_id(id)
+    assert found is not None
+    assert found.id == id
+    
