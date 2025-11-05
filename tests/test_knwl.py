@@ -119,4 +119,8 @@ async def test_knwl_nodes():
     found = await k.get_node_by_id(id)
     assert found is not None
     assert found.id == id
-    
+
+    await k.delete_node_by_id(id)
+    assert not await k.node_exists(id)
+    found = await k.get_node_by_id(id)
+    assert found is None    

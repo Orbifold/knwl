@@ -21,8 +21,8 @@ class SemanticGraph(SemanticGraphBase):
         summarization: SummarizationBase = None,
     ):
         super().__init__()
-        self._graph_store = graph_store
-        self.node_embeddings = node_embeddings
+        self._graph_store: GraphStorageBase = graph_store
+        self.node_embeddings: VectorStorageBase = node_embeddings
         self.edge_embeddings = edge_embeddings
         self.summarization = summarization
         if self._graph_store is None:
@@ -441,6 +441,17 @@ class SemanticGraph(SemanticGraphBase):
         self, edge_ids: list[str]
     ) -> dict[str, tuple[str, str]]:
         return await self.graph.get_semantic_endpoints(edge_ids)
+
+    async def delete_node_by_id(self, node_id: str) -> bool:
+        """
+        Delete a node by its Id from the knowledge graph.
+        Returns True if the node was deleted, False if it did not exist.
+        """
+
+        deleted = await self._graph_store.remove_node(node_id)
+        if deleted:
+            await self.node_embeddings.delete_by_id(node_id)
+        return deleted
 
     def __repr__(self):
         return f"<SemanticGraph, graph={self._graph_store.__class__.__name__}, nodes={self.node_embeddings.__class__.__name__}, edge_embeddings={self.edge_embeddings.__class__.__name__}, summarization={self.summarization.__class__.__name__}>"

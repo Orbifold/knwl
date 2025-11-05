@@ -253,6 +253,13 @@ class Knwl:
         """
         return await self.grag.get_node_by_id(node_id)
 
+    async def delete_node_by_id(self, node_id: str) -> bool:
+        """
+        Delete a node by its Id from the knowledge graph.
+        Returns True if the node was deleted, False if it did not exist.
+        """
+        return await self.grag.delete_node_by_id(node_id)
+
     async def _simple_ask(self, question: str) -> KnwlAnswer:
         """
         Simple LLM QA without knowledge graph.

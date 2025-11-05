@@ -208,3 +208,11 @@ class GraphRAGBase(FrameworkBase, ABC):
         Get the total number of edges in the knowledge graph.
         """
         ...
+
+    @abstractmethod
+    async def delete_node_by_id(self, node_id: str) -> bool:
+        """
+        Delete a node by its Id from the knowledge graph.
+        Returns True if the node was deleted, False if it did not exist.
+        """
+        ...

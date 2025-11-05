@@ -363,3 +363,10 @@ class GraphRAG(GraphRAGBase):
         Get the total number of edges in the knowledge graph.
         """
         return await self.semantic_graph.edge_count()
+
+    async def delete_node_by_id(self, node_id: str) -> bool:
+        """
+        Delete a node by its Id from the knowledge graph.
+        Returns True if the node was deleted, False if it did not exist.
+        """
+        return await self.semantic_graph.delete_node_by_id(node_id)
