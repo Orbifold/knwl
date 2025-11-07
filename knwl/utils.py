@@ -422,11 +422,21 @@ def parse_llm_record(rec: str, delimiter: str = "|") -> list[str] | None:
         list[str]|None: A list containing the components of the record if parsing is successful,
                         otherwise None if the format is incorrect.
     """
+    is_a_record = lambda text: re.match(r"^\(.*\)$", text) is not None
     if rec is None or rec.strip() == "":
         return None
-    record = re.search(r"\((.*)\)", rec)
-    if record is None:
-        raise ValueError(f"Given text is likely not an LLM record: {rec}")
+    
+    if is_a_record(rec) is False:
+        # second attempt with ending parenthesis added
+        rec = rec + ")"
+        if is_a_record(rec) is False:
+            # giving up
+            from knwl.logging import log
+
+            log.error(f"Given text is likely not an LLM record: {rec}")
+            return None
+        
+    record = re.search(r"^\((.*)\)$", rec.strip())    
     record = record.group(1)
     parts = split_string_by_multi_markers(record, [delimiter])
 
@@ -462,8 +472,10 @@ def is_relationship(record: list[str]):
         return False
     return len(record) >= 5 and record[0] == "relationship"
 
-def answer_to_records( answer: str) -> list[list] | None:
+
+def answer_to_records(answer: str) -> list[list] | None:
     from knwl.prompts import prompts
+
     if not answer or answer.strip() == "":
         return None
     parts = split_string_by_multi_markers(
@@ -476,7 +488,7 @@ def answer_to_records( answer: str) -> list[list] | None:
     coll = []
     for part in parts:
         rec = parse_llm_record(part, prompts.constants.DEFAULT_TUPLE_DELIMITER)
-        
+
         if rec:
-            coll.append(rec) 
+            coll.append(rec)
     return coll

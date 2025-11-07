@@ -20,7 +20,7 @@ class EdgeSpecs:
     edge_data: dict = field(default_factory=dict)
 
 
-@defaults("graph", "nx")
+@defaults("graph", "user")
 class NetworkXGraphStorage(GraphStorageBase):
     """
     A class to handle storage and manipulation of a directed multi-graph using NetworkX.

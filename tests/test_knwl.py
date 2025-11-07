@@ -1,12 +1,14 @@
 import os
-
+import time
 import pytest
 from faker import Faker
 
 from knwl.config import resolve_reference
 from knwl.format import print_knwl
 from knwl.knwl import Knwl
+from knwl.models.KnwlInput import KnwlInput
 from knwl.storage.networkx_storage import NetworkXGraphStorage
+from tests.library.collect import get_library_article
 
 pytestmark = pytest.mark.llm
 
@@ -115,7 +117,7 @@ async def test_knwl_nodes():
     assert n.id == id
     assert n.name == name
     assert n.description == content
-    assert  await k.node_exists(id)
+    assert await k.node_exists(id)
     found = await k.get_node_by_id(id)
     assert found is not None
     assert found.id == id
@@ -123,28 +125,65 @@ async def test_knwl_nodes():
     await k.delete_node_by_id(id)
     assert not await k.node_exists(id)
     found = await k.get_node_by_id(id)
-    assert found is None    
+    assert found is None
+
 
 @pytest.mark.asyncio
 async def test_knwl_edges():
-    k = Knwl()
+    kg = Knwl()
     name1 = fake.word()
     content1 = fake.sentence()
     id1 = str(fake.random_number(digits=5))
-    n1 = await k.add_fact(name1, content1, id=id1)
+    n1 = await kg.add_fact(name1, content1, id=id1)
 
     name2 = fake.word()
     content2 = fake.sentence()
     id2 = str(fake.random_number(digits=5))
-    n2 = await k.add_fact(name2, content2, id=id2)
+    n2 = await kg.add_fact(name2, content2, id=id2)
 
     relation = "related_to"
-    e = await k.connect(source_name=n1.name, target_name=n2.name, relation=relation)
+    e = await kg.connect(source_name=n1.name, target_name=n2.name, relation=relation)
     assert e.source_id == n1.id
     assert e.target_id == n2.id
     assert e.type == relation
 
-    edges = await k.get_edges_between_nodes(n1.id, n2.id)
+    edges = await kg.get_edges_between_nodes(n1.id, n2.id)
     assert len(edges) == 1
     assert edges[0].source_id == n1.id
     assert edges[0].target_id == n2.id
+
+
+@pytest.mark.asyncio
+async def test_ingest():
+    kg = Knwl()
+    name = f"ingest_{fake.word()}"
+    id = str(fake.random_number(digits=5))
+    text = await get_library_article("literature", "Charles Dickens")
+    input = KnwlInput(id=id, name=name, description="Test ingest", text=text)
+    start_time = time.time()
+    gr = await kg.ingest(input)
+    end_time = time.time()
+    print(f"Ingestion took {end_time - start_time:.2f} seconds")
+    print_knwl(gr)
+
+
+@pytest.mark.asyncio
+async def test_knwl_absolute_path():
+    """
+    You can use and absolute path for the namespace to store the knowledge graph and vectors in a specific location.
+    """
+    name = fake.word()
+    namespace = f"~/knwl_{name}"
+    actual_path = os.path.expanduser(namespace)
+    kg = Knwl(namespace=namespace, llm="ollama", model="gemma3:4b")
+    input = KnwlInput(
+        id="",
+        name="John",
+        description="Test node for override config",
+        text="John Field wrote amazing piano concertos.",
+    )
+    await kg.add(input)
+    assert os.path.exists(os.path.join(actual_path, "vectors")) is True
+    import shutil
+
+    shutil.rmtree(actual_path)

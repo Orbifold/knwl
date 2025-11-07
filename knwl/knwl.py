@@ -29,6 +29,7 @@ class Knwl:
         namespace: str = "default",
         llm: Optional[str] = None,
         model: Optional[str] = None,
+        override: Optional[dict] = None,
     ):
         """
         Initialize Knwl with optionally the name of knowledge space.
@@ -40,7 +41,7 @@ class Knwl:
         self._llm = None
         self._namespace = namespace
 
-        self._config = get_custom_config(namespace, llm_provider=llm, llm_model=model)
+        self._config = get_custom_config(namespace, llm_provider=llm, llm_model=model, override=override)
         set_active_config(self._config)  # override the whole config
         # tricky thing here: if you use multiple Knwl instances they will share the singletons if accessed via a single global Services instance
         services = Services()

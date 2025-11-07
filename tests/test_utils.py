@@ -24,7 +24,7 @@ from knwl.utils import (
     split_string_by_multi_markers,
     hash_with_prefix,
 )
-from knwl.utils import hash_args, get_json_body, get_full_path
+from knwl.utils import hash_args, get_json_body, get_full_path, parse_llm_record
 from knwl.utils import throttle
 
 
@@ -581,18 +581,43 @@ def test_special_dirs():
     print(p)
     assert p.endswith("abc") and ".knwl" in p and p.startswith(os.path.expanduser("~"))
     if os.path.exists(p):
-            os.rmdir(p)
+        os.rmdir(p)
 
     p = get_full_path("$/data/xyz")
     print(p)
     assert p.endswith("xyz") and p.startswith("/")
     if os.path.exists(p):
         os.rmdir(p)
-        
+
     p = get_full_path("$/tests/xyz")
     print(p)
     assert p.endswith("xyz") and p.startswith("/")
     if os.path.exists(p):
         os.rmdir(p)
 
-        
+
+def test_parse_llm_record():
+    rec = "(component1, component2, component3)"
+    result = parse_llm_record(rec, delimiter=",")
+    assert result == ["component1", "component2", "component3"]
+
+    rec = "No parentheses here"
+    result = parse_llm_record(rec, delimiter=",")
+    assert result is None
+
+    rec = ""
+    result = parse_llm_record(rec, delimiter=",")
+    assert result is None
+
+    rec = None
+    result = parse_llm_record(rec, delimiter=",")
+    assert result is None
+
+    rec_missing_end_parentheses = "(entity<|>Catherine Thomson Hogarth<|>person<|>Catherine Thomson Hogarth was the daughter of George Hogarth and became Charles Dickens's wife after a one-year engagement."
+    result = parse_llm_record(rec_missing_end_parentheses, delimiter="<|>")
+    assert result == [
+        "entity",
+        "Catherine Thomson Hogarth",
+        "person",
+        "Catherine Thomson Hogarth was the daughter of George Hogarth and became Charles Dickens's wife after a one-year engagement.",
+    ]

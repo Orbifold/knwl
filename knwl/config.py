@@ -4,6 +4,7 @@
 # ============================================================================================
 import copy
 import os
+from typing import Optional
 
 from knwl.utils import get_full_path
 
@@ -151,7 +152,13 @@ _default_config = {
             "caching_service": "@/llm_caching/user",
             "temperature": 0.1,
             "context_window": 32768,
-            "singleton": False,
+        },
+        "ollama_gemma": {
+            "class": "knwl.llm.ollama.OllamaClient",
+            "model": "gemma3:27b",
+            "caching_service": "@/llm_caching/user",
+            "temperature": 0.1,
+            "context_window": 32768,
         },
         "openai": {
             "class": "knwl.llm.openai.OpenAIClient",
@@ -179,7 +186,7 @@ _default_config = {
             "path": "$/user/default/llm_cache.json",
         },
     },
-    "logging": {"enabled": True, "level": "ERROR", "path": "$/user/default/knwl.log"},
+    "logging": {"enabled": True, "level": "INFO", "path": "$/user/default/knwl.log"},
     "rag_store": {
         "default": "user",
         "user": {
@@ -569,17 +576,29 @@ def get_active_config() -> dict:
 
 
 def get_custom_config(
-    namespace: str = "default", llm_provider: str = None, llm_model: str = None
+    namespace: str = "default",
+    llm_provider: str = None,
+    llm_model: str = None,
+    override: Optional[dict] = None,
 ) -> dict:
     """
     Get the configuration dictionary adjusted for a specific namespace, LLM provider and LLM model.
-    If the namespace is an absolute path (starts with '/'), it will be used as is for storage paths.
-    If no LLM provider or model is given, the default ones from the active config will be used.
+    - If the namespace is an absolute path (starts with '/'), it will be used as is for storage paths.
+    - If no LLM provider or model is given, the default ones from the active config will be used.
+    - This is primarily for the Kwnl utility class to create isolated knowledge spaces, but can be used elsewhere too.
+
+    Args:
+        namespace: The knowledge space namespace. Defaults to "default". You find this directory under the user's home directory (~/) unless an absolute path is given.
+        llm_provider: The LLM provider to set as default (e.g., "openai"). Defaults to None.
+        llm_model: The LLM model to set for the given provider (e.g., "gpt-4o-mini"). Defaults to None.
+        override: An optional dictionary to override additional configuration settings. Defaults to None.
     """
     if namespace is None or len(str(namespace).strip()) == 0:
         raise ValueError("get_custom_config: namespace cannot be empty.")
 
     base_config = get_active_config()
+    if namespace.startswith("~/"):
+        namespace = os.path.expanduser(namespace)
     if namespace.startswith("/"):  # absolute path
         os.makedirs(namespace, exist_ok=True)
         space_path = namespace
@@ -620,4 +639,7 @@ def get_custom_config(
         replace_default_provider(base_config)
     if llm_model is not None:
         replace_default_model(base_config)
+    # if additional overrides are given, apply them too
+    if override is not None:
+        base_config = merge_configs(override, base_config)
     return base_config
