@@ -115,7 +115,7 @@ class GraphRAG(GraphRAGBase):
 
         return result.graph
 
-    async def chunking(self, document: KnwlDocument) -> list[KnwlChunk]:
+    async def chunk(self, document: KnwlDocument) -> list[KnwlChunk]:
         """
         Chunk the document using the provided ragger (ChunkingBase or RagBase).
         """
@@ -159,7 +159,7 @@ class GraphRAG(GraphRAGBase):
         # Chunking
         # ============================================================================================
 
-        result.chunks = await self.chunking(document_to_ingest)
+        result.chunks = await self.chunk(document_to_ingest)
 
         # ============================================================================================
         # Extract knowledge graph from chunks

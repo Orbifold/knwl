@@ -109,7 +109,7 @@ class KnwlNode(BaseModel):
     def validate_type(cls, v: str) -> str:
         if v is None or len(str.strip(v)) == 0:
             raise ValueError("The type of a KnwlNode cannot be None or empty.")
-        return v
+        return v.strip().replace("<", "").replace(">", "") # sanitize accidents from LLMs
 
     @model_validator(mode="after")
     def set_id(self) -> "KnwlNode":

@@ -4,8 +4,7 @@
 # ============================================================================================
 # %% 
 # Demonstration of knwl formatting capabilities
-from knwl import services, service, KnwlAnswer
-from knwl import OllamaClient
+from knwl import KnwlAnswer
 from knwl.format import print_knwl
 from faker import Faker
 from knwl.models import KnwlNode, KnwlEdge, KnwlGraph, KnwlDocument, KnwlChunk

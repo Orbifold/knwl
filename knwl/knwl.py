@@ -11,6 +11,8 @@ from knwl.config import (
     set_active_config,
 )
 from knwl.llm.llm_base import LLMBase
+from knwl.models import KnwlChunk
+from knwl.models.KnwlDocument import KnwlDocument
 from knwl.models.KnwlEdge import KnwlEdge
 from knwl.models.KnwlGraph import KnwlGraph
 from knwl.models.KnwlNode import KnwlNode
@@ -41,7 +43,9 @@ class Knwl:
         self._llm = None
         self._namespace = namespace
 
-        self._config = get_custom_config(namespace, llm_provider=llm, llm_model=model, override=override)
+        self._config = get_custom_config(
+            namespace, llm_provider=llm, llm_model=model, override=override
+        )
         set_active_config(self._config)  # override the whole config
         # tricky thing here: if you use multiple Knwl instances they will share the singletons if accessed via a single global Services instance
         services = Services()
@@ -260,6 +264,7 @@ class Knwl:
         Returns True if the node was deleted, False if it did not exist.
         """
         return await self.grag.delete_node_by_id(node_id)
+
     async def get_edges_between_nodes(
         self, source_id: str, target_id: str
     ) -> list[KnwlEdge]:
@@ -267,7 +272,7 @@ class Knwl:
         Get all edges between two nodes by their Ids from the knowledge graph.
         """
         return await self.grag.get_edges_between_nodes(source_id, target_id)
-    
+
     async def _simple_ask(self, question: str) -> KnwlAnswer:
         """
         Simple LLM QA without knowledge graph.
@@ -275,6 +280,15 @@ class Knwl:
         """
         found = await self.llm.ask(question)
         return found or KnwlAnswer.none()
+
+    async def chunk(self, doc: str | KnwlDocument) -> list[KnwlChunk]:
+        """
+        Chunk a document or text into smaller chunks using the configured chunker.
+        Note: this method does not store the chunks, it only returns them.
+        """
+        if isinstance(doc, str):
+            doc = KnwlDocument(content=doc)
+        return await self.grag.chunk(doc)
 
     def __repr__(self) -> str:
         from importlib.metadata import version

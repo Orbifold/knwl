@@ -117,7 +117,7 @@ class KnwlEdge(BaseModel):
     def validate_type(cls, v):
         if v is None or len(str(v).strip()) == 0:
             raise ValueError("Type of a KnwlEdge cannot be None or empty.")
-        return v
+        return v.strip().replace("<", "").replace(">", "") # sanitize accidents from LLMs
 
     @model_validator(mode="after")
     def update_id(self):

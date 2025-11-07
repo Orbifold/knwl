@@ -61,9 +61,7 @@ class GraphRAGBase(FrameworkBase, ABC):
         ...
 
     @abstractmethod
-    async def augment(
-        self, input: str | KnwlInput
-    ) -> KnwlContext | None:
+    async def augment(self, input: str | KnwlInput) -> KnwlContext | None:
         """
         Retrieve context from the knowledge graph and augment the input text.
         All you need to answer questions or generate text with context.
@@ -130,13 +128,16 @@ class GraphRAGBase(FrameworkBase, ABC):
             list[KnwlEdge]: A list of KnwlEdge objects attached to the given nodes.
         """
         ...
+
     @abstractmethod
-    async def get_edges_between_nodes(self, source_id: str, target_id: str) -> list[KnwlEdge]:
+    async def get_edges_between_nodes(
+        self, source_id: str, target_id: str
+    ) -> list[KnwlEdge]:
         """
         Retrieve edges between two nodes by their IDs from the knowledge graph.
         """
         ...
-        
+
     @abstractmethod
     async def save_sources(self, sources: list[KnwlDocument]) -> bool:
         """
@@ -220,5 +221,12 @@ class GraphRAGBase(FrameworkBase, ABC):
         """
         Delete a node by its Id from the knowledge graph.
         Returns True if the node was deleted, False if it did not exist.
+        """
+        ...
+
+    @abstractmethod
+    async def chunk(self, document: KnwlDocument) -> list[KnwlChunk]:
+        """
+        Chunk the given document into smaller KnwlChunk objects.
         """
         ...
