@@ -8,6 +8,7 @@ from knwl.models import KnwlAnswer
 from knwl.di import service, inject_config, defaults
 from knwl.logging import log
 
+
 @defaults("@/llm/ollama")
 class OllamaClient(LLMBase):
     def __init__(
@@ -25,21 +26,37 @@ class OllamaClient(LLMBase):
         self._model = model
         self._temperature = temperature
         self._context_window = context_window
-        if not caching_service:
+
+        self._caching_service: LLMCacheBase = caching_service
+        self.validate_params()
+
+    def validate_params(self):
+        if not self.caching_service:
             log.warn("OllamaClient: No caching service provided, caching disabled.")
-        self._caching_service = caching_service
+        if (
+            not isinstance(self.caching_service, LLMCacheBase)
+            and self.caching_service is not None
+        ):
+            raise ValueError(
+                f"OllamaClient: caching_service must be an instance of LLMCacheBase, got {type(self.caching_service)}"
+            )
+
     @property
     def model(self):
         return self._model
+
     @property
     def temperature(self):
         return self._temperature
+
     @property
     def context_window(self):
         return self._context_window
+
     @property
     def caching_service(self):
         return self._caching_service
+
     async def ask(
         self,
         question: str,

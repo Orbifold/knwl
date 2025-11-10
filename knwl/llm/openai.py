@@ -9,7 +9,7 @@ from knwl.logging import log
 from knwl.models import KnwlAnswer
 
 
-@defaults("llm", "openai")
+@defaults("@/llm/openai")
 class OpenAIClient(LLMBase):
     def __init__(
         self,
@@ -24,10 +24,21 @@ class OpenAIClient(LLMBase):
         self._model = model
         self._temperature = temperature
         self._context_window = context_window
-        if not caching_service:
-            log.warn("OpenaiClient: No caching service provided, caching disabled.")
-        self._caching_service = caching_service
+
+        self._caching_service: LLMCacheBase = caching_service
+        self.validate_params()
         self._api_key = api_key
+
+    def validate_params(self):
+        if not self.caching_service:
+            log.warn("OpenaiClient: No caching service provided, caching disabled.")
+        if (
+            not isinstance(self.caching_service, LLMCacheBase)
+            and self.caching_service is not None
+        ):
+            raise ValueError(
+                f"OpenAIClient: caching_service must be an instance of LLMCacheBase, got {type(self.caching_service)}"
+            )
 
     @property
     def client(self):

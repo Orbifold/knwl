@@ -173,6 +173,7 @@ _default_config = {
             "caching_service": "@/llm_caching/user",
             "temperature": 0.1,
             "context_window": 4096,  # Max tokens for response (lower to avoid streaming requirement)
+            "api_key": os.getenv("ANTHROPY_API_KEY", ""),
         },
     },
     "llm_caching": {
@@ -193,7 +194,7 @@ _default_config = {
             "class": "knwl.semantic.rag.rag_store.RagStore",
             "document_store": "@/document_store/user",
             "chunk_store": "@/chunk_store/user",
-            "chunker": "@/chunking/tiktoken",
+            "chunker": "@/chunking",
             "auto_chunk": True,
         },
     },
@@ -385,6 +386,9 @@ def get_config(*keys, default=None, config=None, override=None):
         return cloned_config
     if override is not None:
         cloned_config = merge_configs(override, cloned_config)
+    if isinstance(keys[0], str) and keys[0].startswith("@/") and len(keys) > 1:
+        # ignore the other keys since things are given via reference
+        return get_config(keys[0], default=default, config=cloned_config)   
     if len(keys) == 1:
         # if starts with @/, it's a reference to another config value
         if isinstance(keys[0], str) and keys[0].startswith("@/"):
