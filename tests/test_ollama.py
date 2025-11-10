@@ -1,11 +1,14 @@
+from unittest.mock import patch
 import pytest
 from faker import Faker
 import os
+from knwl.config import get_config
 from knwl.format import print_knwl
 from knwl.services import services
 from knwl.llm.ollama import OllamaClient
 from knwl.models.KnwlAnswer import KnwlAnswer
 from knwl.utils import get_full_path
+from knwl.llm.llm_cache_base import LLMCacheBase
 
 pytestmark = pytest.mark.llm
 
@@ -28,8 +31,8 @@ async def test_basic_ask():
     returns a valid KnwlLLMAnswer response, and correctly caches the query.
     """
     llm = OllamaClient()
-    assert llm.model == "o14"
-    assert llm.temperature == 0.1
+    assert llm.model == get_config("llm/ollama/model")
+    assert llm.temperature == get_config("llm/ollama/temperature")
 
     llm = OllamaClient(model="gemma3:4b", temperature=0.5)
     assert llm.model == "gemma3:4b"
@@ -38,7 +41,7 @@ async def test_basic_ask():
     # let's change the default caching path
     # note that only the overrides are passed, the rest is taken from default_config
     file_name = fake.word()
-    config = {"llm_caching": {"json": {"path": f"$/tests/{file_name}.json"}}}
+    config = {"llm_caching": {"user": {"path": f"$/tests/{file_name}.json"}}}
     llm = services.get_service("llm", "ollama", override=config)
     resp = await llm.ask("Hello")
     assert resp is not None
@@ -85,11 +88,15 @@ async def test_override_caching():
         "llm": {"ollama": {"caching_service": "@/llm_caching/special"}},
         "llm_caching": {"special": {"class": SpecialClass()}},
     }
-    llm = services.get_service("llm", "ollama", override=config)
-    assert llm.caching_service is not None
-    assert llm.caching_service.name == "Swa"
-    assert await llm.is_cached("Anything") is True
-    assert passed_through_cache is True
+    with patch(
+        "knwl.llm.ollama.OllamaClient.validate_params",
+        return_value=None,
+    ):
+        llm = services.get_service("llm", "ollama", override=config)
+        assert llm.caching_service is not None
+        assert llm.caching_service.name == "Swa"
+        assert await llm.is_cached("Anything") is True
+        assert passed_through_cache is True
 
 
 @pytest.mark.asyncio
@@ -108,4 +115,3 @@ async def test_no_cache():
     assert a is None
     a = await llm.ask("")
     assert a is None
-

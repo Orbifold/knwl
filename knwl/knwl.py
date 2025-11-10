@@ -1,4 +1,5 @@
 import copy
+from curses import version
 import json
 from typing import Optional
 
@@ -10,11 +11,12 @@ from knwl.config import (
     set_active_config,
 )
 from knwl.llm.llm_base import LLMBase
+from knwl.models import KnwlChunk
+from knwl.models.KnwlDocument import KnwlDocument
 from knwl.models.KnwlEdge import KnwlEdge
 from knwl.models.KnwlGraph import KnwlGraph
 from knwl.models.KnwlNode import KnwlNode
 from knwl.services import Services
-from knwl.utils import get_project_info
 
 
 class Knwl:
@@ -29,6 +31,7 @@ class Knwl:
         namespace: str = "default",
         llm: Optional[str] = None,
         model: Optional[str] = None,
+        override: Optional[dict] = None,
     ):
         """
         Initialize Knwl with optionally the name of knowledge space.
@@ -40,7 +43,9 @@ class Knwl:
         self._llm = None
         self._namespace = namespace
 
-        self._config = get_custom_config(namespace, llm_provider=llm, llm_model=model)
+        self._config = get_custom_config(
+            namespace, llm_provider=llm, llm_model=model, override=override
+        )
         set_active_config(self._config)  # override the whole config
         # tricky thing here: if you use multiple Knwl instances they will share the singletons if accessed via a single global Services instance
         services = Services()
@@ -217,7 +222,7 @@ class Knwl:
             source_id=source.id,
             target_id=target.id,
             description=relation,
-            type="Relation",
+            type=relation,
         )
         return await self.grag.semantic_graph.embed_edge(
             edge
@@ -247,6 +252,27 @@ class Knwl:
 
         return prompts.extraction.fast_graph_extraction(text, entity_types)
 
+    async def get_node_by_id(self, node_id: str) -> KnwlNode | None:
+        """
+        Get a node by its Id from the knowledge graph.
+        """
+        return await self.grag.get_node_by_id(node_id)
+
+    async def delete_node_by_id(self, node_id: str) -> bool:
+        """
+        Delete a node by its Id from the knowledge graph.
+        Returns True if the node was deleted, False if it did not exist.
+        """
+        return await self.grag.delete_node_by_id(node_id)
+
+    async def get_edges_between_nodes(
+        self, source_id: str, target_id: str
+    ) -> list[KnwlEdge]:
+        """
+        Get all edges between two nodes by their Ids from the knowledge graph.
+        """
+        return await self.grag.get_edges_between_nodes(source_id, target_id)
+
     async def _simple_ask(self, question: str) -> KnwlAnswer:
         """
         Simple LLM QA without knowledge graph.
@@ -255,9 +281,20 @@ class Knwl:
         found = await self.llm.ask(question)
         return found or KnwlAnswer.none()
 
+    async def chunk(self, doc: str | KnwlDocument) -> list[KnwlChunk]:
+        """
+        Chunk a document or text into smaller chunks using the configured chunker.
+        Note: this method does not store the chunks, it only returns them.
+        """
+        if isinstance(doc, str):
+            doc = KnwlDocument(content=doc)
+        return await self.grag.chunk(doc)
+
     def __repr__(self) -> str:
-        info = get_project_info()
-        return f"{info['name']} v{info['version']} - Knwl instance (namespace={self._namespace})"
+        from importlib.metadata import version
+
+        knwl_version = version("knwl")
+        return f"Knwl v{knwl_version} - Knwl instance (namespace={self._namespace})"
 
     def __str__(self) -> str:
         return self.__repr__()

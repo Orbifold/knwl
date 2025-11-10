@@ -1,6 +1,7 @@
 import pytest
 from knwl.config import get_config, merge_configs, reset_active_config, resolve_dict, set_active_config
-from knwl.config import resolve_reference, resolve_config
+from knwl.config import resolve_reference, resolve_config, get_custom_config
+
 
 pytestmark = pytest.mark.basic
 
@@ -152,3 +153,107 @@ def test_active_config():
     assert get_config("a", override= {"a":12}) == 12
     reset_active_config()
     assert get_config("@/llm") is not None
+
+def test_get_custom_config_namespace():
+    
+    # Test with default namespace
+    config = get_custom_config(namespace="default")
+    assert "$/user/default" in config["json"]["user_documents"]["path"]
+    
+    # Test with custom namespace
+    config = get_custom_config(namespace="custom_space")
+    assert "$/user/custom_space" in config["json"]["user_documents"]["path"]
+    assert "$/user/custom_space" in config["json"]["user_chunks"]["path"]
+    assert "$/user/custom_space" in config["graph"]["user"]["path"]
+    assert "$/user/custom_space" in config["llm_caching"]["user"]["path"]
+    
+    # Test that original config is not modified
+    original = get_config("json", "user_documents", "path")
+    assert "$/user/default" in original
+
+
+def test_get_custom_config_absolute_path(tmp_path):
+    
+    # Test with absolute path
+    abs_path = str(tmp_path / "test_space")
+    config = get_custom_config(namespace=abs_path)
+    
+    assert abs_path in config["json"]["user_documents"]["path"]
+    assert abs_path in config["llm_caching"]["user"]["path"]
+    assert abs_path in config["graph"]["user"]["path"]
+
+
+def test_get_custom_config_llm_provider():
+    
+    # Test with LLM provider change
+    config = get_custom_config(namespace="test", llm_provider="openai")
+    assert config["llm"]["default"] == "openai"
+    
+    # Test with invalid provider
+    with pytest.raises(ValueError, match="LLM provider.*not found"):
+        get_custom_config(namespace="test", llm_provider="nonexistent")
+
+
+def test_get_custom_config_llm_model():
+    
+    # Test with LLM model change
+    config = get_custom_config(
+        namespace="test", llm_provider="ollama", llm_model="custom:7b"
+    )
+    assert config["llm"]["ollama"]["model"] == "custom:7b"
+    
+    # Test model change with openai
+    config = get_custom_config(
+        namespace="test", llm_provider="openai", llm_model="gpt-4"
+    )
+    assert config["llm"]["openai"]["model"] == "gpt-4"
+
+
+def test_get_custom_config_combined():
+    
+    # Test namespace + provider + model
+    config = get_custom_config(
+        namespace="myspace", llm_provider="anthropic", llm_model="claude-3"
+    )
+    assert "$/user/myspace" in config["json"]["user_chunks"]["path"]
+    assert config["llm"]["default"] == "anthropic"
+    assert config["llm"]["anthropic"]["model"] == "claude-3"
+
+
+def test_get_custom_config_empty_namespace():
+    
+    with pytest.raises(ValueError, match="namespace cannot be empty"):
+        get_custom_config(namespace="")
+    
+    with pytest.raises(ValueError, match="namespace cannot be empty"):
+        get_custom_config(namespace="   ")
+    
+    with pytest.raises(ValueError, match="namespace cannot be empty"):
+        get_custom_config(namespace=None)
+
+
+def test_get_custom_config_isolation():
+    
+    # Verify config isolation - changes don't affect active config
+    original_default = get_config("llm", "default")
+    
+    config1 = get_custom_config(namespace="space1", llm_provider="openai")
+    config2 = get_custom_config(namespace="space2", llm_provider="anthropic")
+    
+    assert config1["llm"]["default"] == "openai"
+    assert config2["llm"]["default"] == "anthropic"
+    assert get_config("llm", "default") == original_default
+
+def test_extra():
+    # Test with extra overrides
+    extra = {
+        "logging": {
+            "enabled": False,
+            "level": "ERROR",
+            "path": "$/user/extra/knwl.log"
+        }
+    }
+    config = get_custom_config(namespace="extra_space", override=extra)
+    assert config["logging"]["enabled"] is False
+    assert config["logging"]["level"] == "ERROR"
+    assert "$/user/extra/knwl.log" in config["logging"]["path"]

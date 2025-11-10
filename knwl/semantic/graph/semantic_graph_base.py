@@ -179,7 +179,9 @@ class SemanticGraphBase(FrameworkBase, ABC):
         ...
 
     @abstractmethod
-    async def get_edges(self, source_node_id_or_key: str, target_node_id: str = None, type: str = None) -> Union[list[KnwlEdge], None]:
+    async def get_edges(
+        self, source_node_id_or_key: str, target_node_id: str = None, type: str = None
+    ) -> Union[list[KnwlEdge], None]:
         """
         Retrieve edges based on source node, optionally filtered by target node and type.
 
@@ -262,7 +264,9 @@ class SemanticGraphBase(FrameworkBase, ABC):
         ...
 
     @abstractmethod
-    async def consolidate_graphs(self, g1: KnwlGraph, g2: KnwlGraph) -> KnwlGraph | None:
+    async def consolidate_graphs(
+        self, g1: KnwlGraph, g2: KnwlGraph
+    ) -> KnwlGraph | None:
         """
         Consolidate two knowledge graphs into one, merging nodes and edges
         that are semantically similar.
@@ -320,10 +324,15 @@ class SemanticGraphBase(FrameworkBase, ABC):
             list[KnwlEdge]: A list of KnwlEdge objects attached to the given nodes.
         """
         ...
+    @abstractmethod
+    async def get_edges_between_nodes(self, source_id: str, target_id: str) -> list[KnwlEdge]:
+        """
+        Retrieve edges between two nodes by their IDs from the knowledge graph.
+        """
+        ...
 
     @abstractmethod
-    async def node_degree(self, node_id: str) -> int:
-        ...
+    async def node_degree(self, node_id: str) -> int: ...
 
     @abstractmethod
     async def edge_degree(self, edge_or_source_id: str, target_id: str = None) -> int:
@@ -339,11 +348,12 @@ class SemanticGraphBase(FrameworkBase, ABC):
         ...
 
     @abstractmethod
-    async def assign_edge_degrees(self, edges: list[KnwlEdge]) -> list[int]:
-        ...
+    async def assign_edge_degrees(self, edges: list[KnwlEdge]) -> list[int]: ...
 
     @abstractmethod
-    async def get_semantic_endpoints(self, edge_ids: list[str]) -> dict[str, tuple[str, str]]:
+    async def get_semantic_endpoints(
+        self, edge_ids: list[str]
+    ) -> dict[str, tuple[str, str]]:
         """
         Returns the names of the source and target nodes for the given edge Id's.
         """
@@ -363,3 +373,10 @@ class SemanticGraphBase(FrameworkBase, ABC):
         """
         ...
 
+    @abstractmethod
+    async def delete_node_by_id(self, node_id: str) -> bool:
+        """
+        Delete a node by its Id from the knowledge graph.
+        Returns True if the node was deleted, False if it did not exist.
+        """
+        ...

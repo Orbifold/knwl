@@ -1,6 +1,6 @@
 from knwl.extraction.entity_extraction_base import EntityExtractionBase
 from knwl.prompts import prompts
-from knwl.utils import answer_to_records, parse_llm_record, split_string_by_multi_markers
+from knwl.utils import answer_to_records
 from knwl.llm.llm_base import LLMBase
 from knwl.di import defaults
 from knwl.models import KnwlEntity

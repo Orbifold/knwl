@@ -6,6 +6,44 @@ from knwl.utils import get_full_path
 
 
 class Log(FrameworkBase):
+    """
+    A logging utility class that provides flexible logging capabilities with both file and console output.
+
+    This class extends FrameworkBase to provide a configurable logging system that supports:
+    - Rotating file logs with configurable size and backup count
+    - Console logging output
+    - Multiple log levels (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+    - Exception logging with traceback
+    - Callable interface for quick logging
+
+    Args:
+        *args: Variable length argument list passed to parent class
+        **kwargs: Arbitrary keyword arguments, including:
+            - override: Configuration override dictionary
+            - Configuration parameters for logging.enabled, logging.level, and logging.path
+
+    Attributes:
+        enabled (bool): Whether logging is enabled (default: True)
+        logging_level (str): The logging level as string (default: "INFO")
+        path (str): Path to the log file (default: "$/user/default/knwl.log")
+        logger (logging.Logger): The underlying Python logger instance
+
+    Examples:
+        >>> log = Log()
+        >>> log.info("Application started")
+        >>> log("Quick log message")
+        >>> try:
+        ...     raise ValueError("Error occurred")
+        ... except Exception as e:
+        ...     log(e)
+        >>> log.shutdown()
+
+    Note:
+        - File logs are rotated at 10MB with 5 backup files retained
+        - Handlers are only added once to prevent duplicates
+        - If logging is disabled, messages are printed to stdout instead
+        - This class does not use the DI `defaults` mechanism for configuration since this would create a circular dependency.
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         config = kwargs.get("override", None)

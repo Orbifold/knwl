@@ -2,8 +2,9 @@
 # Use VSCode Interactive Python for best experience but you can also run this script directly.
 # See https://code.visualstudio.com/docs/python/jupyter-support-py
 # ============================================================================================
-# %% 
+# %%
 from knwl import services, ChunkingBase
+from knwl.format import print_knwl
 
 config = {
     "chunking": {
@@ -27,3 +28,18 @@ result = await s.chunk(text, source_key="test")
 for chunk in result:
     print("----chunk----")
     print(chunk)
+
+# %%
+# ============================================================================================
+# Chunking via Knwl.
+# In this case the chunking configuration is read from the knwl config.
+# ============================================================================================
+from knwl import Knwl
+kg = Knwl()
+print("===========Chunking Config======================")
+print_knwl("@/chunking")
+result = await kg.chunk(text)
+for chunk in result:
+    print("----chunk----")
+    print(chunk)
+# %%

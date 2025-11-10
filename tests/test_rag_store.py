@@ -1,5 +1,6 @@
 import pytest
 
+from knwl.config import reset_config
 from knwl.models.KnwlDocument import KnwlDocument
 from knwl.semantic.rag.rag_store import RagStore
 from tests.library.collect import get_library_article
@@ -8,6 +9,7 @@ pytestmark = pytest.mark.llm
 
 @pytest.mark.asyncio
 async def test_rag_store():
+    reset_config()
     store = RagStore()
     article = await get_library_article("literature", "Jane Austen")
     doc = KnwlDocument(

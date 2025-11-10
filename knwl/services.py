@@ -247,6 +247,11 @@ class Services:
                 elif isinstance(param_value, str) and param_value.startswith("$/"):
                     # it's a path reference
                     param = get_full_path(param_value)
+                elif (
+                    isinstance(param_value, str)
+                    and param_value.strip().lower() == "none"
+                ):
+                    param = None
                 else:
                     param = param_value
                 valid_kwargs[param_name] = param

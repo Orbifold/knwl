@@ -12,10 +12,7 @@ from knwl.prompts import prompts
 class GraphExtractionBase(FrameworkBase, ABC):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        config = kwargs.get("override", None)
-
-        self.extraction_mode = self.get_param(["graph_extraction", "basic", "mode"], args, kwargs, default="full", override=config)
-
+       
     @abstractmethod
     async def extract(
         self, text: str, entities: list[str] = None, chunk_id: str = None
@@ -47,27 +44,35 @@ class GraphExtractionBase(FrameworkBase, ABC):
         }
         for rec in records:
             if rec[0] == "entity":
-                result["entities"].append(
-                    {
-                        "name": rec[1],
-                        "type": rec[2],
-                        "description": rec[3],
-                    }
-                )
+                try:
+                    result["entities"].append(
+                        {
+                            "name": rec[1],
+                            "type": rec[2],
+                            "description": rec[3],
+                        }
+                    )
+                except Exception as e:
+                    from knwl.logging import log
+                    log.error(f"Error parsing entity record: {rec}: \n{e}")
             elif rec[0] == "relationship":
-                result["relationships"].append(
-                    {
-                        "source": rec[1],
-                        "target": rec[2],
-                        "description": rec[3],
-                        "types": (
-                            [u.strip() for u in rec[4].split(",")]
-                            if rec[4] is not None
-                            else []
-                        ),
-                        "weight": float(rec[5]) if len(rec) > 5 and rec[5] else 1.0,
-                    }
-                )
+                try:
+                    result["relationships"].append(
+                        {
+                            "source": rec[1],
+                            "target": rec[2],
+                            "description": rec[3],
+                            "types": (
+                                [u.strip() for u in rec[4].split(",")]
+                                if rec[4] is not None
+                                else []
+                            ),
+                            "weight": float(rec[5]) if len(rec) > 5 and rec[5] else 1.0,
+                        }
+                    )
+                except Exception as e:
+                    from knwl.logging import log
+                    log.error(f"Error parsing relationship record: {rec}: \n{e}")
             elif rec[0] == "content_keywords":
                 result["keywords"].extend(rec[1].split(", "))
         #  make keywords unique
@@ -169,8 +174,8 @@ class GraphExtractionBase(FrameworkBase, ABC):
 
     def get_extraction_prompt(self, text, entity_types=None):
         if self.extraction_mode == "fast":
-            return prompts.extraction.fast_entity_extraction(text, entity_types)
+            return prompts.extraction.fast_graph_extraction(text, entity_types)
         if self.extraction_mode == "full":
-            return prompts.extraction.full_entity_extraction(text, entity_types)
+            return prompts.extraction.full_graph_extraction(text, entity_types)
         else:
             raise ValueError(f"Unknown extraction mode: {self.extraction_mode}")

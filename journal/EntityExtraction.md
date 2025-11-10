@@ -18,3 +18,5 @@ async def main():
 
 asyncio.run(main())
 ```
+
+Google's [LangExtract](https://github.com/google/langextract) can also be used for entity extraction tasks. It doesn't extract relationships in a graph-sense however. It's a solution for feeding a knowledge graph from unstructured text but the relationships have to be created by other means.

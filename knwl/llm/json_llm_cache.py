@@ -6,7 +6,7 @@ from knwl.storage.json_storage import JsonStorage
 from knwl.di import defaults
 
 
-@defaults("llm_caching", "json")
+@defaults("llm_caching", "user")
 class JsonLLMCache(LLMCacheBase):
     """
     A thin wrapper around a JSON storage object to provide caching functionality for LLM.

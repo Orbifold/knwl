@@ -18,7 +18,7 @@ async def test_extraction():
     content = await get_library_article("mathematics", "Topology")
     doc = KnwlDocument(content=content, id=f"{str(uuid.uuid4())}.txt")
     grag: GraphRAG = services.get_service("graph_rag")
-    result = await grag.extract(doc, enable_chunking=False)
+    result = await grag.extract(doc)
     assert result.input.content == content
     assert result.graph is not None
 

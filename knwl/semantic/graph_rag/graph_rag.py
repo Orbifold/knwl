@@ -115,7 +115,7 @@ class GraphRAG(GraphRAGBase):
 
         return result.graph
 
-    async def chunking(self, document: KnwlDocument) -> list[KnwlChunk]:
+    async def chunk(self, document: KnwlDocument) -> list[KnwlChunk]:
         """
         Chunk the document using the provided ragger (ChunkingBase or RagBase).
         """
@@ -159,7 +159,7 @@ class GraphRAG(GraphRAGBase):
         # Chunking
         # ============================================================================================
 
-        result.chunks = await self.chunking(document_to_ingest)
+        result.chunks = await self.chunk(document_to_ingest)
 
         # ============================================================================================
         # Extract knowledge graph from chunks
@@ -275,7 +275,12 @@ class GraphRAG(GraphRAGBase):
         # return await asyncio.gather(*[self.graph_storage.get_node_edges(n.name) for n in nodes])
 
         return await self.semantic_graph.get_attached_edges(nodes)
-
+    async def get_edges_between_nodes(self, source_id: str, target_id: str) -> list[KnwlEdge]:
+        """
+        Retrieve edges between two nodes by their IDs from the knowledge graph.
+        """
+        return await self.semantic_graph.get_edges_between_nodes(source_id, target_id)
+    
     async def get_chunk_by_id(self, chunk_id: str) -> KnwlChunk | None:
         """
         Retrieve a chunk by its Id from the chunk storage.
@@ -363,3 +368,10 @@ class GraphRAG(GraphRAGBase):
         Get the total number of edges in the knowledge graph.
         """
         return await self.semantic_graph.edge_count()
+
+    async def delete_node_by_id(self, node_id: str) -> bool:
+        """
+        Delete a node by its Id from the knowledge graph.
+        Returns True if the node was deleted, False if it did not exist.
+        """
+        return await self.semantic_graph.delete_node_by_id(node_id)

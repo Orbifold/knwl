@@ -1,7 +1,8 @@
 import pytest
 from faker import Faker
+from unittest.mock import patch
 
-
+from knwl.config import get_config
 from knwl.llm.openai import OpenAIClient
 from knwl.models.KnwlAnswer import KnwlAnswer
 from knwl.utils import get_full_path
@@ -14,17 +15,17 @@ fake = Faker()
 async def test_basic_ask():
    
     llm = OpenAIClient()
-    assert llm.model == "gpt-4o-mini"
-    assert llm.temperature == 0.1
+    assert llm.model == get_config("llm/openai/model")
+    assert llm.temperature == get_config("llm/openai/temperature")
 
     llm = OpenAIClient(model="gpt-4.1", temperature=0.5)
     assert llm.model == "gpt-4.1"
-    assert llm.temperature == 0.5
+    assert llm.temperature ==0.5
 
     # let's change the default caching path
     # note that only the overrides are passed, the rest is taken from default_config
     file_name = fake.word()
-    config = {"llm_caching": {"json": {"path": f"$/tests/{file_name}.json"}}}
+    config = {"llm_caching": {"user": {"path": f"$/tests/{file_name}.json"}}}
     llm = services.get_service("llm", "openai", override=config)
     assert llm.caching_service is not None
     assert llm.caching_service.path == get_full_path(f"$/tests/{file_name}.json")
@@ -62,11 +63,15 @@ async def test_override_caching():
         "llm": {"openai": {"caching_service": "@/llm_caching/special"}},
         "llm_caching": {"special": {"class": SpecialClass()}},
     }
-    llm = services.get_service("llm", "openai", override=config)
-    assert llm.caching_service is not None
-    assert llm.caching_service.name == "Swa"
-    assert await llm.is_cached("Anything") is True
-    assert passed_through_cache is True
+    with patch(
+        "knwl.llm.openai.OpenAIClient.validate_params",
+        return_value=None,
+    ):    
+        llm = services.get_service("llm", "openai", override=config)
+        assert llm.caching_service is not None
+        assert llm.caching_service.name == "Swa"
+        assert await llm.is_cached("Anything") is True
+        assert passed_through_cache is True
 
 
 @pytest.mark.asyncio

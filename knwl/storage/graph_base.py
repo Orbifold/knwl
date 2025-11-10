@@ -145,6 +145,15 @@ class GraphStorageBase(StorageBase, ABC):
         ...
 
     @abstractmethod
+    async def get_edges_between_nodes(
+        self, source_id: str, target_id: str
+    ) -> list[dict]:
+        """
+        Retrieve edges between two nodes by their IDs from the knowledge graph.
+        """
+        ...
+
+    @abstractmethod
     async def get_attached_edges(self, nodes):
         """
         Asynchronously retrieves the edges attached to the given nodes.

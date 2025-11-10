@@ -120,7 +120,6 @@ from knwl import Knwl, print_knwl
 
 async def main():
     knwl = Knwl()
-    print(knwl)
 
     # add a fact
     await knwl.add_fact("gravity", "Gravity is a universal force that attracts two bodies toward each other.", id="fact1", )
@@ -172,7 +171,8 @@ This will output the ingestion
 and the answer to the question about photosynthesis, augmented with graph context.
 
 You can find the LLM cache, the graph (GraphML) and the JSON storage files in the working directory (`~/.knwl/default`). You can define multiple data namespaces and switch between them via configuration (`Knwl(namespace=...)`).
- 
+
+**Note**: ChromaDB is used for vector similarity and out of the box uses `all-MiniLM-L6-v2` as embedding model. The model will be downloaded automatically on first run.
 
 ## Formatting & Rendering
 
@@ -1109,6 +1109,10 @@ In the `benchmarks` directory, you can find evaluation scripts and benchmark dat
 
 - bigger models take longer to ingest data and do not perform better
 - reasoning models do not improved graph extraction quality.
+
+## Known Issues
+
+- The error `PanicException: range start index 10 out of range for slice ...` from ChromaDB happens when the underlying collection is corrupted. The workaround is to delete the collection and re-create it. Go to the Kwnl data directory (usually `~/.knwl/default/`) and delete the `vector` or any other ChromaDB subdirectory.
 
 ## License
 

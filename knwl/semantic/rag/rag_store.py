@@ -32,7 +32,8 @@ class RagStore(RagBase):
         self.chunk_store: ChunkBase = chunk_store
         self.chunker: ChunkingBase = chunker
         self.auto_chunk: bool = auto_chunk
-
+        self.validate_config()
+        
     def validate_config(self) -> None:
         if self.document_store is None:
             raise ValueError("RagStore: document_store is not configured")
