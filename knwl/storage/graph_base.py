@@ -11,8 +11,8 @@ class GraphStorageBase(StorageBase, ABC):
     """
     Base class for graph storage implementations.
     Strictly speaking, the graph is a directed multigraph, meaning multiple edges can exist between the same pair of nodes.
-    This abastract base class does not use the KnwlNode or KnwlEdge models directly, but the data is expected to be in the form of dictionaries
-    that can be converted to/from those models. That is, you can use a GraphBase independently of the higher level mechanisms in knwl.
+    This abstract base class does not use the KnwlNode or KnwlEdge models directly, but the data is expected to be in the form of dictionaries
+    that can be converted to/from those models. That is, you can use a GraphStorageBase independently of the higher level mechanisms in knwl.
 
     - The 'id' (string) should be unique for nodes and edges and present in the data (payload dictionary). If not provided, a uuid4 will be generated.
     - The 'name' (optional string) is not unique and can be the same for different nodes (e.g. "Apple" as fruit and as company).
@@ -369,16 +369,3 @@ class GraphStorageBase(StorageBase, ABC):
         """
         ...
 
-    @abstractmethod
-    async def get_nodes_by_name(self, node_name: str) -> Union[list[dict], None]:
-        """
-        Retrieves node(s) by its name.
-
-        Args:
-            node_name (str): The name of the node to retrieve.
-
-        Returns:
-            list[dict] | None: Since the name is not unique and can appear with different semantic types (e.g. Apple as fruit and as company), a list of dictionaries is returned if found, None otherwise.
-
-        """
-        ...

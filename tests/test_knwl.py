@@ -1,11 +1,12 @@
 import os
 import time
+
 import pytest
 from faker import Faker
 
 from knwl.config import resolve_reference
 from knwl.format import print_knwl
-from knwl.knwl import Knwl
+from knwl.knwl import Knwl, PromptType
 from knwl.models.KnwlInput import KnwlInput
 from knwl.storage.networkx_storage import NetworkXGraphStorage
 from tests.library.collect import get_library_article
@@ -23,11 +24,7 @@ async def test_quick_start():
     knwl = Knwl(name_space)
 
     # add a fact
-    await knwl.add_fact(
-        "gravity",
-        "Gravity is a universal force that attracts two bodies toward each other.",
-        id="fact1",
-    )
+    await knwl.add_fact("gravity", "Gravity is a universal force that attracts two bodies toward each other.", id="fact1", )
     # where is the graph stored?
     actual_graphml_path = resolve_reference("@/graph/user/path")
     print(f"GraphML path: {actual_graphml_path}")
@@ -45,11 +42,7 @@ async def test_quick_start():
     # Note: you can go and double-click the graphml file to open it in a graph viewer like yEd to visualize the graph.
 
     # add another fact
-    await knwl.add_fact(
-        "photosynthesis",
-        "Photosynthesis is the process by which green plants and some other organisms use sunlight to synthesize foods from carbon dioxide and water.",
-        id="fact2",
-    )
+    await knwl.add_fact("photosynthesis", "Photosynthesis is the process by which green plants and some other organisms use sunlight to synthesize foods from carbon dioxide and water.", id="fact2", )
     # two nodes should be present now
     assert await knwl.node_count() == 2
 
@@ -60,11 +53,7 @@ async def test_quick_start():
     found = await knwl.get_nodes_by_name("photosynthesis")
     assert len(found) == 1
     photosynthesis_node = found[0]
-    await knwl.connect(
-        source_name=gravity_node.name,
-        target_name=photosynthesis_node.name,
-        relation="Both are fundamental natural processes.",
-    )
+    await knwl.connect(source_name=gravity_node.name, target_name=photosynthesis_node.name, relation="Both are fundamental natural processes.", )
 
     # one edge
     assert await knwl.edge_count() == 1
@@ -176,14 +165,33 @@ async def test_knwl_absolute_path():
     namespace = f"~/knwl_{name}"
     actual_path = os.path.expanduser(namespace)
     kg = Knwl(namespace=namespace, llm="ollama", model="gemma3:4b")
-    input = KnwlInput(
-        id="",
-        name="John",
-        description="Test node for override config",
-        text="John Field wrote amazing piano concertos.",
-    )
+    input = KnwlInput(id="", name="John", description="Test node for override config", text="John Field wrote amazing piano concertos.", )
     await kg.add(input)
     assert os.path.exists(os.path.join(actual_path, "vectors")) is True
     import shutil
 
     shutil.rmtree(actual_path)
+
+
+@pytest.mark.asyncio
+async def test_knwl_prompt_access():
+    knwl = Knwl()
+    extraction_prompts = knwl.get_prompt(PromptType.EXTRACTION)
+    assert extraction_prompts is not None
+    text = fake.sentence()
+    p = extraction_prompts.fast_graph_extraction(text)
+    assert text in p
+    print_knwl(p)
+    summarization_prompts = knwl.get_prompt(PromptType.SUMMARIZATION)
+    assert summarization_prompts is not None
+    text = fake.sentence()
+    p = summarization_prompts.summarize(text)
+    assert text in p
+    rag_prompts = knwl.get_prompt(PromptType.RAG)
+    assert rag_prompts is not None
+    text = fake.sentence()
+    p = rag_prompts.self_rag(text)
+    assert text in p
+
+    constants_prompts = knwl.get_prompt(PromptType.CONSTANTS)
+    assert constants_prompts is not None

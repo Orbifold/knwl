@@ -14,259 +14,28 @@ The "default" refers both to the fact that it defines defaults and the "default"
 That is, you have out of the box a '~/.knwl/user/default' space where all user data is stored unless otherwise specified.
 If you use the `Knwl` utility class, you can specify a different space when adding or asking.
 """
-_default_config = {
-    "blob": {
-        "default": "file_system",
-        "file_system": {
-            "class": "knwl.storage.file_storage.FileStorage",
-            "base_path": "$/data/blobs",
-        },
-    },
-    "chunking": {
-        "default": "tiktoken",
-        "tiktoken": {
-            "class": "knwl.chunking.TiktokenChunking",
-            "model": "gpt-4o-mini",
-            "chunk_size": 1024,
-            "chunk_overlap": 128,
-        },
-    },
-    "chunk_store": {
-        "default": "user",
-        "user": {
-            "class": "knwl.semantic.rag.chunk_store.ChunkStore",
-            "chunker": "@/chunking/tiktoken",
-            "chunk_embeddings": "@/vector/user_chunks",
-            "chunk_storage": "@/json/user_chunks",
-        },
-    },
-    "document_store": {
-        "default": "user",
-        "user": {
-            "class": "knwl.semantic.rag.document_store.DocumentStore",
-            "document_storage": "@/json/user_documents",
-        },
-    },
-    "entity_extraction": {
-        "default": "basic",
-        "basic": {
-            "class": "knwl.extraction.basic_entity_extraction.BasicEntityExtraction",
-            "llm": "@/llm",
-        },
-    },
-    "graph_extraction": {
-        "default": "full",
-        "full": {
-            "class": "knwl.extraction.basic_graph_extraction.BasicGraphExtraction",
-            "mode": "full",  # fast or full
-            "llm": "@/llm",
-        },
-        "fast": {
-            "class": "knwl.extraction.basic_graph_extraction.BasicGraphExtraction",
-            "mode": "fast",  # fast or full
-            "llm": "@/llm",
-        },
-    },
-    "glean_graph_extraction": {
-        "default": "max3",
-        "max3": {
-            "class": "knwl.extraction.glean_graph_extraction.GleanGraphExtraction",
-            "llm": "@/llm",
-            "max_glean": 3,
-        },
-    },
-    "graph": {
-        "default": "user",
-        "user": {
-            "class": "knwl.storage.networkx_storage.NetworkXGraphStorage",
-            "format": "graphml",
-            "memory": False,
-            "path": "$/user/default/graph.graphml",
-        },
-        "memory": {
-            "class": "knwl.storage.networkx_storage.NetworkXGraphStorage",
-            "format": "graphml",
-            "memory": True,
-        },
-    },
-    "graph_rag": {
-        "default": "user",
-        "memory": {
-            "class": "knwl.semantic.graph_rag.graph_rag.GraphRAG",
-            "semantic_graph": "@/semantic_graph/memory",
-            "ragger": "@/rag_store",
-            "graph_extractor": "@/graph_extraction/basic",
-            "keywords_extractor": "@/keywords_extraction",
-        },
-        "user": {
-            "class": "knwl.semantic.graph_rag.graph_rag.GraphRAG",
-            "semantic_graph": "@/semantic_graph/user",
-            "ragger": "@/rag_store/user",
-            "graph_extractor": "@/graph_extraction",
-            "keywords_extractor": "@/keywords_extraction",
-        },
-    },
-    "json": {
-        "default": "basic",
-        "basic": {
-            "class": "knwl.storage.json_storage.JsonStorage",
-            "path": "$/data/data.json",
-        },
-        "node_store": {
-            "class": "knwl.storage.json_storage.JsonStorage",
-            "path": "$/tests/graphrag/node_store.json",
-        },
-        "edge_store": {
-            "class": "knwl.storage.json_storage.JsonStorage",
-            "path": "$/tests/graphrag/edge_store.json",
-        },
-        "document_store": {
-            "class": "knwl.storage.json_storage.JsonStorage",
-            "path": "$/tests/graphrag/document_store.json",
-        },
-        "chunk_store": {
-            "class": "knwl.storage.json_storage.JsonStorage",
-            "path": "$/tests/graphrag/chunk_store.json",
-        },
-        "user_documents": {
-            "class": "knwl.storage.json_storage.JsonStorage",
-            "path": "$/user/default/documents.json",
-        },
-        "user_chunks": {
-            "class": "knwl.storage.json_storage.JsonStorage",
-            "path": "$/user/default/chunks.json",
-        },
-    },
-    "keywords_extraction": {
-        "default": "basic",
-        "basic": {
-            "class": "knwl.extraction.basic_keywords_extraction.BasicKeywordsExtraction",
-            "llm": "@/llm",
-        },
-    },
-    "llm": {
-        "default": "ollama",
-        "ollama": {
-            "class": "knwl.llm.ollama.OllamaClient",
-            "model": "qwen2.5:7b",
-            "caching_service": "@/llm_caching/user",
-            "temperature": 0.1,
-            "context_window": 32768,
-        },
-        "ollama_gemma": {
-            "class": "knwl.llm.ollama.OllamaClient",
-            "model": "gemma3:27b",
-            "caching_service": "@/llm_caching/user",
-            "temperature": 0.1,
-            "context_window": 32768,
-        },
-        "openai": {
-            "class": "knwl.llm.openai.OpenAIClient",
-            "model": "gpt-4o-mini",
-            "caching_service": "@/llm_caching/user",
-            "temperature": 0.1,
-            "context_window": 32768,
-        },
-        "anthropic": {
-            "class": "knwl.llm.anthropic.AnthropicClient",
-            "model": "claude-sonnet-4-5-20250929",  # Sonnet 4.5 model
-            "caching_service": "@/llm_caching/user",
-            "temperature": 0.1,
-            "context_window": 4096,  # Max tokens for response (lower to avoid streaming requirement)
-            "api_key": os.getenv("ANTHROPY_API_KEY", ""),
-        },
-    },
-    "llm_caching": {
-        "default": "user",
-        "tests": {
-            "class": "knwl.llm.json_llm_cache.JsonLLMCache",
-            "path": "$/tests/llm.json",
-        },
-        "user": {
-            "class": "knwl.llm.json_llm_cache.JsonLLMCache",
-            "path": "$/user/default/llm_cache.json",
-        },
-    },
-    "logging": {"enabled": True, "level": "INFO", "path": "$/user/default/knwl.log"},
-    "rag_store": {
-        "default": "user",
-        "user": {
-            "class": "knwl.semantic.rag.rag_store.RagStore",
-            "document_store": "@/document_store/user",
-            "chunk_store": "@/chunk_store/user",
-            "chunker": "@/chunking",
-            "auto_chunk": True,
-        },
-    },
-    "semantic_graph": {
-        "default": "user",
-        "user": {
-            "class": "knwl.semantic.graph.semantic_graph.SemanticGraph",
-            "graph_store": "@/graph/user",  # the topology
-            "node_embeddings": "@/vector/user_nodes",  # the node embeddings
-            "edge_embeddings": "@/vector/user_edges",  # the edge embeddings
-            "summarization": "@/summarization",  # how to summarize long texts
-        },
-        "memory": {
-            "class": "knwl.semantic.graph.semantic_graph.SemanticGraph",
-            "graph_store": "@/graph/memory",  # the topology
-            "node_embeddings": "@/vector/memory",  # the node embeddings
-            "edge_embeddings": "@/vector/memory",  # the edge embeddings
-            "summarization": "@/summarization",  # how to summarize long texts
-        },
-    },
-    "summarization": {
-        "default": "llm",
-        "concat": {
-            "class": "knwl.summarization.concat.SimpleConcatenation",
-            "max_tokens": 500,
-        },
-        "llm": {
-            "class": "knwl.summarization.ollama.OllamaSummarization",
-            "llm": "@/llm",
-            "max_tokens": 150,
-            "chunker": "@/chunking/tiktoken",
-        },
-    },
-    "vector": {
-        "default": "chroma",
-        "chroma": {
-            "class": "knwl.storage.chroma_storage.ChromaStorage",
-            "memory": False,
-            "path": "$/tests/vector",
-            "collection_name": "default",
-            "metadata": [],
-        },
-        "user_nodes": {
-            "class": "knwl.storage.chroma_storage.ChromaStorage",
-            "memory": False,
-            "path": "$/user/default/vectors",
-            "collection_name": "nodes",
-        },
-        "user_edges": {
-            "class": "knwl.storage.chroma_storage.ChromaStorage",
-            "memory": False,
-            "path": "$/user/default/vectors",
-            "collection_name": "edges",
-        },
-        "user_chunks": {
-            "class": "knwl.storage.chroma_storage.ChromaStorage",
-            "memory": False,
-            "path": "$/user/default/vectors",
-            "collection_name": "chunks",
-        },
-        "memory": {
-            "class": "knwl.storage.chroma_storage.ChromaStorage",
-            "memory": True,
-            "collection_name": "default",
-        },
-        "chunks": {
-            "class": "knwl.storage.chroma_storage.ChromaStorage",
-            "memory": True,
-            "collection_name": "chunks",
-        },
-    },
-}
+_default_config = {"blob": {"default": "file_system", "file_system": {"class": "knwl.storage.file_storage.FileStorage", "base_path": "$/data/blobs", }, }, "chunking": {"default": "tiktoken", "tiktoken": {"class": "knwl.chunking.TiktokenChunking", "model": "gpt-4o-mini", "chunk_size": 1024, "chunk_overlap": 128, }, }, "chunk_store": {"default": "user", "user": {"class": "knwl.semantic.rag.chunk_store.ChunkStore", "chunker": "@/chunking/tiktoken", "chunk_embeddings": "@/vector/user_chunks", "chunk_storage": "@/json/user_chunks", }, }, "document_store": {"default": "user", "user": {"class": "knwl.semantic.rag.document_store.DocumentStore", "document_storage": "@/json/user_documents", }, },
+                   "entity_extraction": {"default": "basic", "basic": {"class": "knwl.extraction.basic_entity_extraction.BasicEntityExtraction", "llm": "@/llm", }, }, "graph_extraction": {"default": "full", "full": {"class": "knwl.extraction.basic_graph_extraction.BasicGraphExtraction", "mode": "full",  # fast or full
+                                                                                                                                                                                                                        "llm": "@/llm", }, "fast": {"class": "knwl.extraction.basic_graph_extraction.BasicGraphExtraction", "mode": "fast",  # fast or full
+                                                                                                                                                                                                                                                    "llm": "@/llm", }, }, "glean_graph_extraction": {"default": "max3", "max3": {"class": "knwl.extraction.glean_graph_extraction.GleanGraphExtraction", "llm": "@/llm", "max_glean": 3, }, }, "graph": {"default": "user", "user": {"class": "knwl.storage.networkx_storage.NetworkXGraphStorage", "format": "graphml", "memory": False, "path": "$/user/default/graph.graphml", }, "memory": {"class": "knwl.storage.networkx_storage.NetworkXGraphStorage", "format": "graphml", "memory": True, }, },
+                   "graph_rag": {"default": "user", "memory": {"class": "knwl.semantic.graph_rag.graph_rag.GraphRAG", "semantic_graph": "@/semantic_graph/memory", "ragger": "@/rag_store", "graph_extractor": "@/graph_extraction/basic", "keywords_extractor": "@/keywords_extraction", }, "user": {"class": "knwl.semantic.graph_rag.graph_rag.GraphRAG", "semantic_graph": "@/semantic_graph/user", "ragger": "@/rag_store/user", "graph_extractor": "@/graph_extraction", "keywords_extractor": "@/keywords_extraction", }, },
+                   "json": {"default": "basic", "basic": {"class": "knwl.storage.json_storage.JsonStorage", "path": "$/data/data.json", }, "node_store": {"class": "knwl.storage.json_storage.JsonStorage", "path": "$/tests/graphrag/node_store.json", }, "edge_store": {"class": "knwl.storage.json_storage.JsonStorage", "path": "$/tests/graphrag/edge_store.json", }, "document_store": {"class": "knwl.storage.json_storage.JsonStorage", "path": "$/tests/graphrag/document_store.json", }, "chunk_store": {"class": "knwl.storage.json_storage.JsonStorage", "path": "$/tests/graphrag/chunk_store.json", }, "user_documents": {"class": "knwl.storage.json_storage.JsonStorage", "path": "$/user/default/documents.json", },
+                            "user_chunks": {"class": "knwl.storage.json_storage.JsonStorage", "path": "$/user/default/chunks.json", }, }, "keywords_extraction": {"default": "basic", "basic": {"class": "knwl.extraction.basic_keywords_extraction.BasicKeywordsExtraction", "llm": "@/llm", }, },
+                   "llm": {"default": "ollama", "ollama": {"class": "knwl.llm.ollama.OllamaClient", "model": "qwen2.5:7b", "caching_service": "@/llm_caching/user", "temperature": 0.1, "context_window": 32768, }, "ollama_gemma": {"class": "knwl.llm.ollama.OllamaClient", "model": "gemma3:27b", "caching_service": "@/llm_caching/user", "temperature": 0.1, "context_window": 32768, }, "openai": {"class": "knwl.llm.openai.OpenAIClient", "model": "gpt-4o-mini", "caching_service": "@/llm_caching/user", "temperature": 0.1, "context_window": 32768, }, "anthropic": {"class": "knwl.llm.anthropic.AnthropicClient", "model": "claude-sonnet-4-5-20250929",  # Sonnet 4.5 model
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 "caching_service": "@/llm_caching/user", "temperature": 0.1, "context_window": 4096,  # Max tokens for response (lower to avoid streaming requirement)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 "api_key": os.getenv("ANTHROPY_API_KEY", ""), }, },
+                   "llm_caching": {"default": "user", "tests": {"class": "knwl.llm.json_llm_cache.JsonLLMCache", "path": "$/tests/llm.json", }, "user": {"class": "knwl.llm.json_llm_cache.JsonLLMCache", "path": "$/user/default/llm_cache.json", }, }, "logging": {"enabled": True, "level": "INFO", "path": "$/user/default/knwl.log"}, "rag_store": {"default": "user", "user": {"class": "knwl.semantic.rag.rag_store.RagStore", "document_store": "@/document_store/user", "chunk_store": "@/chunk_store/user", "chunker": "@/chunking", "auto_chunk": True, }, }, "semantic_graph": {"default": "user", "user": {"class": "knwl.semantic.graph.semantic_graph.SemanticGraph", "graph_store": "@/graph/user",  # the topology
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        "node_embeddings": "@/vector/user_nodes",  # the node embeddings
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        "edge_embeddings": "@/vector/user_edges",  # the edge embeddings
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        "summarization": "@/summarization",  # how to summarize long texts
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        }, "memory": {"class": "knwl.semantic.graph.semantic_graph.SemanticGraph", "graph_store": "@/graph/memory",  # the topology
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      "node_embeddings": "@/vector/memory",  # the node embeddings
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      "edge_embeddings": "@/vector/memory",  # the edge embeddings
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      "summarization": "@/summarization",  # how to summarize long texts
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      }, },
+                   "summarization": {"default": "llm", "concat": {"class": "knwl.summarization.concat.SimpleConcatenation", "max_tokens": 500, }, "llm": {"class": "knwl.summarization.ollama.OllamaSummarization", "llm": "@/llm", "max_tokens": 150, "chunker": "@/chunking/tiktoken", }, },
+                   "vector": {"default": "chroma", "chroma": {"class": "knwl.storage.chroma_storage.ChromaStorage", "memory": False, "path": "$/tests/vector", "collection_name": "default", "metadata": [], }, "user_nodes": {"class": "knwl.storage.chroma_storage.ChromaStorage", "memory": False, "path": "$/user/default/vectors", "collection_name": "nodes", }, "user_edges": {"class": "knwl.storage.chroma_storage.ChromaStorage", "memory": False, "path": "$/user/default/vectors", "collection_name": "edges", }, "user_chunks": {"class": "knwl.storage.chroma_storage.ChromaStorage", "memory": False, "path": "$/user/default/vectors", "collection_name": "chunks", }, "memory": {"class": "knwl.storage.chroma_storage.ChromaStorage", "memory": True, "collection_name": "default", },
+                              "chunks": {"class": "knwl.storage.chroma_storage.ChromaStorage", "memory": True, "collection_name": "chunks", }, }, }
 
 _active_config = copy.deepcopy(_default_config)
 
@@ -388,7 +157,7 @@ def get_config(*keys, default=None, config=None, override=None):
         cloned_config = merge_configs(override, cloned_config)
     if isinstance(keys[0], str) and keys[0].startswith("@/") and len(keys) > 1:
         # ignore the other keys since things are given via reference
-        return get_config(keys[0], default=default, config=cloned_config)   
+        return get_config(keys[0], default=default, config=cloned_config)
     if len(keys) == 1:
         # if starts with @/, it's a reference to another config value
         if isinstance(keys[0], str) and keys[0].startswith("@/"):
@@ -397,15 +166,11 @@ def get_config(*keys, default=None, config=None, override=None):
                 if ref_keys[0] not in cloned_config:
                     return default
                 # fetch the default variant if only the service name is given
-                default_variant = cloned_config.get(ref_keys[0], {}).get(
-                    "default", None
-                )
+                default_variant = cloned_config.get(ref_keys[0], {}).get("default", None)
                 if default_variant is not None:
                     ref_keys.append(default_variant)
                 else:
-                    raise ValueError(
-                        f"get_config: No default variant found for {ref_keys[0]}"
-                    )
+                    raise ValueError(f"get_config: No default variant found for {ref_keys[0]}")
             return get_config(*ref_keys, default=default, config=cloned_config)
         else:
             return cloned_config.get(keys[0], default)
@@ -455,9 +220,7 @@ def resolve_dict(d: dict, config: dict = None) -> dict:
         if default_variant in d:
             d = d[default_variant]
         else:
-            raise ValueError(
-                f"resolve_dict: default variant '{default_variant}' not found in configuration."
-            )
+            raise ValueError(f"resolve_dict: default variant '{default_variant}' not found in configuration.")
 
     resolved = {}
     for k, v in d.items():
@@ -502,9 +265,7 @@ def resolve_config(*keys, config=None, override=None) -> dict:
             if default_variant in service_config:
                 service_config = service_config[default_variant]
             else:
-                raise ValueError(
-                    f"resolve_config: Default variant '{default_variant}' not found in configuration for {keys}"
-                )
+                raise ValueError(f"resolve_config: Default variant '{default_variant}' not found in configuration for {keys}")
 
         resolved = {}
         for k, v in service_config.items():
@@ -542,9 +303,7 @@ def resolve_reference(ref: str, config=None, override=None) -> dict:
         ref_keys = [u for u in ref[2:].split("/") if u]
         if len(ref_keys) == 1:
             # fetch the default variant if only the service name is given
-            default_variant = get_config(
-                ref_keys[0], "default", config=config, override=override
-            )
+            default_variant = get_config(ref_keys[0], "default", config=config, override=override)
             if default_variant is not None:
                 ref_keys.append(default_variant)
             else:
@@ -579,12 +338,7 @@ def get_active_config() -> dict:
     return copy.deepcopy(_active_config)
 
 
-def get_custom_config(
-    namespace: str = "default",
-    llm_provider: str = None,
-    llm_model: str = None,
-    override: Optional[dict] = None,
-) -> dict:
+def get_custom_config(namespace: str = "default", llm_provider: str = None, llm_model: str = None, override: Optional[dict] = None, ) -> dict:
     """
     Get the configuration dictionary adjusted for a specific namespace, LLM provider and LLM model.
     - If the namespace is an absolute path (starts with '/'), it will be used as is for storage paths.
@@ -623,9 +377,7 @@ def get_custom_config(
         if llm_provider in llm_config:
             base_config["llm"]["default"] = llm_provider
         else:
-            raise ValueError(
-                f"get_custom_config: LLM provider '{llm_provider}' not found in configuration."
-            )
+            raise ValueError(f"get_custom_config: LLM provider '{llm_provider}' not found in configuration.")
 
     def replace_default_model(d):
         llm_config = d.get("llm", {})
@@ -634,9 +386,7 @@ def get_custom_config(
             provider_config["model"] = llm_model
 
         else:
-            raise ValueError(
-                f"get_custom_config: LLM model setting not found for provider '{llm_provider}'."
-            )
+            raise ValueError(f"get_custom_config: LLM model setting not found for provider '{llm_provider}'.")
 
     replace_space_path(base_config)
     if llm_provider is not None:
@@ -647,3 +397,23 @@ def get_custom_config(
     if override is not None:
         base_config = merge_configs(override, base_config)
     return base_config
+
+
+def merge_into_active_config(section: dict) -> dict:
+    """
+    Merges an configuration section into the active configuration.
+    This a combination of `get_config`, `merge_configs` and `set_active_config`.
+
+    Args:
+        section (dict): The configuration dictionary containing values to override in the active configuration.
+    """
+    current_config = get_config()
+    if section is None:
+        return current_config
+    if not isinstance(section, dict):
+        raise ValueError("merge_into_active_config: section must be a dictionary")
+    if len(section) == 0:
+        return current_config
+    new_config = merge_configs(section, current_config)
+    set_active_config(new_config)
+    return copy.deepcopy(new_config)

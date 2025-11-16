@@ -26,6 +26,6 @@ class KnwlParams(BaseModel):
     )
 
     return_chunks: bool = Field(
-        default=False,
+        default=True,
         description="Whether to return the chunk text data or just the chunk Id's.",
     )

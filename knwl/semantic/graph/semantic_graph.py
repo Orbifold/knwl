@@ -28,7 +28,7 @@ class SemanticGraph(SemanticGraphBase):
         if self._graph_store is None:
             raise ValueError("SemanticGraph: graph_store is required.")
         if not isinstance(self._graph_store, GraphStorageBase):
-            raise ValueError("SemanticGraph: graph_store must be a GraphBase instance.")
+            raise ValueError("SemanticGraph: graph_store must be a GraphStorageBase instance.")
         if self.node_embeddings is None:
             raise ValueError("SemanticGraph: node_embeddings is required.")
         if not isinstance(self.node_embeddings, VectorStorageBase):
@@ -426,7 +426,7 @@ class SemanticGraph(SemanticGraphBase):
             self.fix_lists_in_data(e)
             coll.append(KnwlEdge(**e))
         return coll
-    
+
     async def get_nodes_by_name(self, name: str) -> list[KnwlNode] | None:
         if name is None or len(name.strip()) == 0:
             return None

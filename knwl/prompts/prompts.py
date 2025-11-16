@@ -7,6 +7,24 @@ from knwl.prompts.summarization_prompts import SummarizationPrompts
 
 
 class Prompts:
+    """
+    A centralized manager for accessing various types of prompt templates.
+
+    This class provides organized access to different categories of prompts used throughout
+    the application, including extraction, summarization, RAG (Retrieval-Augmented Generation),
+    and constant prompts.
+
+    Attributes:
+        extraction (ExtractionPrompts): Prompts related to information extraction tasks.
+        constants (PromptConstants): Constant prompt values and templates.
+        summarization (SummarizationPrompts): Prompts for text summarization operations.
+        rag (RagPrompts): Prompts for retrieval-augmented generation workflows.
+
+    Example:
+        >>> prompts = Prompts()
+        >>> extraction_prompt = prompts.extraction
+        >>> summary_prompt = prompts.summarization
+    """
     def __init__(self):
         self._constants = PromptConstants()
         self._summarization = SummarizationPrompts()
