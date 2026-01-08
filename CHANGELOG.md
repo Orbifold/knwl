@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.7.3
+
+
 ## v1.7.2
 - **fix**: return_chunks default value
 - **feature**: `Knwl.get_prompt` method wired to the `list_resources` method of the `knwl_api` MCP service.

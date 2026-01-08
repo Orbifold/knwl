@@ -59,3 +59,16 @@ Standard RAG (vector-based retrieval over text chunks) may be insufficient when:
 - you need provenance and traceability. Graph RAG can trace answers back to specific nodes and edges, aiding auditability and trust.
 - your data evolves frequently. Graphs can be incrementally updated with new entities and relations, while vector stores often require full re-embedding.
 - domain knowledge is critical. Graphs can encode expert ontologies and constraints that guide retrieval beyond surface-level text similarity. A domain expert can't edit vector embeddings but knowledge graphs can be curated directly.
+
+## What does graph RAG solve?
+
+Standard RAG is all about vectorization of text. This is a strength and a weakness at the same time. Imagine you have a piece of text about Isaac Netwon:
+
+> Isaac Newton was an English mathematician, physicist, astronomer, alchemist, theologian, and author who is widely recognised as one of the most influential scientists of all time and a key figure in the scientific revolution. His book Philosophiæ Naturalis Principia Mathematica (Mathematical Principles of Natural Philosophy), first published in 1687, laid the foundations for classical mechanics. Newton also made seminal contributions to optics and shares credit with Gottfried Wilhelm Leibniz for developing the infinitesimal calculus.
+
+A standard RAG system will chunk this text into smaller pieces, create embeddings for each chunk, and store them in a vector database. When you ask a question about Isaac Newton, the system will retrieve the most relevant chunks based on embedding similarity.
+If you ask a question about 'London' there will be no vector similarity with the above text since 'London' is not mentioned there. The system will simply not pick up the fragment. Adding the fact that 'Isaac Newton is burried in Westminster Abbey, London' means you have to re-vectorize things again. In addition, if you would want to link something completely unrelated like 'the Bootes Void' you would need to find some text which links the two concepts and re-vectorize again. Humans can't edit vector embeddings directly, they need to find text fragments which link concepts together. 
+
+A graph makes information more manageable and allows to link things which are not necessarily present in texts. You can explicitly link London to Netwton, you explicitly remove links which are, according to a domain expert, not correct.
+Of course, vectors are still necessary but you don't have to chunk and re-vectorize everything again. You can simply add nodes and edges to the graph. This is especially useful in domains where knowledge evolves frequently or where domain expertise is critical.
+
