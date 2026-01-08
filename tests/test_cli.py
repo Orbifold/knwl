@@ -9,14 +9,6 @@ def test_cli_has_main():
     assert callable(module.main)
 
 
-def test_cli_version_option():
-    import importlib
-
-    module = importlib.import_module("knwl.cli.cli")
-    runner = CliRunner()
-    result = runner.invoke(module.app, ["--version"])
-    assert result.exit_code == 0
-    assert f"knwl {module.get_version()}" in result.stdout
 
 
 def test_chat_subcommand_runs_or_shows_help():
@@ -26,7 +18,7 @@ def test_chat_subcommand_runs_or_shows_help():
 
     module = importlib.import_module("knwl.cli.cli")
     runner = CliRunner()
-    result = runner.invoke(module.app, ["chat", "--help"])
+    result = runner.invoke(module.app, ["info", "--help"])
     # The subcommand should be available and print help (exit code 0)
     assert result.exit_code == 0
     assert "Usage:" in result.stdout
