@@ -369,3 +369,44 @@ class GraphStorageBase(StorageBase, ABC):
         """
         ...
 
+    @abstractmethod
+    async def get_node_types(self) -> list[str]:
+        """
+        Get all unique node types in the knowledge graph.
+        """
+        ...
+
+    @abstractmethod
+    async def get_node_stats(self) -> dict[str, int]:
+        """
+        Get statistics about node types in the knowledge graph.
+
+        Returns:
+            dict[str, int]: A dictionary where keys are node types and values are their corresponding counts.
+        """
+        ...
+
+    @abstractmethod
+    async def get_edge_stats(self) -> dict[str, int]:
+        """
+        Get statistics about edge types in the knowledge graph.
+
+        Returns:
+            dict[str, int]: A dictionary where keys are edge types and values are their corresponding counts.
+        """
+        ...
+
+    @abstractmethod
+    async def get_nodes_by_type(self, node_type: str) -> Union[list[dict], None]:
+        """
+        Retrieves node(s) by its type.
+
+        Args:
+            node_type (str): The type of the node to retrieve.
+
+        Returns:
+            list[dict] | None: A list of dictionaries representing the nodes
+                if found, None otherwise.
+
+        """
+        ...

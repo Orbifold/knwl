@@ -480,6 +480,17 @@ class NetworkXGraphStorage(GraphStorageBase):
                 found.append(node)
         return found
 
+    async def get_nodes_by_type(self, node_type: str) -> Union[list[dict], None]:
+        found = []
+        node_type_lower = node_type.lower()
+        for node_id in self.graph.nodes:
+            node = self.graph.nodes[node_id]
+            node_type_value = node.get("type", None)
+            if node_type_value and node_type_value.lower() == node_type_lower:
+                node["id"] = node_id
+                found.append(node)
+        return found
+
     async def node_degree(self, node_id: str) -> int:
         return self.graph.degree(node_id)
 
@@ -853,3 +864,25 @@ class NetworkXGraphStorage(GraphStorageBase):
                 )
             await self.upsert_edge(source_id, target_id, edge)
         await self.save()
+
+    async def get_node_types(self) -> list[str]:
+        types = set()
+        for _, data in self.graph.nodes(data=True):
+            node_type = data.get("type")
+            if node_type:
+                types.add(node_type)
+        return list(types)
+
+    async def get_node_stats(self) -> dict[str, int]:
+        stats = {}
+        for _, data in self.graph.nodes(data=True):
+            node_type = data.get("type", "Unknown").lower()
+            stats[node_type] = stats.get(node_type, 0) + 1
+        return stats
+
+    async def get_edge_stats(self) -> dict[str, int]:
+        stats = {}
+        for _, _, data in self.graph.edges(data=True):
+            edge_type = data.get("type", "Unknown").lower()
+            stats[edge_type] = stats.get(edge_type, 0) + 1
+        return stats

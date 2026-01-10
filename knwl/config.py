@@ -187,7 +187,7 @@ _default_config = {
             "path": "$/user/default/llm_cache.json",
         },
     },
-    "logging": {"enabled": True, "level": "INFO", "path": "$/user/default/knwl.log"},
+    "logging": {"enabled": True, "level": "WARNING", "path": "$/user/default/knwl.log"},
     "rag_store": {
         "default": "user",
         "user": {

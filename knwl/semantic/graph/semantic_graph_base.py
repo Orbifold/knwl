@@ -380,3 +380,26 @@ class SemanticGraphBase(FrameworkBase, ABC):
         Returns True if the node was deleted, False if it did not exist.
         """
         ...
+
+    @abstractmethod
+    async def get_node_types(self) -> list[str]:
+        """
+        Get all unique node types in the knowledge graph.
+        """
+        ...
+
+    @abstractmethod
+    async def get_node_stats(self) -> dict[str, int]:
+        """
+        Get statistics about nodes in the knowledge graph.
+        Returns a dictionary with node types as keys and their counts as values.
+        """
+        ...
+
+    @abstractmethod
+    async def get_edge_stats(self) -> dict[str, int]:
+        """
+        Get statistics about edge types in the knowledge graph.
+        Returns a dictionary with edge types as keys and their counts as values.
+        """
+        ...

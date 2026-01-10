@@ -7,7 +7,7 @@ console = Console()
 info_app = typer.Typer(help="View info about Knwl installation.")
 
 
-@info_app.command()
+@info_app.command("version", help="Show the version of knwl.", epilog="Example:\n  knwl info version")
 def version():
     """Show the version of knwl."""
     from knwl.cli.cli_utils import get_version
