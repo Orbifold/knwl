@@ -475,7 +475,7 @@ class KnwlIngestionTerminalFormatter(ModelFormatter):
         ]
         if show_entities:
             content.append(Text("\n"))
-            content.append(Text("Entities:", style=formatter.theme.SUBTITLE_STYLE))
+            content.append(Text("🔵 Nodes:", style=formatter.theme.SUBTITLE_STYLE))
 
             entity_table = Table(box=formatter.theme.TABLE_BOX)
             entity_table.add_column("Type", style=formatter.theme.TYPE_STYLE)

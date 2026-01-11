@@ -174,6 +174,38 @@ You can find the LLM cache, the graph (GraphML) and the JSON storage files in th
 
 **Note**: ChromaDB is used for vector similarity and out of the box uses `all-MiniLM-L6-v2` as embedding model. The model will be downloaded automatically on first run.
 
+Out of the box, Kwnl uses Ollama with Qwen2.5:7b as LLM. You can see this in the `config.py` file where you will find:
+
+```json
+    "llm": {
+        "default": "ollama",
+        "ollama": {
+            "class": "knwl.llm.ollama.OllamaClient",
+            "model": "qwen2.5:7b",
+            "caching_service": "@/llm_caching/user",
+            "temperature": 0.1,
+            "context_window": 32768,
+        }
+    }
+```
+
+You can see adjacent to this section for Anthropic, OpenAI and other LLM configurations. You can swap out the default LLM by changing the `default` parameter to another variant name, e.g. `openai`. Obviously, if you use Ollama or similar you need to download the model first.
+
+
+## Dev Installation
+
+To install Knwl for development, clone the repository and install the dependencies using UV:
+
+```bash
+mkdir knwl-dev
+cd knwl-dev
+git clone https://github.com/Orbifold/knwl.git
+mkdir experiments
+cd experiments
+uv init
+uv add --editable ../knwl
+```
+
 ## Formatting & Rendering
 
 KNWL provides sophisticated formatting utilities for beautiful output across multiple mediums: **terminal**, **HTML**, and **Markdown**. The formatting system is protocol-based and extensible, allowing custom formatters for any Pydantic model.
@@ -908,7 +940,6 @@ class TestExtraction:
         self.llm = llm
 ```
 
-
 ## Configuration
 
 Knwl has an intricate [[DependencyInjection]] system which allows for flexible configuration of its services. Instead of having defaults for the constructor parameters of each service, Knwl uses a centralized configuration object to manage dependencies. This design choice enables easier testing, customization, and extension of the services without modifying their internal implementations.
@@ -1079,8 +1110,6 @@ print_knwl("$/data/xyz")
 print_knwl("$/tests/xyz")
 ```
 
-
-
 ## Testing
 
 Knwl is extensively tested with unit tests covering all components, strategies, and integration scenarios. The tests depending on an LLM require various Ollama models, Anthropic, OpenAI and more.
@@ -1090,7 +1119,6 @@ You can run the tests without LLM integration (fast) via:
 ```bash
 uv run pytest -m "not llm"
 ```
-
 
 ## Examples
 

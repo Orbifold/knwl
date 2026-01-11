@@ -28,7 +28,9 @@ class SemanticGraph(SemanticGraphBase):
         if self._graph_store is None:
             raise ValueError("SemanticGraph: graph_store is required.")
         if not isinstance(self._graph_store, GraphStorageBase):
-            raise ValueError("SemanticGraph: graph_store must be a GraphStorageBase instance.")
+            raise ValueError(
+                "SemanticGraph: graph_store must be a GraphStorageBase instance."
+            )
         if self.node_embeddings is None:
             raise ValueError("SemanticGraph: node_embeddings is required.")
         if not isinstance(self.node_embeddings, VectorStorageBase):
@@ -410,7 +412,10 @@ class SemanticGraph(SemanticGraphBase):
             self.fix_lists_in_data(e)
             coll.append(KnwlEdge(**e))
         return coll
-    async def get_edges_between_nodes(self, source_id: str, target_id: str) -> list[KnwlEdge]:
+
+    async def get_edges_between_nodes(
+        self, source_id: str, target_id: str
+    ) -> list[KnwlEdge]:
         """
         Retrieve edges between two nodes by their IDs from the knowledge graph.
 
@@ -468,6 +473,55 @@ class SemanticGraph(SemanticGraphBase):
         if deleted:
             await self.node_embeddings.delete_by_id(node_id)
         return deleted
+
+    async def get_node_types(self) -> list[str]:
+        """
+        Get all unique node types in the knowledge graph.
+        """
+        return await self._graph_store.get_node_types()
+
+    async def get_node_stats(self) -> dict[str, int]:
+        """
+        Get statistics about node types in the knowledge graph.
+        Returns a dictionary with node types as keys and their counts as values.
+        """
+        return await self._graph_store.get_node_stats()
+
+    async def get_edge_stats(self) -> dict[str, int]:
+        """
+        Get statistics about edge types in the knowledge graph.
+        Returns a dictionary with edge types as keys and their counts as values.
+        """
+        return await self._graph_store.get_edge_stats()
+
+    async def get_nodes_by_type(self, node_type: str) -> Union[list[dict], None]:
+        """
+        Get all nodes of a given type from the knowledge graph.
+        """
+        return await self._graph_store.get_nodes_by_type(node_type)
+
+    async def similar_nodes(
+        self, query: str, amount: int = 10
+    ) -> list[tuple[KnwlNode, float]]:
+        """
+        Find nodes in the knowledge graph matching the query.
+        """
+        results = await self.node_embeddings.nearest(query, top_k=amount)
+        nodes = []
+        for r in results:
+            nodes.append((KnwlNode(**r), r.get("_distance", 0.0)))
+        return nodes
+
+    async def find_nodes(self, text: str, amount: int = 10) -> list[KnwlNode]:
+        """
+        Find nodes in the knowledge graph matching the query.
+        """
+        results = await self.graph.find_nodes(text, amount)
+        nodes = []
+        for r in results:
+            self.fix_lists_in_data(r)
+            nodes.append(KnwlNode(**r))
+        return nodes
 
     def __repr__(self):
         return f"<SemanticGraph, graph={self._graph_store.__class__.__name__}, nodes={self.node_embeddings.__class__.__name__}, edge_embeddings={self.edge_embeddings.__class__.__name__}, summarization={self.summarization.__class__.__name__}>"
