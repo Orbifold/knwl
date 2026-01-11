@@ -1,7 +1,8 @@
 # Changelog
 
 ## v1.7.3
-
+- **feature**: the new CLI allows you to use Knwl from the command line. Run `knwl --help` for more information. Lots of functionality is available, see the `journal/CLI.md` for more details.
+- **feature**: the CLI reflects the underlying Knwl API and various methods have been added to support this.
 
 ## v1.7.2
 - **fix**: return_chunks default value

@@ -1,7 +1,7 @@
 [project]
 name = "knwl"
 license = "MIT"
-version = "1.7.2"
+version = "1.8.0"
 description = "A flexible Graph RAG package with advanced ingestion and augmentation strategies."
 authors = [
     { name = "Francois Vanderseypen (Orbifold Consulting)", email = "swa@orbifold.net" }
