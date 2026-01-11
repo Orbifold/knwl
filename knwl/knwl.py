@@ -360,7 +360,7 @@ class Knwl:
         from importlib.metadata import version
 
         knwl_version = version("knwl")
-        return f"Knwl v{knwl_version} - Knwl instance (namespace={self._namespace})"
+        return f"Knwl v{knwl_version} - Knwl instance (namespace={self._namespace}) - https://knwl.ai"
 
     def __str__(self) -> str:
         return self.__repr__()

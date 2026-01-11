@@ -102,6 +102,8 @@ def test_resolve_dict():
     r = resolve_dict(d, d)
     assert r["a"] == {"k": {"d": 56}}
     assert r["b"] == {"d": 56}
+    print(r)
+
 
 
 def test_active_config():

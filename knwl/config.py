@@ -18,6 +18,7 @@ _default_config = {
     "blob": {
         "default": "file_system",
         "file_system": {
+            "description": "File system based blob storage",
             "class": "knwl.storage.file_storage.FileStorage",
             "base_path": "$/data/blobs",
         },
@@ -25,6 +26,7 @@ _default_config = {
     "chunking": {
         "default": "tiktoken",
         "tiktoken": {
+            "description": "[Tiktoken](https://github.com/openai/tiktoken) based chunking",
             "class": "knwl.chunking.TiktokenChunking",
             "model": "gpt-4o-mini",
             "chunk_size": 1024,
