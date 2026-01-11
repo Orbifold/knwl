@@ -1,5 +1,5 @@
 import asyncio
-from typing import Optional
+from typing import Optional, Annotated
 from knwl.knwl import Knwl
 import typer
 from knwl.config import get_config, resolve_config
@@ -12,6 +12,12 @@ from rich.table import Table
 console = Console()
 # create a sub-app for config commands
 graph_app = typer.Typer(help="Inspect and manipulate the knowledge graph.")
+
+def _get(node, field):
+    """Safely get field from a dict or model-like object."""
+    if isinstance(node, dict):
+        return node.get(field, "")
+    return getattr(node, field, "")
 
 
 @graph_app.command(
@@ -43,7 +49,12 @@ def count(
     help="Inspect all types in the knowledge graph.",
     epilog="Example:\n  knwl graph types",
 )
-def show_types(ctx: typer.Context, what: Optional[str] = typer.Argument(None, help="What to inspect (e.g. 'nodes' or 'edges')")):  
+def show_types(
+    ctx: typer.Context,
+    what: Optional[str] = typer.Argument(
+        None, help="What to inspect (e.g. 'nodes' or 'edges')"
+    ),
+):
     if what is None:
         what = "nodes edges"
     what = what.strip().lower()
@@ -68,6 +79,24 @@ def show_types(ctx: typer.Context, what: Optional[str] = typer.Argument(None, he
             table.add_row(edge_type.upper(), str(count))
         console.print(Padding(table, (1, 2)))
 
+
+@graph_app.command(
+    "stats",
+    help="Show statistics of the knowledge graph.",
+    epilog="Example:\n  knwl graph stats nodes",
+)
+def show_stats(
+    ctx: typer.Context,
+    what: Optional[str] = typer.Argument(
+        None, help="What to inspect (e.g. 'nodes' or 'edges')"
+    ),
+):
+    """
+    Called in case no subcommand is given, ie. `knwl graph`.
+    """
+    show_types(ctx, what)
+
+
 @graph_app.command(
     "type",
     help="Inspect one type in the knowledge graph.",
@@ -79,7 +108,7 @@ def get_type(
         ..., help="What to inspect (e.g. 'types', 'stats', 'Person' or 'Location')"
     ),
 ):
-    
+
     knwl = ctx.obj  # type: Knwl
     nodes = asyncio.run(knwl.get_nodes_by_type(what))
     if nodes is None or len(nodes) == 0:
@@ -95,9 +124,80 @@ def get_type(
     table.add_column("Name", style="magenta")
     table.add_column("Description")
     for node in nodes:
-        table.add_row(str(node.get("name", "")), str(node.get("description", "")))
+        table.add_row(str(_get(node, "name")), str(_get(node, "description")))
     console.print(table)
 
+@graph_app.command(
+    "similar",
+    help="Find similar nodes in the knowledge graph matching a query.",
+    epilog="Example:\n  knwl graph similar-nodes 'George Washington'",
+)
+def similar_nodes(
+    ctx: typer.Context,
+    query: Annotated[
+        str, typer.Argument(..., help="Search query to find nodes in the graph")
+    ],
+) -> None:
+    """Find nodes in the knowledge graph matching the query."""
+    knwl = ctx.obj  # type: Knwl
+    nodes_tuples = asyncio.run(knwl.similar_nodes(query))
+    if nodes_tuples is None or len(nodes_tuples) == 0:
+        console.print(
+            Panel(
+                Padding(Markdown(f"No nodes found matching query '**{query}**'."), (1, 2)),
+                title="Node Search",
+            )
+        )
+        return
+    table = Table(title=f"Nodes matching query '{query}'")
+
+    table.add_column("Type", style="cyan")
+    table.add_column("Name", style="magenta")
+    table.add_column("Distance", style="green")
+    table.add_column("Description")
+    for node, distance in nodes_tuples:
+        table.add_row(
+            str(_get(node, "type")),
+            str(_get(node, "name")),
+            f"{distance:.2f}",
+            str(_get(node, "description"))
+        )
+    console.print(table)
+
+@graph_app.command(
+    "find",
+    help="Find nodes in the knowledge graph by scanning the name and description of the nodes.",
+    epilog="Example:\n  knwl graph find 'George Washington'",
+)
+def find_nodes(
+    ctx: typer.Context,
+    query: Annotated[
+        str, typer.Argument(..., help="Search query to find nodes in the graph")
+    ],
+) -> None:
+    """Find nodes in the knowledge graph matching the query."""
+    knwl = ctx.obj  # type: Knwl
+    nodes = asyncio.run(knwl.find_nodes(query))
+    if nodes is None or len(nodes) == 0:
+        console.print(
+            Panel(
+                Padding(Markdown(f"No nodes found matching query '**{query}**'."), (1, 2)),
+                title="Node Search",
+            )
+        )
+        return
+    table = Table(title=f"Nodes matching query '{query}'")
+
+    table.add_column("Type", style="cyan")
+    table.add_column("Name", style="magenta")
+    table.add_column("Description")
+    for node in nodes:
+        table.add_row(
+            str(_get(node, "type")),
+            str(_get(node, "name")),
+            str(_get(node, "description"))
+        )
+    console.print(table)    
 
 @graph_app.callback(invoke_without_command=True)
 def _app_callback(ctx: typer.Context):

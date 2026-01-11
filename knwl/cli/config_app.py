@@ -31,16 +31,22 @@ def get(
     """
     # keys might be None if no argument given
     # Typer will produce an empty list for missing varargs; handle that
-    if not keys:
-        knwl = ctx.obj  # type: Knwl
-        value = knwl.config
+    knwl = ctx.obj  # type: Knwl
+    # If keys is not a list/tuple (e.g. the default ArgumentInfo), treat as no keys
+    if not keys or not isinstance(keys, (list, tuple)):
+        value = get_config()
+    elif keys[0] == "tree":
+        return typer.echo(tree(ctx))
+    elif keys[0] == "summary":
+        return typer.echo(summary(ctx))
+    elif keys[0] == "all":
+        value = get_config()
     else:
         # support both "llm.model" and "llm model"
-        if len(keys) == 1 and "." in keys[0]:
+        if len(keys) == 1 and isinstance(keys[0], str) and "." in keys[0]:
             parsed_keys = keys[0].split(".")
         else:
             parsed_keys = list(keys)
-
         value = resolve_config(*parsed_keys)
     if value is None and default is not None:
         value = default
@@ -157,4 +163,25 @@ def summary(ctx: typer.Context):
     with console.capture() as capture:
         print_summary(config)
     captured = capture.get()
-    console.print(Panel(Padding(Text.from_ansi(captured), (1, 2)), title="Configuration Summary"))
+    console.print(
+        Panel(Padding(Text.from_ansi(captured), (1, 2)), title="Configuration Summary")
+    )
+
+
+@config_app.command("all", help="Get the entire configuration. Same as `knwl config get all`", epilog="Example:\n  knwl config all")
+def all(ctx: typer.Context):
+    """
+    Get the entire configuration.
+    """
+    knwl = ctx.obj  # type: Knwl
+    get(ctx, keys=["all"])
+
+
+@config_app.callback(invoke_without_command=True)
+def _app_callback(ctx: typer.Context):
+    """
+    Called in case no subcommand is given, ie. `knwl config`.
+    """
+    if ctx.invoked_subcommand is None:
+        summary(ctx)
+        raise typer.Exit()

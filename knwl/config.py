@@ -189,7 +189,7 @@ _default_config = {
             "path": "$/user/default/llm_cache.json",
         },
     },
-    "logging": {"enabled": True, "level": "WARNING", "path": "$/user/default/knwl.log"},
+    "logging": {"enabled": True, "level": "INFO", "path": "$/user/default/knwl.log"},
     "rag_store": {
         "default": "user",
         "user": {
@@ -415,6 +415,8 @@ def get_config(*keys, default=None, config=None, override=None):
         current = cloned_config
         # drill down into the nested dictionary
         for k in keys:
+            if not isinstance(current, dict):
+                return default
             current = current.get(k, None)
             if current is None:
                 return default

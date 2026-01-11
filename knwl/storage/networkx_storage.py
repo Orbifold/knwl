@@ -886,3 +886,17 @@ class NetworkXGraphStorage(GraphStorageBase):
             edge_type = data.get("type", "Unknown").lower()
             stats[edge_type] = stats.get(edge_type, 0) + 1
         return stats
+
+    async def find_nodes(self, text: str, amount: int = 10) -> list[dict]:
+        found = []
+        text_lower = text.lower()
+        for node_id in self.graph.nodes:
+            node = self.graph.nodes[node_id]
+            name = node.get("name", "").lower()
+            description = node.get("description", "").lower()
+            if text_lower in name or text_lower in description:
+                node["id"] = node_id
+                found.append(node)
+            if len(found) >= amount:
+                break
+        return found

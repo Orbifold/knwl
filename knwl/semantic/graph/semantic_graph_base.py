@@ -324,8 +324,11 @@ class SemanticGraphBase(FrameworkBase, ABC):
             list[KnwlEdge]: A list of KnwlEdge objects attached to the given nodes.
         """
         ...
+
     @abstractmethod
-    async def get_edges_between_nodes(self, source_id: str, target_id: str) -> list[KnwlEdge]:
+    async def get_edges_between_nodes(
+        self, source_id: str, target_id: str
+    ) -> list[KnwlEdge]:
         """
         Retrieve edges between two nodes by their IDs from the knowledge graph.
         """
@@ -401,5 +404,26 @@ class SemanticGraphBase(FrameworkBase, ABC):
         """
         Get statistics about edge types in the knowledge graph.
         Returns a dictionary with edge types as keys and their counts as values.
+        """
+        ...
+
+    @abstractmethod
+    async def similar_nodes(self, text: str, amount: int = 10) -> list[tuple[KnwlNode, float]]:
+        """
+        Find nodes in the knowledge graph matching the query.
+
+        Returns:
+            list[tuple[KnwlNode, float]]: A list of tuples where each tuple contains a KnwlNode
+            and its similarity score (float). The list should be ordered by descending similarity.
+        """
+        ...
+
+    @abstractmethod
+    async def find_nodes(self, text: str, amount: int = 10) -> list[KnwlNode]:
+        """
+        Find nodes in the knowledge graph matching the query.
+
+        Returns:
+            list[KnwlNode]: A list of KnwlNode objects that match the query.
         """
         ...

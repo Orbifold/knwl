@@ -1,6 +1,7 @@
 from typing import Annotated
 from knwl.format import print_knwl
 from knwl.knwl import Knwl
+from knwl.models.KnwlInput import KnwlInput
 import typer
 import asyncio
 
@@ -47,6 +48,13 @@ def add(
     print_knwl(g)
 
 
+@app.command("ingest", hidden=True)  # hidden=True keeps it out of help text
+def ingest(
+    text: Annotated[str, typer.Argument(..., help="Text to ingest into the database")],
+) -> None:
+    """Alias for 'add' command."""
+    add(text)
+
 @app.command(
     "ask",
     help="Asks a question to the knowledge base and returns the answer.",
@@ -56,10 +64,28 @@ def ask(
     question: Annotated[
         str, typer.Argument(..., help="Question to ask the knowledge base")
     ],
+    strategy: Annotated[
+        str, typer.Option("--strategy", "-s", help="Strategy to use")
+    ] = "local",
+    simple: Annotated[
+        bool,
+        typer.Option(
+            "--simple",
+            "-S",
+            help="Don't use the knowledge graph, ask the LLM directly.",
+        ),
+    ] = False,
 ) -> None:
     """Asks a question to the knowledge base and returns the answer."""
     answer = asyncio.run(K.ask(question))
-    console.print(Markdown(answer.answer))
+    if simple:
+        answer = asyncio.run(K.simple_ask(question))
+        title = "Direct LLM Answer"
+    else:
+        input = KnwlInput(text=question, strategy=strategy)
+        answer = asyncio.run(K.ask(input))
+        title = "Knowledge Base Answer"
+    console.print(Panel(Padding(Markdown(answer.answer), (1, 2)), title=title))
 
 
 @app.command(
@@ -78,7 +104,9 @@ def simple(
 ) -> None:
     """Asks a question to the knowledge base and returns the answer as a string."""
     answer = asyncio.run(K.simple_ask(question))
-    console.print(Panel(Padding(Markdown(answer.answer), (1, 2)), title="Simple Answer"))
+    console.print(
+        Panel(Padding(Markdown(answer.answer), (1, 2)), title="Direct LLM Answer")
+    )
 
 
 @app.callback(invoke_without_command=True)

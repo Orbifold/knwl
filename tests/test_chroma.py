@@ -29,6 +29,7 @@ async def test_chroma_db_upsert(dummy_store):
     # print("querying ", key)
     assert len(result) == 1
     assert result[0]["content"] == content
+    assert result[0]["_distance"] > 0
 
 
 @pytest.mark.asyncio
@@ -72,9 +73,7 @@ async def test_auto_embedding():
     data = {"key1": "This is a test document."}
     collection.upsert(ids=list(data.keys()), documents=list(data.values()))
     all = collection.get(include=["embeddings"])
-    assert (
-        len(all["embeddings"][0]) == 384
-    )  # all-MiniLM-L6-v2 produces 384-dimensional embeddings
+    assert (len(all["embeddings"][0]) == 384)  # all-MiniLM-L6-v2 produces 384-dimensional embeddings
 
 
 @pytest.mark.asyncio
@@ -84,16 +83,7 @@ async def test_chroma_via_service():
     await chroma.upsert({"a1": {"content": "a1"}})
     names = await chroma.get_collection_names()
     assert chroma.collection_name in names
-    config = {
-        "vector": {
-            "special": {
-                "class": "knwl.storage.chroma_storage.ChromaStorage",
-                "memory": False,
-                "collection_name": "special",
-                "path": "$/tests/v2",
-            },
-        }
-    }
+    config = {"vector": {"special": {"class": "knwl.storage.chroma_storage.ChromaStorage", "memory": False, "collection_name": "special", "path": "$/tests/v2", }, }}
     chroma = services.create_service("vector", "special", override=config)
     assert chroma.collection_name == "special"
     await chroma.upsert({"b1": {"content": "b1"}})
@@ -101,6 +91,7 @@ async def test_chroma_via_service():
     assert "special" in names
     found = await chroma.get_by_id("b1")
     assert found is not None
+
 
 @pytest.mark.asyncio
 async def test_chroma_memory_service():
@@ -115,7 +106,3 @@ async def test_chroma_memory_service():
     await chroma.upsert({"m2": {"content": "more memory data"}})
     found = await chroma.get_by_id("m2")
     assert found is not None
-
-
-
-    

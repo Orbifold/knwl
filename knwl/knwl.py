@@ -1,7 +1,7 @@
 import asyncio
 import copy
 from enum import Enum
-from typing import Optional, Union
+from typing import Optional, Tuple, Union
 
 from knwl import prompts, services, KnwlInput, GraphRAG, KnwlAnswer, KnwlContext
 from knwl.config import (
@@ -355,6 +355,16 @@ class Knwl:
         Get all nodes of a given type from the knowledge graph.
         """
         return await self.grag.semantic_graph.get_nodes_by_type(node_type)
+
+    async def similar_nodes(
+        self, text: str, amount: int = 10
+    ) -> list[Tuple[KnwlNode, float]]:
+        """Find similar nodes in the knowledge graph matching the query."""
+        return await self.grag.semantic_graph.similar_nodes(text, amount)
+
+    async def find_nodes(self, text: str, amount: int = 10) -> list[KnwlNode]:
+        """Find nodes in the knowledge graph matching the query."""
+        return await self.grag.semantic_graph.find_nodes(text, amount)
 
     def __repr__(self) -> str:
         from importlib.metadata import version

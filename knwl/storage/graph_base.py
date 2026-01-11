@@ -410,3 +410,13 @@ class GraphStorageBase(StorageBase, ABC):
 
         """
         ...
+
+    @abstractmethod
+    async def find_nodes(self, text: str, amount: int = 10) -> list[dict]:
+        """
+        Find nodes in the knowledge graph matching the query.
+
+        Returns:
+            list[dict]: A list of dictionaries representing the nodes that match the query.
+        """
+        ...

@@ -500,6 +500,29 @@ class SemanticGraph(SemanticGraphBase):
         """
         return await self._graph_store.get_nodes_by_type(node_type)
 
+    async def similar_nodes(
+        self, query: str, amount: int = 10
+    ) -> list[tuple[KnwlNode, float]]:
+        """
+        Find nodes in the knowledge graph matching the query.
+        """
+        results = await self.node_embeddings.nearest(query, top_k=amount)
+        nodes = []
+        for r in results:
+            nodes.append((KnwlNode(**r), r.get("_distance", 0.0)))
+        return nodes
+
+    async def find_nodes(self, text: str, amount: int = 10) -> list[KnwlNode]:
+        """
+        Find nodes in the knowledge graph matching the query.
+        """
+        results = await self.graph.find_nodes(text, amount)
+        nodes = []
+        for r in results:
+            self.fix_lists_in_data(r)
+            nodes.append(KnwlNode(**r))
+        return nodes
+
     def __repr__(self):
         return f"<SemanticGraph, graph={self._graph_store.__class__.__name__}, nodes={self.node_embeddings.__class__.__name__}, edge_embeddings={self.edge_embeddings.__class__.__name__}, summarization={self.summarization.__class__.__name__}>"
 
