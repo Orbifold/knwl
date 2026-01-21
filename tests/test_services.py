@@ -20,6 +20,7 @@ def test_get_spec():
         },
         "transport": {"car": {"wheels": 4}, "bike": {"wheels": 2}},
     }
+    # this picks up the default variant
     specs = services.get_service_specs("food", override=override_config)
     assert specs["service_name"] == "food"
     assert specs["variant_name"] == "pizza"
@@ -28,25 +29,38 @@ def test_get_spec():
         services.get_service_specs("unknown_service", override=override_config)
     with pytest.raises(ValueError):
         services.get_service_specs("food", "unknown_variant", override=override_config)
-
+    # you can specify variant in the service_name with "/"
     specs = services.get_service_specs("food/burger", override=override_config)
     assert specs["service_name"] == "food"
     assert specs["variant_name"] == "burger"
     assert specs["size"] == "medium"
 
+    # or as a separate parameter
     specs = services.get_service_specs("food", "default", override=override_config)
     assert specs["service_name"] == "food"
     assert specs["variant_name"] == "pizza"
+
+    # or mix and match
     specs = services.get_service_specs("food/default", None, override=override_config)
     assert specs["service_name"] == "food"
     assert specs["variant_name"] == "pizza"
+
+    # what is the default variant for food?
+    default_variant = services.get_default_variant_name(
+        "food", override=override_config
+    )
+    assert default_variant == "pizza"
+
+    # boundary cases
     with pytest.raises(ValueError):
         services.get_service_specs(None, override=override_config)
+    with pytest.raises(TypeError):
+        services.get_service_specs()
+    with pytest.raises(ValueError):
+        services.get_service_specs("")
     with pytest.raises(ValueError):
         # can't have both "/" and variant in one call
         services.get_service_specs("a/b", "c", override=override_config)
-
-    
 
 
 @pytest.mark.asyncio
@@ -54,6 +68,7 @@ async def test_service_simplicity():
 
     # simply getting the service with default config
     json_service_default = services.get_service("json")
+    # paths are resolved
     assert json_service_default.path == get_full_path(
         get_config("json", "basic", "path")
     )
@@ -149,6 +164,7 @@ def test_service_singleton():
 
     llm3 = services.get_service("llm", variant_name="ollama")
     assert llm1.id == llm3.id
+
     override_config = {
         "llm": {
             "ollama": {
@@ -158,9 +174,59 @@ def test_service_singleton():
             }
         }
     }
+    # note that the override is merged and that Ollama is still the default variant
     llm4 = services.get_service("llm", override=override_config)
     llm5 = services.get_service("llm", override=override_config)
-    # for k in services.singletons:
 
     assert llm4.id == llm5.id
     assert llm4.id != llm1.id
+
+
+def test_custom_singleton():
+    # You can create a custom service and ensure it's a singleton
+
+    def create_class_from_dict(name, data):
+        return type(name, (), data)
+
+    is_correct = False
+
+    def do_something(self, *args, **kwargs):
+        nonlocal is_correct
+        is_correct = args[0] == "param1"
+        return is_correct
+
+    SpecialClass = create_class_from_dict(
+        "Special",
+        {
+            "name": "Swa",
+            "do_something": do_something,
+            "__init__": lambda self: setattr(self, "id", os.urandom(8).hex()),
+        },
+    )
+    # note that instead of referencing the class via a string, we pass the class instance directly
+    config = {
+        "custom_service": {
+            "default": "special",
+            "special": {"class": SpecialClass()},
+        }
+    }
+    service1 = services.get_service("custom_service", override=config)
+    service2 = services.get_service("custom_service", override=config)
+    assert service1.id == service2.id
+    service1.do_something("param1")
+    assert is_correct is True
+    service2.do_something("wrong_param")
+    assert is_correct is False
+
+
+def test_create_service():
+    # create_service will always create a new instance
+    llm1 = services.create_service("llm")  # new instance
+    llm2 = services.get_service("llm")  # gets singleton
+    assert llm1.id != llm2.id
+
+    llm3 = services.get_service("llm")  # gets singleton
+    assert llm2.id == llm3.id
+    llm4 = services.create_service("llm")  # new instance
+    assert llm3.id != llm4.id
+    assert llm3.id != llm1.id

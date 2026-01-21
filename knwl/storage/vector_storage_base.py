@@ -5,8 +5,47 @@ from knwl.storage.storage_base import StorageBase
 
 
 class VectorStorageBase(StorageBase, ABC):
-    """
-    Base class for vector storage.
+    """Abstract base class for asynchronous vector storage backends.
+
+    Implementations store, index, and query vector embeddings and associated metadata.
+    All operations are asynchronous and intended to support large-scale, concurrent
+    workloads. Subclasses must implement storage-specific persistence, concurrency
+    control, and similarity search semantics.
+
+    Responsibilities:
+    - nearest(query: str, top_k: int = 1, where: dict | None = None) -> list[dict]:
+        Perform a vector similarity search and return up to top_k results ordered
+        by descending similarity. Each result should include identifying information
+        (e.g. id), a similarity score, and any associated metadata.
+    - upsert(data: dict[str, dict]) -> None:
+        Insert or update multiple entries in a single operation. Each value dict
+        typically contains an embedding (under 'embedding' or 'embeddings') and
+        optional 'metadata'. Implementations may also compute embeddings if not
+        provided.
+    - clear() -> None:
+        Remove all stored vectors and metadata. This is destructive and should be
+        made durable according to backend semantics.
+    - count() -> int:
+        Return the total number of stored vectors.
+    - get_ids() -> list[str]:
+        Return a list of all stored entry identifiers.
+    - save() -> None:
+        Persist any in-memory state to durable storage if applicable.
+    - get_by_id(id: str) -> dict | None:
+        Retrieve the stored entry (embedding and metadata) for a given id, or None
+        if not found.
+    - delete_by_id(id: str) -> None:
+        Remove a specific entry by id.
+    - exists(id: str) -> bool:
+        Return True if an entry with the given id exists.
+
+    Implementation notes:
+    - Implementations should document any backend-specific limitations (consistency,
+      transactional guarantees, indexing latency, maximum vector dimensionality).
+    - Methods should raise clear exceptions for invalid input or backend failures.
+    - Returning structures and metadata keys should be stable and well-documented
+      by the concrete storage class to allow consistent consumer behavior.    
+    
     """
 
     @abstractmethod
@@ -58,17 +97,94 @@ class VectorStorageBase(StorageBase, ABC):
         ...
 
     @abstractmethod
-    async def clear(self): ...
+    async def clear(self): 
+        """
+        Clear all data from the vector storage.
+
+        This asynchronous coroutine removes every stored vector, document, and associated metadata
+        from the underlying storage backend. The operation is destructive and generally irreversible;
+        after successful completion the storage should behave as empty.
+
+        Implementations should ensure changes are durably persisted according to the backend's
+        semantics and handle any necessary concurrency control (e.g., locks) to avoid races.
+
+        Returns:
+            None
+
+        Raises:
+            NotImplementedError: If the concrete storage backend does not implement clearing.
+            RuntimeError: On I/O, permission, or backend-specific failures that prevent clearing.
+
+        Example:
+            await storage.clear()
+        """
+        ...
 
     @abstractmethod
-    async def count(self): ...
+    async def count(self): 
+        """
+        Count the number of vectors stored.
+
+        Returns:
+            int: The total number of vectors stored.
+
+        Raises:
+            NotImplementedError: If the concrete storage backend does not implement counting.
+            RuntimeError: On I/O, permission, or backend-specific failures that prevent counting.
+
+        Example:
+            count = await storage.count()
+        """
+        ...
 
     @abstractmethod
-    async def get_ids(self): ...
+    async def get_ids(self):  
+        """Asynchronously retrieve the identifiers of all entries stored in this vector storage.
+
+        Returns:
+            List[str]: A list of unique IDs (typically strings) for the vectors/documents currently
+            stored by the backend. Implementations may return any iterable sequence of identifiers,
+            but callers should generally expect a list of strings.
+
+        Raises:
+            NotImplementedError: If the concrete storage class does not implement this method.
+            RuntimeError: Backend-specific errors may be raised if the storage cannot be queried.
+
+        Notes:
+            - This is an async method and must be awaited: ids = await storage.get_ids()
+            - Implementations should strive to return stable, deduplicated IDs and handle large
+            collections efficiently (e.g., pagination) if necessary.
+        """
+        ...
 
     @abstractmethod
-    async def save(self): ...
+    async def save(self): 
+        """
+        Persist any in-memory state or pending changes for this vector storage to durable storage.
 
+        This asynchronous method should flush and synchronize the current vector index, embeddings,
+        and any related metadata so that subsequent process restarts or crashes will not lose updates.
+        Implementations may write to disk, a database, or a remote service.
+
+        Behavior:
+        - Should await completion of all IO and consistency checks before returning.
+        - May be a no-op for read-only or ephemeral implementations.
+        - Implementations should aim for atomic/transactional semantics where possible.
+
+        Parameters:
+        - self: instance of the storage class.
+
+        Returns:
+        - None. Implementations may optionally return status information, but callers should not
+            rely on a non-None value unless documented by a concrete implementation.
+
+        Raises:
+        - IOError/OSError or implementation-specific exceptions on failure.
+        - NotImplementedError if the concrete subclass does not support persistence.
+
+        
+        """
+        ...
     @abstractmethod
     async def get_by_id(self, id: str): ...
 

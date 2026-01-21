@@ -22,6 +22,15 @@ _default_config = {
             "class": "knwl.storage.file_storage.FileStorage",
             "base_path": "$/data/blobs",
         },
+        "seaweed": {
+            "description": "S3 blob storage using SeaweedFS in docker",
+            "class": "knwl.storage.s3_storage.S3Storage",
+            "bucket_name": "knwl-blobs",
+            "region_name": "does-not-matter",
+            "aws_access_key_id": "does-not-matter",
+            "aws_secret_access_key": "does-not-matter",
+            "endpoint_url": "http://localhost:8333",
+        },
     },
     "chunking": {
         "default": "tiktoken",
@@ -89,6 +98,13 @@ _default_config = {
             "class": "knwl.storage.networkx_storage.NetworkXGraphStorage",
             "format": "graphml",
             "memory": True,
+        },
+        "neo": {
+            "class": "knwl.storage.neo_storage.NeoGraphStorage",
+            "connection_string": "bolt://localhost:7687",
+            "username": "neo4j",
+            "password": "123456789",
+            "database": "neo4j",
         },
     },
     "graph_rag": {
@@ -175,7 +191,7 @@ _default_config = {
             "caching_service": "@/llm_caching/user",
             "temperature": 0.1,
             "context_window": 4096,  # Max tokens for response (lower to avoid streaming requirement)
-            "api_key": os.getenv("ANTHROPY_API_KEY", ""),
+            "api_key": os.getenv("ANTHROPIC_API_KEY", ""),
         },
     },
     "llm_caching": {

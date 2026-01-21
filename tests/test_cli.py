@@ -9,8 +9,6 @@ def test_cli_has_main():
     assert callable(module.main)
 
 
-
-
 def test_chat_subcommand_runs_or_shows_help():
     """The chat subcommand should be registered. We don't run the UI in tests,
     but we can assert that invoking `knwl chat --help` returns successfully."""
