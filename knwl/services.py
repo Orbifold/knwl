@@ -8,7 +8,13 @@ import inspect
 
 class Services:
     """
-    A class to manage and instantiate services based on configuration.
+    A class to manage and instantiate services based on configurations.
+
+    Note:
+        - This class supports singleton instances of services, ensuring that only one
+          instance of a service variant is created and reused. The singleton instances are stored
+          in the `self.singletons` dictionary.
+        - Services can be specified using a shorthand notation "service/variant".
     """
 
     def __init__(self):
@@ -18,6 +24,7 @@ class Services:
     def parse_name(name: str) -> tuple[str, str | None]:
         """
         Parse a service name that may contain a variant specification.
+
         Args:
             name (str): The service name string, potentially in the format "service/variant", e.g., "json/default".
         Returns:
@@ -27,6 +34,12 @@ class Services:
         Example:
             >>> parse_name("vector")
             ('vector', None)
+            >>> parse_name("json/custom")
+            ('json', 'custom')
+        Raises:
+            None
+        Notes:
+            - This method simply splits the input string on the first "/" character. If no "/" is found, it returns the entire string as the service name and None for the variant.
         """
 
         if "/" in name:
@@ -38,7 +51,56 @@ class Services:
     def get_service_specs(
         service_name: str, variant_name: str | None = None, override=None
     ) -> dict:
-        if service_name is None:
+        """
+        Retrieve the configuration/specification for a named service variant.
+
+        This function resolves a service name and variant, supports shorthand
+        "<service>/<variant>" notation, falls back to a configured default variant
+        when appropriate, and returns the resolved spec dictionary with two added
+        keys: "service_name" and "variant_name".
+
+        Args:
+            service_name (str): Name of the service. May be of the form "service" or
+                "service/variant". Must not be None.
+            variant_name (str | None): Optional variant name. If omitted, empty, or
+                equal to "default" (ignoring surrounding whitespace) the configured
+                default variant for the service will be used. If service_name already
+                contains a slash, variant_name must be None.
+            override: Optional override passed to Services.get_default_variant_name and
+                get_config (implementation-specific).
+
+        Returns:
+            dict: The configuration/spec for the resolved service variant. The returned
+            dict is the raw spec from configuration with two keys set/overwritten:
+            "service_name" and "variant_name".
+
+        Raises:
+            ValueError: If service_name is None.
+            ValueError: If service_name contains a "/" while variant_name is also provided.
+            ValueError: If no default variant is configured for the service when one is required.
+            ValueError: If the requested service variant is not found in configuration.
+
+        Notes:
+            - The function uses Services.parse_name to split "service/variant" form,
+              Services.get_default_variant_name to determine defaults, and get_config
+              to fetch the variant spec from configuration.
+
+        Example:
+            >>> override_config = {
+                    "food": {
+                        "default": "pizza",
+                        "pizza": {"size": "large", "delivery": "transport/car"},
+                        "burger": {"size": "medium"},
+                    },
+                    "transport": {"car": {"wheels": 4}, "bike": {"wheels": 2}},
+                }
+            >>> specs = services.get_service_specs("food", override=override_config)
+            >>> assert specs["service_name"] == "food"
+            >>> assert specs["variant_name"] == "pizza"
+            >>> assert specs["size"] == "large"
+
+        """
+        if not service_name:
             raise ValueError("Service name must be provided.")
         if "/" in service_name:
             if variant_name is not None:
@@ -66,7 +128,6 @@ class Services:
         spec["variant_name"] = variant_name
         return spec
 
-    # def service_exists(self, service_name: str, variant_name: str, override=None) -> bool:
     @staticmethod
     def get_default_variant_name(service_name: str, override=None) -> str | None:
         """
@@ -94,9 +155,34 @@ class Services:
         """
         return get_config(service_name, "default", default=None, override=override)
 
-    def get_singleton_key(
+    def _get_singleton_key(
         self, service_name: str, variant_name: str = None, override=None
     ) -> str:
+        """
+        Return a unique string key for a singleton instance of a service.
+        This computes a stable key derived from the service name, the resolved variant
+        name and the variant specification (as returned by get_config). If variant_name
+        is None or the literal "default", the method will resolve the default variant
+        via self.get_default_variant_name(...). The computed key is produced by
+        hash_args(service_name, variant_name, spec).
+        
+        Args:
+            service_name (str): The logical name of the service. Required.
+            variant_name (str, optional): The variant of the service. If None or
+                "default", the default variant is resolved using
+                self.get_default_variant_name(...).
+            override (optional): Passed through to get_default_variant_name and
+                get_config to influence configuration resolution.
+
+        Returns:
+            str: A hashed string uniquely identifying the service+variant+spec tuple.
+
+        Raises:
+            ValueError: If service_name is None.
+            ValueError: If a default variant cannot be resolved for the given service.
+            ValueError: If the specified service variant is not found in the configuration.
+        """
+
         if service_name is None:
             raise ValueError("Service name must be provided to get singleton key.")
         if variant_name is None or variant_name == "default":
@@ -115,7 +201,7 @@ class Services:
     def get_singleton(
         self, service_name: str, variant_name: str = None, override=None
     ) -> object | None:
-        key = self.get_singleton_key(
+        key = self._get_singleton_key(
             service_name, variant_name=variant_name, override=override
         )
         return self.singletons.get(key, None)
@@ -123,7 +209,7 @@ class Services:
     def set_singleton(
         self, instance, service_name: str, variant_name: str = None, override=None
     ) -> object:
-        key = self.get_singleton_key(
+        key = self._get_singleton_key(
             service_name, variant_name=variant_name, override=override
         )
         self.singletons[key] = instance
@@ -197,7 +283,63 @@ class Services:
             service_name, variant_name=variant_name, override=override
         )
 
-    def instantiate_service_specs(self, specs: dict, override=None) -> object:
+    def _instantiate_service_from_specs(self, specs: dict, override=None) -> object:
+        """
+        Instantiate a service (or value) described by a specification dictionary.
+
+        This helper resolves the "class" entry in a service specification and returns
+        an instantiated object (or the value itself) according to the following rules:
+
+        Behavior
+        - If specs["class"] is None: raises ValueError describing the service and variant.
+        - If specs["class"] is a type: removes the keys "class", "service_name", and
+            "variant_name" from the specs dict and constructs the class with the
+            remaining spec entries as keyword arguments.
+        - If specs["class"] is a callable (but not a type): calls it with the full
+            specs dict as keyword arguments and returns the result.
+        - If specs["class"] is neither a str nor a type nor a callable: returns it
+            directly (assumed to be an already-created instance or value).
+        - If specs["class"] is a str: treats it as a fully-qualified import path
+            ("module.submodule.ClassName"), imports the module, retrieves the class,
+            inspects its __init__ signature, and filters specs to only those parameters
+            accepted by the constructor (excluding "self"). For each parameter present
+            in specs the following resolution is applied:
+                - If the parameter value is a string starting with "@/": resolved via
+                    get_config(..., override=override). If the resolved value is a dict
+                    containing a "class" key, the dict is treated as a nested service
+                    specification and recursively instantiated by this function; otherwise
+                    the resolved value is used directly.
+                - If the parameter value is a string starting with "$/": resolved via
+                    get_full_path(...) and that value is used.
+                - If the parameter value is a string equal to "none" (case-insensitive,
+                    whitespace-insensitive): interpreted as None.
+                - Otherwise the parameter value from specs is used unchanged.
+            The class is then instantiated with the filtered and resolved keyword args.
+
+        Parameters
+        - specs (dict): Service specification dictionary. Expected keys include:
+                - "class": a type, callable, instance, or import path string.
+                - "service_name" (optional): used in error messages.
+                - "variant_name" (optional): used in error messages.
+            Additional keys may represent constructor parameters for the target class.
+        - override: optional context passed to get_config when resolving "@/..." refs.
+
+        Returns
+        - object: The instantiated class instance, the return value of a callable,
+            or the passed-through object/value when "class" is already an instance.
+
+        Side effects and notes
+        - When specs["class"] is a type, this function mutates the passed-in specs
+            by deleting "class", "service_name", and "variant_name".
+        - Import errors, attribute errors, or exceptions raised by the target class
+            constructor propagate to the caller.
+        - Raises ValueError when the "class" key is missing/None or when a named
+            class cannot be found in the imported module.
+
+        Dependencies
+        - Uses inspect.signature to determine constructor parameters.
+        - Uses get_config(...) and get_full_path(...) for special reference resolution.
+        """
         class_path = specs.get("class", None)
         if class_path is None:
 
@@ -238,7 +380,7 @@ class Services:
                     value_ref = get_config(param_value, override=override)
                     if isinstance(value_ref, dict) and "class" in value_ref:
                         # it's a service specification
-                        param = self.instantiate_service_specs(
+                        param = self._instantiate_service_from_specs(
                             value_ref, override=override
                         )
                     else:
@@ -289,12 +431,9 @@ class Services:
             raise ValueError(
                 f"Service variant '{variant_name}' for {service_name} not found in configuration."
             )
-        instance = self.instantiate_service_specs(specs, override=override)
+        instance = self._instantiate_service_from_specs(specs, override=override)
         instance.service_config = specs
         return instance
-
-
-services = Services()
 
 
 def get_service(service_name: str, variant_name: str = None, override=None) -> object:
@@ -315,3 +454,6 @@ def create_service(
     return services.create_service(
         service_name, variant_name=variant_name, override=override
     )
+
+
+services = Services()

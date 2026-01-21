@@ -191,7 +191,7 @@ _default_config = {
             "caching_service": "@/llm_caching/user",
             "temperature": 0.1,
             "context_window": 4096,  # Max tokens for response (lower to avoid streaming requirement)
-            "api_key": os.getenv("ANTHROPY_API_KEY", ""),
+            "api_key": os.getenv("ANTHROPIC_API_KEY", ""),
         },
     },
     "llm_caching": {

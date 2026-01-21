@@ -1370,11 +1370,10 @@ wheels = [
 
 [[package]]
 name = "knwl"
-version = "1.8.0"
+version = "1.8.1"
 source = { editable = "." }
 dependencies = [
     { name = "anthropic" },
-    { name = "boto3" },
     { name = "chromadb" },
     { name = "lxml" },
     { name = "networkx", version = "3.4.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
@@ -1403,11 +1402,13 @@ dev = [
 neo4j = [
     { name = "neo4j" },
 ]
+s3 = [
+    { name = "boto3" },
+]
 
 [package.metadata]
 requires-dist = [
     { name = "anthropic", specifier = ">=0.72.0" },
-    { name = "boto3", specifier = ">=1.42.30" },
     { name = "chromadb", specifier = ">=1.1.1" },
     { name = "lxml", specifier = ">=6.0.2" },
     { name = "networkx", specifier = ">=3.4.2" },
@@ -1433,6 +1434,7 @@ dev = [
     { name = "wikipedia-api", specifier = ">=0.8.1" },
 ]
 neo4j = [{ name = "neo4j", specifier = ">=6.0.2" }]
+s3 = [{ name = "boto3", specifier = ">=1.42.30" }]
 
 [[package]]
 name = "kubernetes"
