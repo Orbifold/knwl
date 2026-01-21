@@ -7,7 +7,7 @@ from knwl.storage.s3_storage import S3Storage
 from knwl.models import KnwlBlob
 from knwl import services
 
-pytestmark = pytest.mark.basic
+pytestmark = pytest.mark.integration
 
 
 class DummyClient:
