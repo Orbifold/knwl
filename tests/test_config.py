@@ -1,7 +1,17 @@
+import os
 import pytest
 
-from knwl.config import get_config, merge_configs, reset_active_config, resolve_dict, set_active_config, merge_into_active_config
+from knwl.config import (
+    get_config,
+    merge_configs,
+    reset_active_config,
+    resolve_dict,
+    set_active_config,
+    merge_into_active_config,
+    set_config_value,
+)
 from knwl.config import resolve_reference, resolve_config, get_custom_config
+from knwl.utils import get_full_path
 
 pytestmark = pytest.mark.basic
 
@@ -15,19 +25,40 @@ def test_config_get():
     assert get_config("a", "b", config=config) == {"c": 1}
     assert get_config("a", config=config) == {"b": {"c": 1}}
     assert get_config(config=config) == config
-    assert (get_config("nonexistent", default="default_value", config=config) == "default_value")
+    assert (
+        get_config("nonexistent", default="default_value", config=config)
+        == "default_value"
+    )
     assert get_config("llm", "ollama", "model") == "qwen2.5:7b"
     assert get_config("llm", "ollama", "temperature") == 0.1
     assert get_config("llm", "ollama", "context_window") == 32768
     assert get_config("llm", "ollama", "caching_service") == "@/llm_caching/user"
     assert get_config("llm_caching", "user", "path") == "$/user/default/llm_cache.json"
     assert get_config("nonexistent", default="default_value") == "default_value"
-    assert get_config("llm", "nonexistent", default={"key": "value"}) == {"key": "value"}
+    assert get_config("llm", "nonexistent", default={"key": "value"}) == {
+        "key": "value"
+    }
     assert get_config("storage", "documents", "nonexistent", default=123) == 123
     assert get_config("storage", "nonexistent", default={"a": 1}) == {"a": 1}
     assert get_config("nonexistent", default=None) is None
-    assert (get_config("llm", "ollama", "model", override={"llm": {"ollama": {"model": "custom_model:1b"}}}, ) == "custom_model:1b")
-    assert (get_config("llm", "ollama", "temperature", override={"llm": {"ollama": {"temperature": 0.56}}}, ) == 0.56)
+    assert (
+        get_config(
+            "llm",
+            "ollama",
+            "model",
+            override={"llm": {"ollama": {"model": "custom_model:1b"}}},
+        )
+        == "custom_model:1b"
+    )
+    assert (
+        get_config(
+            "llm",
+            "ollama",
+            "temperature",
+            override={"llm": {"ollama": {"temperature": 0.56}}},
+        )
+        == 0.56
+    )
     assert get_config("@/llm/ollama/model") == "qwen2.5:7b"
     assert get_config("@/a/b", override=config) == {"c": 1}
     assert get_config("@/a/b/", override=config) == {"c": 1}
@@ -38,7 +69,11 @@ def test_config_get():
 def test_config_merge():
     base = {"a": 1, "b": {"c": 2, "d": 3}}
     override = {"b": {"c": 20}, "e": 5}
-    merged = {"a": 1, "b": {"c": 20, "d": 3}, "e": 5, }
+    merged = {
+        "a": 1,
+        "b": {"c": 20, "d": 3},
+        "e": 5,
+    }
 
     result = merge_configs(override, base)
     assert result == merged
@@ -57,13 +92,19 @@ def test_config_merge():
     with pytest.raises(ValueError):
         merge_configs(override, "not_a_dict")
 
-    config = {"llm": {"openai": {"caching_service": "@/llm_caching/special"}}, "llm_caching": {"special": {"class": "A"}}, }
+    config = {
+        "llm": {"openai": {"caching_service": "@/llm_caching/special"}},
+        "llm_caching": {"special": {"class": "A"}},
+    }
     result = get_config("llm", "openai", "caching_service", override=config)
     assert result == "@/llm_caching/special"
 
 
 def test_resolve_reference():
-    config = {"klm": {"default": "a", "a": {"u": 4, "v": 5, "w": 6}}, "abc": {"default": "b", "b": {"z": "@/klm"}, "c": {"y": "@/klm/a/u"}}, }
+    config = {
+        "klm": {"default": "a", "a": {"u": 4, "v": 5, "w": 6}},
+        "abc": {"default": "b", "b": {"z": "@/klm"}, "c": {"y": "@/klm/a/u"}},
+    }
     result = resolve_reference("@/abc/b/z", override=config)
     assert result == {"u": 4, "v": 5, "w": 6}
 
@@ -78,7 +119,10 @@ def test_resolve_reference():
 
 
 def test_resolve_config():
-    config = {"klm": {"default": "a", "a": {"u": 4, "v": 5, "w": 6}}, "abc": {"default": "b", "b": {"z": "@/klm"}, "c": {"y": "@/klm/a/u"}}, }
+    config = {
+        "klm": {"default": "a", "a": {"u": 4, "v": 5, "w": 6}},
+        "abc": {"default": "b", "b": {"z": "@/klm"}, "c": {"y": "@/klm/a/u"}},
+    }
     result = resolve_config("abc", override=config)
     assert result == {"z": {"u": 4, "v": 5, "w": 6}}
 
@@ -87,6 +131,9 @@ def test_resolve_config():
 
     result = resolve_config("@/abc/c", override=config)
     assert result == {"y": 4}
+
+    result = resolve_config("abc", "b", "z", override=config)
+    assert result == config["klm"]["a"]
 
 
 def test_resolve_dict():
@@ -98,12 +145,14 @@ def test_resolve_dict():
     r = resolve_dict(d)
     assert ".knwl" in r["a"]["k"]
 
-    d = {"a": {"default": "u", "u": {"k": "@/b"}}, "b": {"default": "data", "data": {"d": 56}}, }
+    d = {
+        "a": {"default": "u", "u": {"k": "@/b"}},
+        "b": {"default": "data", "data": {"d": 56}},
+    }
     r = resolve_dict(d, d)
     assert r["a"] == {"k": {"d": 56}}
     assert r["b"] == {"d": 56}
     print(r)
-
 
 
 def test_active_config():
@@ -156,17 +205,23 @@ def test_get_custom_config_llm_provider():
 
 def test_get_custom_config_llm_model():
     # Test with LLM model change
-    config = get_custom_config(namespace="test", llm_provider="ollama", llm_model="custom:7b")
+    config = get_custom_config(
+        namespace="test", llm_provider="ollama", llm_model="custom:7b"
+    )
     assert config["llm"]["ollama"]["model"] == "custom:7b"
 
     # Test model change with openai
-    config = get_custom_config(namespace="test", llm_provider="openai", llm_model="gpt-4")
+    config = get_custom_config(
+        namespace="test", llm_provider="openai", llm_model="gpt-4"
+    )
     assert config["llm"]["openai"]["model"] == "gpt-4"
 
 
 def test_get_custom_config_combined():
     # Test namespace + provider + model
-    config = get_custom_config(namespace="myspace", llm_provider="anthropic", llm_model="claude-3")
+    config = get_custom_config(
+        namespace="myspace", llm_provider="anthropic", llm_model="claude-3"
+    )
     assert "$/user/myspace" in config["json"]["user_chunks"]["path"]
     assert config["llm"]["default"] == "anthropic"
     assert config["llm"]["anthropic"]["model"] == "claude-3"
@@ -197,7 +252,9 @@ def test_get_custom_config_isolation():
 
 def test_extra():
     # Test with extra overrides
-    extra = {"logging": {"enabled": False, "level": "ERROR", "path": "$/user/extra/knwl.log"}}
+    extra = {
+        "logging": {"enabled": False, "level": "ERROR", "path": "$/user/extra/knwl.log"}
+    }
     config = get_custom_config(namespace="extra_space", override=extra)
     assert config["logging"]["enabled"] is False
     assert config["logging"]["level"] == "ERROR"
@@ -223,3 +280,33 @@ def test_merge_into_active_config():
     assert get_config("llm", "ollama", "temperature") == base_value
     with pytest.raises(ValueError):
         merge_into_active_config("not_a_dict")
+
+
+def test_set_active_config():
+    reset_active_config()
+    set_active_config({"x": {"y": 10}})
+    assert get_config("x", "y") == 10
+    set_active_config({"x": {"y": 20}}, save=False)
+    assert get_config("x", "y") == 20
+    reset_active_config(save=False)
+    assert get_config("x", "y") is None
+    set_active_config({"x": {"y": 30}}, save=True)
+    
+    # files should persist
+    file_path = get_full_path("$/user/config.json")
+    assert os.path.exists(file_path)
+    assert get_config("x", "y") == 30
+    reset_active_config(save=True)
+    assert get_config("x", "y") is None
+    assert not os.path.exists(file_path)
+
+def test_set_value():
+    reset_active_config()
+    set_config_value("something", "llm.ollama.model", save=False)
+    assert get_config("llm", "ollama", "model") == "something"
+    file_path = get_full_path("$/user/config.json")
+    assert not os.path.exists(file_path)
+    set_config_value("another_model:1b", "llm.ollama.model", save=True)
+    assert get_config("llm", "ollama", "model") == "another_model:1b"
+    assert os.path.exists(file_path)
+    os.remove(file_path)

@@ -4,7 +4,7 @@ from knwl.knwl import Knwl
 from knwl.models.KnwlInput import KnwlInput
 import typer
 import asyncio
-
+import json
 from knwl.cli.config_app import config_app
 from knwl.cli.info_app import info_app
 from knwl.cli.graph_app import graph_app
@@ -30,9 +30,16 @@ app.add_typer(graph_app, name="graph", context_settings={"obj": K})
 )
 def extract(
     text: Annotated[str, typer.Argument(..., help="Text to extract knowledge from")],
+    raw: Annotated[
+        bool,
+        typer.Option("--raw", "-r", help="Return raw JSON rather than pretty print"),
+    ] = False,
 ) -> None:
     g = asyncio.run(K.extract(text))
-    print_knwl(g)
+    if raw:
+        console.print(json.dumps(g.model_dump(), indent=2))
+    else:
+        print_knwl(g)
 
 
 @app.command(
@@ -54,6 +61,7 @@ def ingest(
 ) -> None:
     """Alias for 'add' command."""
     add(text)
+
 
 @app.command(
     "ask",

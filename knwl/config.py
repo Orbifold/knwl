@@ -3,6 +3,7 @@
 # By enabling/disabling certain features here, you can change the behavior of knwl.
 # ============================================================================================
 import copy
+import json
 import os
 from typing import Optional
 
@@ -289,24 +290,34 @@ _default_config = {
 _active_config = copy.deepcopy(_default_config)
 
 
-def set_active_config(new_config: dict):
+def set_active_config(new_config: dict, save: Optional[bool] = False):
     """
     Set a new active configuration dictionary.
     This overrides the whole default configuration and can be a better solution then overriding if too many settings need to be changed.
 
     Args:
         new_config (dict): The new active configuration dictionary to set.
+        save (bool, optional): Whether to save the new configuration to a file. Defaults to False.
     """
     global _active_config
     _active_config = new_config
+    if save:
+        save_path = get_full_path("$/user/config.json")
+        with open(save_path, "w") as f:
+            json.dump(new_config, f, indent=2)
 
 
-def reset_active_config():
+def reset_active_config(save: Optional[bool] = False):
     """
     Reset the active configuration to the default configuration.
     """
     global _active_config
     _active_config = copy.deepcopy(_default_config)
+    if save:
+        save_path = get_full_path("$/user/config.json")
+        # remove file
+        if os.path.exists(save_path):
+            os.remove(save_path)
 
 
 def reset_config():
@@ -400,6 +411,11 @@ def get_config(*keys, default=None, config=None, override=None):
     """
     # the config should not be changed outside
     cloned_config = copy.deepcopy(config or _active_config)
+    # if the user changed and saved the config, we replace the active config
+    if os.path.exists(get_full_path("$/user/config.json")):
+        with open(get_full_path("$/user/config.json"), "r") as f:
+            user_config = json.load(f)
+            cloned_config = merge_configs(user_config, cloned_config)
     if len(keys) == 0:
         return cloned_config
     if override is not None:
@@ -686,4 +702,45 @@ def merge_into_active_config(section: dict) -> dict:
         return current_config
     new_config = merge_configs(section, current_config)
     set_active_config(new_config)
+    return copy.deepcopy(new_config)
+
+def set_config_value(
+    value,
+    *keys,
+    config=None,
+    override=None,
+    save: Optional[bool] = False,
+) -> dict:
+    """
+    Set a configuration value in the active configuration.
+
+    Args:
+        value: The value to set for the specified configuration key path.
+        *keys: A variable number of string arguments representing the keys to access the nested configuration.
+        config: The configuration dictionary to use. If None, the global config will be used. Defaults to None.
+        override: An optional dictionary to override the default config for this lookup. Defaults to None.
+    Returns:
+        dict: The updated active configuration dictionary after setting the new value.
+    """
+    current_config = get_config(config=config, override=override)
+    if len(keys) == 0:
+        raise ValueError("set_config_value: At least one key must be provided to set a value.")
+    if "/" in keys[0]:
+        # split by /
+        keys = tuple(u for u in keys[0].split("/") if u)
+    elif "." in keys[0]:
+        # split by .
+        keys = tuple(u for u in keys[0].split(".") if u)
+    else:
+        keys = tuple(keys)
+    # drill down into the nested dictionary to set the value
+    d = current_config
+    for k in keys[:-1]:
+        if k not in d or not isinstance(d[k], dict):
+            d[k] = {}
+        d = d[k]
+    d[keys[-1]] = value
+    # set the new active config
+    new_config = current_config
+    set_active_config(new_config, save=save)
     return copy.deepcopy(new_config)

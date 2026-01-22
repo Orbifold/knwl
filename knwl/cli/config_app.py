@@ -1,6 +1,8 @@
+import json
+from typing_extensions import Annotated
 from knwl.knwl import Knwl
 import typer
-from knwl.config import get_config, resolve_config
+from knwl.config import get_config, resolve_config, set_config_value
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
@@ -15,19 +17,62 @@ console = Console()
 config_app = typer.Typer(help="View or modify knwl configuration")
 
 
+@config_app.command(
+    "reset",
+    help="Reset the active configuration to the default configuration.",
+    epilog="Example:\n  knwl config reset",
+)
+def reset_config():
+    """
+    Resets the active configuration to the default configuration.
+    """
+    from knwl.config import reset_active_config
+
+    reset_active_config(save=True)
+    console.print("[green]Configuration reset to default and saved.[/]")
+
+
+@config_app.command("set",
+    help="Set a configuration value.",
+    epilog="Example:\n  knwl config set 'llm.ollama.model' 'custom_model:1b'",
+)
+def set_config(
+    ctx: typer.Context,
+    keys: list[str] = typer.Argument(
+        None, help="Config key path (e.g. 'llm.ollama.model' or 'llm ollama model')"
+    ),
+    value: str = typer.Argument(
+        ..., help="Value to set the configuration key to"
+    ),
+):
+    """
+    Sets a configuration value.
+    Accepts either a dotted single argument ("llm.model") or multiple keys ("llm model").
+    Note that this modifies the active configuration in memory only; to persist changes, use `knwl config save`.
+    """
+    knwl = ctx.obj  # type: Knwl
+    # use the set_config_value function to set the value
+    if not keys or not isinstance(keys, (list, tuple)):
+        console.print("[red]No configuration keys provided.[/]")
+        raise typer.Exit(code=1)
+    # note that we save the config after setting
+    set_config_value(value, *keys, save=True)
+    console.print(f"[green]Configuration key '{'.'.join(keys)}' set to '{value}'.[/]")
+
+
 @config_app.command("get")
 def get(
     ctx: typer.Context,
     keys: list[str] = typer.Argument(
-        None, help="Config key path (e.g. 'llm.model' or 'llm model')"
+        None, help="Config key path (e.g. 'llm.ollama.model' or 'llm ollama model')"
     ),
     default: str = typer.Option(
         None, "-d", "--default", help="Default value if key not found"
     ),
 ):
     """
-    Get a configuration value.
-    Accepts either a dotted single argument ("llm.model") or multiple keys ("llm model").
+    Gets a resolved configuration value.
+    Accepts either a dotted single argument ("llm.model") or multiple keys ("llm model"). Since it returns a resolved value you don't need to specify the variant.
     """
     # keys might be None if no argument given
     # Typer will produce an empty list for missing varargs; handle that
@@ -43,11 +88,17 @@ def get(
         value = get_config()
     else:
         # support both "llm.model" and "llm model"
-        if len(keys) == 1 and isinstance(keys[0], str) and "." in keys[0]:
-            parsed_keys = keys[0].split(".")
+        if len(keys) == 1 and isinstance(keys[0], str):
+            if "." in keys[0]:
+                parsed_keys = keys[0].split(".")
+            elif "/" in keys[0]:
+                parsed_keys = keys[0].split("/")
+            else:
+                parsed_keys = keys[0].split(" ")
         else:
             parsed_keys = list(keys)
-        value = resolve_config(*parsed_keys)
+        value = get_config(*parsed_keys)
+
     if value is None and default is not None:
         value = default
     if value is None:
@@ -61,12 +112,21 @@ def get(
 
 
 @config_app.command("tree")
-def tree(ctx: typer.Context):
+def tree(
+    ctx: typer.Context,
+    raw: Annotated[
+        bool,
+        typer.Option("--raw", "-r", help="Return raw JSON rather than pretty print"),
+    ] = False,
+):
     """
     Show a summary of the current configuration as a tree.
     """
     knwl = ctx.obj  # type: Knwl
     config = knwl.config
+    if raw:
+        console.print(json.dumps(config, indent=2))
+        return
 
     def _looks_like_markdown(s: str) -> bool:
         if not isinstance(s, str):
@@ -120,12 +180,21 @@ def tree(ctx: typer.Context):
 
 
 @config_app.command("summary")
-def summary(ctx: typer.Context):
+def summary(
+    ctx: typer.Context,
+    raw: Annotated[
+        bool,
+        typer.Option("--raw", "-r", help="Return raw JSON rather than pretty print"),
+    ] = False,
+):
     """
     Show a summary of the current configuration.
     """
     knwl = ctx.obj  # type: Knwl
     config = knwl.config
+    if raw:
+        console.print(json.dumps(config, indent=2))
+        return
 
     def print_summary(d, indent=0):
         for key, value in d.items():
@@ -168,7 +237,11 @@ def summary(ctx: typer.Context):
     )
 
 
-@config_app.command("all", help="Get the entire configuration. Same as `knwl config get all`", epilog="Example:\n  knwl config all")
+@config_app.command(
+    "all",
+    help="Get the entire configuration. Same as `knwl config get all`",
+    epilog="Example:\n  knwl config all",
+)
 def all(ctx: typer.Context):
     """
     Get the entire configuration.

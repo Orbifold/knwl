@@ -9,6 +9,17 @@ python -m pipx install .
 
 It keeps the CLI isolated from system Python packages and uses its own virtual environment.
 
+## CLI Overview
+
+The Knwl CLI provides several command groups to interact with the Knwl knowledge base. The main command groups are:
+
+- `info`: Get information about your Knwl installation and configuration.
+- `config`: View and manage Knwl configuration settings.
+- `graph`: Inspect and query the knowledge graph stored in Knwl.
+- `ask`: Ask questions to the knowledge base using natural language.
+- `extract`: Extract knowledge from text without ingesting it into the database.
+- `add` / `ingest`: Ingest knowledge from text into the knowledge graph.
+
 ## Info and Configuration Commands
 
 You can get help and list the available commands by running:
@@ -59,6 +70,18 @@ Note that this will not work as expected because of the way the configuration is
 
 ```bash
 knwl config get llm default model
+```
+
+You can set configuration values using the `set` command. For example:
+
+```bash
+knwl config set "llm.ollama.model" "custom_model:1b"
+```
+
+This will be saved to your user configuration file. If you want to reset the configuration to default values, you can use:
+
+```bash
+knwl config reset
 ```
 
 ## Graph Commands
@@ -121,6 +144,14 @@ but if you do want to ingest the knowledge into the graph database, you can use 
 ```bash
 knwl add "Anna went to school in Johannesburg and married Ian soon thereafter."
 ```
+
+Using `extract` will return the extracted knowledge graph in a pretty-printed format. If you want the raw JSON output instead, you can use the `--raw` or `-r` flag:
+
+```bash
+knwl extract -r "Anna went to school in Johannesburg and married Ian soon thereafter."
+```
+
+and this will return the knowledge graph (and more, like chunking info) as raw JSON.
 
 You can check the graph was augmented by listing the nodes of type `Person`:
 
