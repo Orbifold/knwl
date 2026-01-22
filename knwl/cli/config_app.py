@@ -22,7 +22,7 @@ config_app = typer.Typer(help="View or modify knwl configuration")
     help="Reset the active configuration to the default configuration.",
     epilog="Example:\n  knwl config reset",
 )
-def reset_config():
+def reset_configuration():
     """
     Resets the active configuration to the default configuration.
     """
@@ -36,7 +36,7 @@ def reset_config():
     help="Set a configuration value.",
     epilog="Example:\n  knwl config set 'llm.ollama.model' 'custom_model:1b'",
 )
-def set_config(
+def set_configuration(
     ctx: typer.Context,
     keys: list[str] = typer.Argument(
         None, help="Config key path (e.g. 'llm.ollama.model' or 'llm ollama model')"
@@ -61,7 +61,7 @@ def set_config(
 
 
 @config_app.command("get")
-def get(
+def get_configuration(
     ctx: typer.Context,
     keys: list[str] = typer.Argument(
         None, help="Config key path (e.g. 'llm.ollama.model' or 'llm ollama model')"

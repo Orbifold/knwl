@@ -99,6 +99,7 @@ def test_config_get():
 
     assert result.stdout.replace("\n", "") == "qwen2.5:7b"
 
+
 def test_config_set():
     """
     The config command should run and set configuration information.
@@ -106,11 +107,12 @@ def test_config_set():
 
     module = importlib.import_module("knwl.cli.cli")
     runner = CliRunner()
-    result = runner.invoke(module.app, ["config", "set", "llm.ollama.model", "custom_model:1b"])
+    result = runner.invoke(
+        module.app, ["config", "set", "llm.ollama.model", "custom_model:1b"]
+    )
     assert result.exit_code == 0
 
     result = runner.invoke(module.app, ["config", "get", "llm.ollama.model"])
     assert result.exit_code == 0
 
     assert result.stdout.replace("\n", "") == "custom_model:1b"
-    

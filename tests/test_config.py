@@ -10,11 +10,12 @@ from knwl.config import (
     merge_into_active_config,
     set_config_value,
 )
-from knwl.config import resolve_reference, resolve_config, get_custom_config
+from knwl.config import resolve_reference, resolve_config, get_custom_config, reset_config
 from knwl.utils import get_full_path
 
 pytestmark = pytest.mark.basic
 
+reset_config(save=True)
 
 def test_config_get():
     config = {"a": {"b": {"c": 1}}}

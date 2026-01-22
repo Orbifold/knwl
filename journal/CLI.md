@@ -78,6 +78,8 @@ You can set configuration values using the `set` command. For example:
 knwl config set "llm.ollama.model" "custom_model:1b"
 ```
 
+You can edit the config manually too, it sits in `~/.knwl/config.json` by default. Configuring Knwl via the CLI like above is (for now) limited to setting string values only and this will cause issues if the value needs to be a number or a boolean. You can work around this by editing the config file directly.
+
 This will be saved to your user configuration file. If you want to reset the configuration to default values, you can use:
 
 ```bash

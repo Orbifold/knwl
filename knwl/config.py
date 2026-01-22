@@ -320,12 +320,11 @@ def reset_active_config(save: Optional[bool] = False):
             os.remove(save_path)
 
 
-def reset_config():
+def reset_config(save: Optional[bool] = False):
     """
     This is an alias for `reset_active_config` to reset the active configuration to the default configuration.
     """
-    reset_active_config()
-
+    reset_active_config(save=save)
 
 def merge_configs(override: dict, base_config: dict) -> dict:
     """
