@@ -116,3 +116,49 @@ def test_config_set():
     assert result.exit_code == 0
 
     assert result.stdout.replace("\n", "") == "custom_model:1b"
+
+def test_graph_count():
+    """
+    The graph count command should run and return counts.
+    """
+
+    module = importlib.import_module("knwl.cli.cli")
+    runner = CliRunner()
+    result = runner.invoke(module.app, ["graph", "count", "--raw"])
+    assert result.exit_code == 0
+    counts = json.loads(result.stdout.replace("\n", ""))  # stdout ends with a newline
+    assert "nodes" in counts
+    assert "edges" in counts
+
+def test_graph_types():
+    """
+    The graph types command should run and return types.
+    """
+
+    module = importlib.import_module("knwl.cli.cli")
+    runner = CliRunner()
+    result = runner.invoke(module.app, ["graph", "types", "--raw"])
+    assert result.exit_code == 0
+    types = json.loads(result.stdout.replace("\n", ""))  # stdout ends with a newline
+    assert "nodes" in types
+    assert "edges" in types
+
+def test_graph_type_nodes():
+    """
+    The graph type command should run and return nodes of a specific type.
+    """
+
+    module = importlib.import_module("knwl.cli.cli")
+    runner = CliRunner()
+    test_text = "John Field was an Irish composer."
+    extract_result = runner.invoke(
+        module.app, ["add",  test_text]
+    )
+    assert extract_result.exit_code == 0
+
+    result = runner.invoke(module.app, ["graph", "type", "Person", "--raw"])
+    assert result.exit_code == 0
+    nodes = json.loads(result.stdout.replace("\n", ""))  # stdout ends with a newline
+    assert len(nodes) > 0
+    found = [u for u in nodes if u["name"] == "John Field"]
+    assert len(found) > 0

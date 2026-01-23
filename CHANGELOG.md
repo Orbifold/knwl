@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.8.2
+- **feature**: lots more CLI
+
 ## v1.8.1
 
 - **feature**: S3 storage backend implemented for Knwl.

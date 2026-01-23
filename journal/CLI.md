@@ -114,6 +114,7 @@ which will return the total number of nodes in the graph. You can also count edg
 ```bash
 knwl graph count edges
 ```
+Like other commands, you can use the `--raw` or `-r` flag to get raw JSON output.
 
 ## Chat Commands
 
@@ -167,11 +168,19 @@ The knowledge is both a graph and a vector store, so 'finding' things can be don
 knwl graph similar "George Washington"
 ```
 
-This will return nodes that are semantically similar to "George Washington" along with their similarity scores (or distances).
+This will return nodes that are semantically similar to "George Washington" along with their similarity scores (or distances). There is direct alias and you can also use:
+
+```bash
+knwl similar "George Washington"
+```
 To find nodes matching specific properties (name and description), you can use:
 
 ```bash
 knwl graph find "George Washington"
 ```
+or 
 
+```bash
+knwl find "George Washington"
+```
 This does not return similarity scores but only nodes that match the given text in their properties.

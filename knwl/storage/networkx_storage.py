@@ -489,6 +489,8 @@ class NetworkXGraphStorage(GraphStorageBase):
             if node_type_value and node_type_value.lower() == node_type_lower:
                 node["id"] = node_id
                 found.append(node)
+        # sort by name
+        found.sort(key=lambda x: x.get("name", ""))
         return found
 
     async def node_degree(self, node_id: str) -> int:
@@ -899,4 +901,6 @@ class NetworkXGraphStorage(GraphStorageBase):
                 found.append(node)
             if len(found) >= amount:
                 break
+        # sort by name
+        found.sort(key=lambda x: x.get("name", ""))
         return found

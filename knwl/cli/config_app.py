@@ -60,7 +60,9 @@ def set_configuration(
     console.print(f"[green]Configuration key '{'.'.join(keys)}' set to '{value}'.[/]")
 
 
-@config_app.command("get")
+@config_app.command("get",
+    help="Get a configuration value.",
+    epilog="Example:\n  knwl config get 'llm.ollama.model'")
 def get_configuration(
     ctx: typer.Context,
     keys: list[str] = typer.Argument(
@@ -111,7 +113,9 @@ def get_configuration(
             console.print(value)
 
 
-@config_app.command("tree")
+@config_app.command("tree",
+    help="Show the configuration as a tree.",
+    epilog="Example:\n  knwl config tree")
 def tree(
     ctx: typer.Context,
     raw: Annotated[
@@ -179,7 +183,9 @@ def tree(
     console.print(Panel(Padding(root, (1, 2)), title="Configuration Tree"))
 
 
-@config_app.command("summary")
+@config_app.command("summary",
+    help="Show a summary of the current configuration.",
+    epilog="Example:\n  knwl config summary")
 def summary(
     ctx: typer.Context,
     raw: Annotated[

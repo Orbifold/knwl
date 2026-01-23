@@ -1,4 +1,5 @@
 import asyncio
+import json
 from typing import Optional, Annotated
 from knwl.knwl import Knwl
 import typer
@@ -12,6 +13,7 @@ from rich.table import Table
 console = Console()
 # create a sub-app for config commands
 graph_app = typer.Typer(help="Inspect and manipulate the knowledge graph.")
+
 
 def _get(node, field):
     """Safely get field from a dict or model-like object."""
@@ -30,6 +32,10 @@ def count(
     what: Optional[str] = typer.Argument(
         "nodes edges", help="What to count (e.g. 'edge' or 'nodes')"
     ),
+    raw: Annotated[
+        bool,
+        typer.Option("--raw", "-r", help="Return raw JSON rather than pretty print"),
+    ] = False,
 ):
     knwl = ctx.obj  # type: Knwl
     answer = ""
@@ -39,9 +45,16 @@ def count(
     if "edge" in what.lower():
         edges = asyncio.run(knwl.edge_count())
         answer += f"**Edges**: {edges}\n"
-    console.print(
-        Panel(Padding(Markdown(answer.strip()), (1, 2)), title="Count Results")
-    )
+    if raw:
+        j = {
+            "nodes": nodes if "node" in what.lower() else None,
+            "edges": edges if "edge" in what.lower() else None,
+        }
+        console.print(json.dumps(j, indent=2))
+    else:
+        console.print(
+            Panel(Padding(Markdown(answer.strip()), (1, 2)), title="Count Results")
+        )
 
 
 @graph_app.command(
@@ -54,30 +67,43 @@ def show_types(
     what: Optional[str] = typer.Argument(
         None, help="What to inspect (e.g. 'nodes' or 'edges')"
     ),
+    raw: Annotated[
+        bool,
+        typer.Option("--raw", "-r", help="Return raw JSON rather than pretty print"),
+    ] = False,
 ):
     if what is None:
         what = "nodes edges"
     what = what.strip().lower()
     if len(what) == 0:
         what = "nodes edges"
+    json_output = {}
     if "node" in what:
         knwl = ctx.obj  # type: Knwl
         stats = asyncio.run(knwl.node_stats())
-        table = Table(title="Node Statistics")
-        table.add_column("Node Type", style="cyan", no_wrap=True)
-        table.add_column("Count", style="magenta")
-        for node_type, count in sorted(stats.items()):
-            table.add_row(node_type.upper(), str(count))
-        console.print(Padding(table, (1, 2)))
+        if not raw:
+            table = Table(title="Node Statistics")
+            table.add_column("Node Type", style="cyan", no_wrap=True)
+            table.add_column("Count", style="magenta")
+            for node_type, count in sorted(stats.items()):
+                table.add_row(node_type.upper(), str(count))
+            console.print(Padding(table, (1, 2)))
+        else:
+            json_output["nodes"] = stats
     if "edge" in what:
         knwl = ctx.obj  # type: Knwl
         stats = asyncio.run(knwl.edge_stats())
-        table = Table(title="Edge Statistics")
-        table.add_column("Edge Type", style="cyan", no_wrap=True)
-        table.add_column("Count", style="magenta")
-        for edge_type, count in sorted(stats.items()):
-            table.add_row(edge_type.upper(), str(count))
-        console.print(Padding(table, (1, 2)))
+        if not raw:
+            table = Table(title="Edge Statistics")
+            table.add_column("Edge Type", style="cyan", no_wrap=True)
+            table.add_column("Count", style="magenta")
+            for edge_type, count in sorted(stats.items()):
+                table.add_row(edge_type.upper(), str(count))
+            console.print(Padding(table, (1, 2)))
+        else:
+            json_output["edges"] = stats
+    if raw:
+        console.print(json.dumps(json_output, indent=2))
 
 
 @graph_app.command(
@@ -107,10 +133,22 @@ def get_type(
     what: Optional[str] = typer.Argument(
         ..., help="What to inspect (e.g. 'types', 'stats', 'Person' or 'Location')"
     ),
+    raw: Annotated[
+        bool,
+        typer.Option("--raw", "-r", help="Return raw JSON rather than pretty print"),
+    ] = False,
 ):
 
     knwl = ctx.obj  # type: Knwl
     nodes = asyncio.run(knwl.get_nodes_by_type(what))
+    if raw:
+        console.print(
+            json.dumps(
+                [node.dict() if hasattr(node, "dict") else node for node in nodes],
+                indent=2,
+            )
+        )
+        return
     if nodes is None or len(nodes) == 0:
         console.print(
             Panel(
@@ -127,30 +165,50 @@ def get_type(
         table.add_row(str(_get(node, "name")), str(_get(node, "description")))
     console.print(table)
 
+
 @graph_app.command(
     "similar",
     help="Find similar nodes in the knowledge graph matching a query.",
-    epilog="Example:\n  knwl graph similar-nodes 'George Washington'",
+    epilog="Example:\n  knwl graph similar 'George Washington'",
 )
 def similar_nodes(
     ctx: typer.Context,
     query: Annotated[
         str, typer.Argument(..., help="Search query to find nodes in the graph")
     ],
+    raw: Annotated[
+        bool,
+        typer.Option("--raw", "-r", help="Return raw JSON rather than pretty print"),
+    ] = False,
 ) -> None:
     """Find nodes in the knowledge graph matching the query."""
     knwl = ctx.obj  # type: Knwl
     nodes_tuples = asyncio.run(knwl.similar_nodes(query))
+    if raw:
+        console.print(
+            json.dumps(
+                [
+                    {
+                        "node": node.dict() if hasattr(node, "dict") else node,
+                        "distance": distance,
+                    }
+                    for node, distance in nodes_tuples
+                ],
+                indent=2,
+            )
+        )
+        return
     if nodes_tuples is None or len(nodes_tuples) == 0:
         console.print(
             Panel(
-                Padding(Markdown(f"No nodes found matching query '**{query}**'."), (1, 2)),
+                Padding(
+                    Markdown(f"No nodes found matching query '**{query}**'."), (1, 2)
+                ),
                 title="Node Search",
             )
         )
         return
     table = Table(title=f"Nodes matching query '{query}'")
-
     table.add_column("Type", style="cyan")
     table.add_column("Name", style="magenta")
     table.add_column("Distance", style="green")
@@ -160,9 +218,10 @@ def similar_nodes(
             str(_get(node, "type")),
             str(_get(node, "name")),
             f"{distance:.2f}",
-            str(_get(node, "description"))
+            str(_get(node, "description")),
         )
     console.print(table)
+
 
 @graph_app.command(
     "find",
@@ -174,14 +233,28 @@ def find_nodes(
     query: Annotated[
         str, typer.Argument(..., help="Search query to find nodes in the graph")
     ],
+    raw: Annotated[
+        bool,
+        typer.Option("--raw", "-r", help="Return raw JSON rather than pretty print"),
+    ] = False,
 ) -> None:
     """Find nodes in the knowledge graph matching the query."""
     knwl = ctx.obj  # type: Knwl
     nodes = asyncio.run(knwl.find_nodes(query))
+    if raw:
+        console.print(
+            json.dumps(
+                [node.dict() if hasattr(node, "dict") else node for node in nodes],
+                indent=2,
+            )
+        )
+        return
     if nodes is None or len(nodes) == 0:
         console.print(
             Panel(
-                Padding(Markdown(f"No nodes found matching query '**{query}**'."), (1, 2)),
+                Padding(
+                    Markdown(f"No nodes found matching query '**{query}**'."), (1, 2)
+                ),
                 title="Node Search",
             )
         )
@@ -195,9 +268,10 @@ def find_nodes(
         table.add_row(
             str(_get(node, "type")),
             str(_get(node, "name")),
-            str(_get(node, "description"))
+            str(_get(node, "description")),
         )
-    console.print(table)    
+    console.print(table)
+
 
 @graph_app.callback(invoke_without_command=True)
 def _app_callback(ctx: typer.Context):
