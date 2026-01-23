@@ -273,6 +273,28 @@ def find_nodes(
     console.print(table)
 
 
+@graph_app.command(
+    "export",
+    help="Export the knowledge graph in various formats.",
+    epilog="Example:\n  knwl graph export --format json",
+)
+def export(
+    ctx: typer.Context,
+    format: Annotated[
+        str,
+        typer.Option(
+            "--format",
+            "-f",
+            help="Export format (e.g. 'json', 'csv', 'xml')",
+        ),
+    ] = "json",
+):
+    """Export the knowledge graph in the specified format."""
+    knwl = ctx.obj  # type: Knwl
+    data = asyncio.run(knwl.export_graph(format=format))
+    console.print(data)
+
+
 @graph_app.callback(invoke_without_command=True)
 def _app_callback(ctx: typer.Context):
     """

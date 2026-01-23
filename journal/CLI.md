@@ -21,6 +21,12 @@ The Knwl CLI provides several command groups to interact with the Knwl knowledge
 - `add` / `ingest`: Ingest knowledge from text into the knowledge graph.
 - `log`: View and manage Knwl log entries.
 
+Most commands support a `--raw` or `-r` flag to return raw JSON output instead of pretty-printed tables, this allows you to easily pipe the output to other tools or scripts. For example, you write graph types stats to json like so:
+
+```bash
+knwl graph types --raw > graph_types.json
+```
+
 ## Info and Configuration Commands
 
 You can get help and list the available commands by running:
@@ -117,6 +123,31 @@ knwl graph count edges
 ```
 
 Like other commands, you can use the `--raw` or `-r` flag to get raw JSON output.
+
+To export the knowledge graph in various formats, you can use the `export` command:
+
+```bash
+knwl graph export --format json
+```
+with json being the default you can also use simply `knwl graph export`. To save to file use output redirection:
+
+```bash
+knwl graph export --format csv > knowledge_graph.txt
+```
+
+**Important**: the csv export is necessarily two files, one for nodes and one for edges, so the above command will only save both into a text file. You can find the two set delimited by `--- NODES ---` and `--- EDGES ---` headers.
+
+The supported export formats are:
+
+- `json`: Exports the graph as a JSON object containing nodes and edges.
+- `csv`: Exports nodes and edges as CSV format (two separate sections).
+- `ttl`: Exports the graph in Turtle (TTL) format for RDF data.
+- `ntriples`: Exports the graph in N-Triples format for RDF data.
+- `xml`: Exports the graph in RDF/XML format.
+- `cypher`: Exports the graph as Cypher commands for use with Neo4j.
+
+You can simply copy/paste the saved Cypher commands into a Neo4j browser to recreate the graph there. Similarly, the RDF formats can be imported into any RDF triple store (e.g. [Apache Jena](https://jena.apache.org), [qlever](https://github.com/ad-freiburg/qlever) and more).
+
 
 ## Chat Commands
 

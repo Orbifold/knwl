@@ -366,6 +366,13 @@ class Knwl:
         """Find nodes in the knowledge graph matching the query."""
         return await self.grag.semantic_graph.find_nodes(text, amount)
 
+    async def export_graph(self, format: str = "json") -> str:
+        """
+        Export the knowledge graph in the given format.
+        Supported formats: json, csv, ttl (Turtle), ntriples, xml (RDF/XML)
+        """
+        return await self.grag.semantic_graph.export_graph(format=format)  # type: ignore
+
     def __repr__(self) -> str:
         from importlib.metadata import version
 

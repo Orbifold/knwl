@@ -24,6 +24,7 @@ dependencies = [
     "anthropic>=0.72.0",
     "lxml>=6.0.2",
     "typer>=0.20.0",
+    "rdflib>=7.5.0",
 ]
 
 [dependency-groups]
