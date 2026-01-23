@@ -523,6 +523,13 @@ class SemanticGraph(SemanticGraphBase):
             nodes.append(KnwlNode(**r))
         return nodes
 
+    async def export_graph(self, format: str = "json") -> str:
+        """
+        Export the knowledge graph in the given format.
+        Supported formats: json, csv, ttl (Turtle), cypher.
+        """
+        return await self._graph_store.export_graph(format=format)
+
     def __repr__(self):
         return f"<SemanticGraph, graph={self._graph_store.__class__.__name__}, nodes={self.node_embeddings.__class__.__name__}, edge_embeddings={self.edge_embeddings.__class__.__name__}, summarization={self.summarization.__class__.__name__}>"
 

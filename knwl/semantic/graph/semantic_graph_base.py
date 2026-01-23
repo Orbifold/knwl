@@ -408,7 +408,9 @@ class SemanticGraphBase(FrameworkBase, ABC):
         ...
 
     @abstractmethod
-    async def similar_nodes(self, text: str, amount: int = 10) -> list[tuple[KnwlNode, float]]:
+    async def similar_nodes(
+        self, text: str, amount: int = 10
+    ) -> list[tuple[KnwlNode, float]]:
         """
         Find nodes in the knowledge graph matching the query.
 
@@ -425,5 +427,13 @@ class SemanticGraphBase(FrameworkBase, ABC):
 
         Returns:
             list[KnwlNode]: A list of KnwlNode objects that match the query.
+        """
+        ...
+
+    @abstractmethod
+    async def export_graph(self, format: str = "json") -> str:
+        """
+        Export the knowledge graph in the given format.
+        Supported formats: json, csv, ttl (Turtle), cypher.
         """
         ...

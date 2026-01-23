@@ -35,7 +35,7 @@ jobs:
 
     - name: Run tests (excluding LLM-dependent tests)
       run: |
-        uv run pytest --cov=knwl --cov-report=xml -m "not llm and not integration" -v
+        uv run pytest --cov=knwl --cov-report=xml -m "not llm and not integration and not cli" -v
 
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v3

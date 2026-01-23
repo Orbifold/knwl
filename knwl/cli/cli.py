@@ -4,10 +4,11 @@ from knwl.knwl import Knwl
 from knwl.models.KnwlInput import KnwlInput
 import typer
 import asyncio
-
+import json
 from knwl.cli.config_app import config_app
 from knwl.cli.info_app import info_app
-from knwl.cli.graph_app import graph_app
+from knwl.cli.log_app import log_app
+from knwl.cli.graph_app import graph_app, similar_nodes, find_nodes
 
 from rich.console import Console
 from rich.markdown import Markdown
@@ -20,7 +21,44 @@ app = typer.Typer()
 K = Knwl()
 app.add_typer(config_app, name="config", context_settings={"obj": K})
 app.add_typer(info_app, name="info", context_settings={"obj": K})
+app.add_typer(log_app, name="log", context_settings={"obj": K})
 app.add_typer(graph_app, name="graph", context_settings={"obj": K})
+
+
+@app.command(
+    "find",
+    help="Find nodes in the knowledge graph matching a query.",
+    epilog="Example:\n  knwl find 'George Washington'",
+)
+def find(
+    ctx: typer.Context,
+    text: Annotated[
+        str, typer.Argument(..., help="Search text to find nodes in the graph")
+    ],
+    raw: Annotated[
+        bool,
+        typer.Option("--raw", "-r", help="Return raw JSON rather than pretty print"),
+    ] = False,
+) -> None:
+    return find_nodes(ctx=ctx, query=text, raw=raw)
+
+
+@app.command(
+    "similar",
+    help="Find similar nodes in the knowledge graph matching a query.",
+    epilog="Example:\n  knwl similar 'George Washington'",
+)
+def similar(
+    ctx: typer.Context,
+    text: Annotated[
+        str, typer.Argument(..., help="Search text to find nodes in the graph")
+    ],
+    raw: Annotated[
+        bool,
+        typer.Option("--raw", "-r", help="Return raw JSON rather than pretty print"),
+    ] = False,
+) -> None:
+    return similar_nodes(ctx=ctx, query=text, raw=raw)
 
 
 @app.command(
@@ -30,9 +68,16 @@ app.add_typer(graph_app, name="graph", context_settings={"obj": K})
 )
 def extract(
     text: Annotated[str, typer.Argument(..., help="Text to extract knowledge from")],
+    raw: Annotated[
+        bool,
+        typer.Option("--raw", "-r", help="Return raw JSON rather than pretty print"),
+    ] = False,
 ) -> None:
     g = asyncio.run(K.extract(text))
-    print_knwl(g)
+    if raw:
+        console.print(json.dumps(g.model_dump(), indent=2))
+    else:
+        print_knwl(g)
 
 
 @app.command(
@@ -54,6 +99,7 @@ def ingest(
 ) -> None:
     """Alias for 'add' command."""
     add(text)
+
 
 @app.command(
     "ask",
@@ -93,7 +139,7 @@ def ask(
     help="Asks a direct question to the LLM without augmentation, ie. without the knowledge graph.",
     epilog="Example:\n  knwl simple 'What is spacetime?'",
 )
-def simple(
+def simple_ask(
     question: Annotated[
         str,
         typer.Argument(
@@ -107,6 +153,20 @@ def simple(
     console.print(
         Panel(Padding(Markdown(answer.answer), (1, 2)), title="Direct LLM Answer")
     )
+
+
+@app.command("direct", hidden=True)  # hidden=True keeps it out of help text
+def direct_ask(
+    question: Annotated[
+        str,
+        typer.Argument(
+            ...,
+            help="A direct question to the LLM without augmentation, ie. without the knowledge graph.",
+        ),
+    ],
+) -> None:
+    """Alias for 'simple' command."""
+    simple_ask(question)
 
 
 @app.callback(invoke_without_command=True)

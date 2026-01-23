@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.8.2
+
+- **feature**: CLI command to view log entries
+- **refactor**: NetworkXGraphStorage has been refectored to improve code clarity and maintainability.
+- **feature**: Added export_graph method to Knwl class to export the knowledge graph in various formats (json, csv, ttl, cypher).
+
 ## v1.8.1
 
 - **feature**: S3 storage backend implemented for Knwl.

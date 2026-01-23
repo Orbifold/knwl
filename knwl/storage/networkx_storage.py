@@ -1,4 +1,5 @@
 import shutil
+from uuid import uuid4
 import warnings
 from dataclasses import field, dataclass
 from typing import cast
@@ -10,6 +11,9 @@ from knwl.di import defaults
 from knwl.logging import log
 from knwl.storage.graph_base import GraphStorageBase
 from knwl.utils import *
+import io
+import csv
+import json
 
 
 @dataclass
@@ -141,13 +145,30 @@ class NetworkXGraphStorage(GraphStorageBase):
 
     @staticmethod
     def validate_payload(payload):
+        """
+        Validate and sanitize payload data for GraphML compatibility.
+
+        Converts complex types (dict, BaseModel) to JSON strings since GraphML
+        only supports primitive types.
+
+        Args:
+            payload: Dictionary of node/edge attributes
+
+        Raises:
+            ValueError: If payload is invalid or contains unsupported types
+        """
         if payload is None:
             raise ValueError("NetworkXStorage: payload cannot be None")
         if not isinstance(payload, dict):
-            raise ValueError("NetworkXStorage: custom data must be a dict")
+            raise ValueError(
+                f"NetworkXStorage: payload must be a dict, got {type(payload).__name__}"
+            )
+
         for key, value in payload.items():
             if not isinstance(key, str):
-                raise ValueError("NetworkXStorage: custom data keys must be strings")
+                raise ValueError(
+                    f"NetworkXStorage: payload keys must be strings, got {type(key).__name__} for key {key}"
+                )
             if (
                 not isinstance(value, (str, int, float, bool, list))
                 and value is not None
@@ -160,7 +181,8 @@ class NetworkXGraphStorage(GraphStorageBase):
                     )
                 else:
                     raise ValueError(
-                        "NetworkXStorage: custom data values must be strings, numbers, booleans, lists or dicts"
+                        f"NetworkXStorage: payload value for key '{key}' has unsupported type {type(value).__name__}. "
+                        f"Supported types: str, int, float, bool, list, dict, BaseModel"
                     )
 
     @staticmethod
@@ -339,11 +361,11 @@ class NetworkXGraphStorage(GraphStorageBase):
                 )
 
             elif isinstance(target, dict):
-                # (dict, dict) - merge both dictionaries
+                # (dict, dict) - source dict is source node, target dict is target node
                 id1, source_id, _, edge_data1 = extract_from_dict(source)
                 id2, _, target_id, edge_data2 = extract_from_dict(target)
 
-                return EdgeSpecs(id=None, source_id=id1, target_id=id2, edge_data=None)
+                return EdgeSpecs(id=None, source_id=id1, target_id=id2, edge_data={})
 
             elif isinstance(target, BaseModel):
                 # (dict, BaseModel) - merge dict with BaseModel data
@@ -384,14 +406,14 @@ class NetworkXGraphStorage(GraphStorageBase):
                 )
 
             elif isinstance(target, dict):
-                # (BaseModel, dict) - merge BaseModel with dict data
+                # (BaseModel, dict) - source BaseModel is source node, target dict is target node
                 id1, source_id, _, edge_data1 = extract_from_basemodel(source)
                 id2, _, target_id, edge_data2 = extract_from_dict(target)
 
                 return EdgeSpecs(id=None, source_id=id1, target_id=id2, edge_data={})
 
             elif isinstance(target, BaseModel):
-                # (BaseModel, BaseModel) - merge both BaseModels
+                # (BaseModel, BaseModel) - source BaseModel is source node, target BaseModel is target node
                 id1, source_id, _, edge_data1 = extract_from_basemodel(source)
                 id2, _, target_id, edge_data2 = extract_from_basemodel(target)
 
@@ -448,22 +470,50 @@ class NetworkXGraphStorage(GraphStorageBase):
             NetworkXGraphStorage.write(self.graph, self._path)
 
     async def node_exists(self, node_id: str) -> bool:
+        """
+        Check if a node exists in the graph.
+
+        Args:
+            node_id: The ID of the node to check
+
+        Returns:
+            bool: True if the node exists, False otherwise
+        """
         if str.strip(node_id) == "":
             return False
         return self.graph.has_node(node_id)
 
     async def edge_exists(
         self,
-        source_or_key: Union[BaseModel, str, dict],
-        target_node_id: Union[BaseModel, str, dict] = None,
+        source_or_key: BaseModel | str | dict,
+        target_node_id: BaseModel | str | dict = None,
     ) -> bool:
+        """
+        Check if an edge exists in the graph.
+
+        Args:
+            source_or_key: Either an edge ID (str), edge dict/BaseModel, or source node ID/dict/BaseModel
+            target_node_id: Target node ID, dict, or BaseModel (optional if source_or_key specifies both endpoints)
+
+        Returns:
+            bool: True if the edge exists, False otherwise
+        """
         specs = NetworkXGraphStorage.get_edge_specs(source_or_key, target_node_id)
         if specs.id is not None:
             return self.get_edge_by_id(specs.id) is not None
         else:
             return self.graph.has_edge(specs.source_id, specs.target_id)
 
-    async def get_node_by_id(self, node_id: str) -> Union[dict, None]:
+    async def get_node_by_id(self, node_id: str) -> dict | None:
+        """
+        Retrieve a node by its ID.
+
+        Args:
+            node_id: The ID of the node to retrieve
+
+        Returns:
+            dict | None: Node data dictionary if found, None otherwise
+        """
         found = self.graph.nodes.get(node_id)
         if found:
             found["id"] = node_id
@@ -471,7 +521,7 @@ class NetworkXGraphStorage(GraphStorageBase):
         else:
             return None
 
-    async def get_nodes_by_name(self, node_name: str) -> Union[list[dict], None]:
+    async def get_nodes_by_name(self, node_name: str) -> list[dict] | None:
         found = []
         for node_id in self.graph.nodes:
             node = self.graph.nodes[node_id]
@@ -480,7 +530,7 @@ class NetworkXGraphStorage(GraphStorageBase):
                 found.append(node)
         return found
 
-    async def get_nodes_by_type(self, node_type: str) -> Union[list[dict], None]:
+    async def get_nodes_by_type(self, node_type: str) -> list[dict] | None:
         found = []
         node_type_lower = node_type.lower()
         for node_id in self.graph.nodes:
@@ -489,6 +539,8 @@ class NetworkXGraphStorage(GraphStorageBase):
             if node_type_value and node_type_value.lower() == node_type_lower:
                 node["id"] = node_id
                 found.append(node)
+        # sort by name
+        found.sort(key=lambda x: x.get("name", ""))
         return found
 
     async def node_degree(self, node_id: str) -> int:
@@ -511,7 +563,7 @@ class NetworkXGraphStorage(GraphStorageBase):
 
     async def get_edges(
         self, source_node_id_or_key: str, target_node_id: str = None, type: str = None
-    ) -> Union[list[dict], None]:
+    ) -> list[dict] | None:
         specs = NetworkXGraphStorage.get_edge_specs(
             source_node_id_or_key, target_node_id
         )
@@ -606,17 +658,47 @@ class NetworkXGraphStorage(GraphStorageBase):
         return coll
 
     async def get_edge_by_id(self, edge_id: str) -> dict | None:
-        for edge in self.graph.edges(data=True):
-            if edge[2]["id"] == edge_id:
-                found = edge[2]
-                found["id"] = edge_id
+        """
+        Retrieve an edge by its ID.
 
+        Note: This method has O(n) complexity as it iterates through all edges.
+        For large graphs with frequent edge lookups by ID, consider maintaining
+        an edge index for O(1) lookups.
+
+        Args:
+            edge_id: The ID of the edge to retrieve
+
+        Returns:
+            dict | None: Edge data dictionary if found, None otherwise
+        """
+        if not edge_id or str.strip(edge_id) == "":
+            return None
+
+        for edge in self.graph.edges(data=True):
+            if edge[2].get("id") == edge_id:
+                found = edge[2].copy()
+                found["id"] = edge_id
+                found["source_id"] = edge[0]
+                found["target_id"] = edge[1]
                 return found
-        raise ValueError(f"Edge with id {edge_id} not found")
+        return None
 
     async def get_edges_between_nodes(
         self, source_id: str, target_id: str
     ) -> list[dict]:
+        """
+        Retrieve all edges between two specific nodes.
+
+        Args:
+            source_id: The ID of the source node
+            target_id: The ID of the target node
+
+        Returns:
+            list[dict]: List of edge data dictionaries (empty list if no edges found)
+        """
+        if not source_id or not target_id:
+            return []
+
         edges = []
         for u, v, data in self.graph.edges(data=True):
             if u == source_id and v == target_id:
@@ -792,7 +874,7 @@ class NetworkXGraphStorage(GraphStorageBase):
         if os.path.exists(self._path) and not self._in_memory:
             shutil.rmtree(os.path.dirname(self._path))
 
-    async def upsert_node(self, node_id: Union[BaseModel, str, dict], node_data=None):
+    async def upsert_node(self, node_id: BaseModel | str | dict, node_data=None):
         if node_id is None:
             raise ValueError("NetworkXStorage: you need an id to upsert node")
         else:
@@ -899,4 +981,180 @@ class NetworkXGraphStorage(GraphStorageBase):
                 found.append(node)
             if len(found) >= amount:
                 break
+        # sort by name
+        found.sort(key=lambda x: x.get("name", ""))
         return found
+
+    def fix_id(self, id: str) -> str:
+        """
+        The Kwnl id's contain "|>" which are not valid in RDF URIs. Replace them with "_".
+        """
+        return id.replace("|>", "_")
+
+    def to_json(self) -> dict:
+        nodes = []
+        for node_id, data in self.graph.nodes(data=True):
+            node_data = {"id": node_id, **data}
+            nodes.append(node_data)
+
+        edges = []
+        for u, v, data in self.graph.edges(data=True):
+            edge_data = {"source_id": u, "target_id": v, **data}
+            edges.append(edge_data)
+
+        return {"nodes": nodes, "edges": edges}
+
+    def to_csv(self):
+
+        # Prepare nodes
+        nodes = []
+        for node_id, data in self.graph.nodes(data=True):
+            row = {"id": node_id}
+            for k, v in data.items():
+                if isinstance(v, (dict, list)):
+                    row[k] = json.dumps(v, ensure_ascii=False)
+                else:
+                    row[k] = v
+            nodes.append(row)
+
+        node_fields = ["id"]
+        if nodes:
+            extra = sorted({k for n in nodes for k in n.keys() if k != "id"})
+            node_fields += extra
+
+        nodes_buf = io.StringIO()
+        node_writer = csv.DictWriter(
+            nodes_buf, fieldnames=node_fields, extrasaction="ignore"
+        )
+        node_writer.writeheader()
+        for n in nodes:
+            node_writer.writerow(
+                {k: ("" if n.get(k) is None else n.get(k)) for k in node_fields}
+            )
+        nodes_csv = nodes_buf.getvalue()
+
+        # Prepare edges
+        edges = []
+        for u, v, data in self.graph.edges(data=True):
+            row = {"source_id": u, "target_id": v}
+            for k, val in data.items():
+                if isinstance(val, (dict, list)):
+                    row[k] = json.dumps(val, ensure_ascii=False)
+                else:
+                    row[k] = val
+            edges.append(row)
+
+        edge_fields = ["source_id", "target_id"]
+        if edges:
+            extra_e = sorted(
+                {
+                    k
+                    for e in edges
+                    for k in e.keys()
+                    if k not in ("source_id", "target_id")
+                }
+            )
+            edge_fields += extra_e
+
+        edges_buf = io.StringIO()
+        edge_writer = csv.DictWriter(
+            edges_buf, fieldnames=edge_fields, extrasaction="ignore"
+        )
+        edge_writer.writeheader()
+        for e in edges:
+            edge_writer.writerow(
+                {k: ("" if e.get(k) is None else e.get(k)) for k in edge_fields}
+            )
+        edges_csv = edges_buf.getvalue()
+
+        return nodes_csv, edges_csv
+
+    def to_rdf(self, format="ttl") -> str:
+        from rdflib import Graph, Literal, RDF, URIRef
+
+        g = Graph()
+
+        # Add nodes
+        for node_id, data in self.graph.nodes(data=True):
+            node_uri = URIRef(f"https://knwl.ai/node/{self.fix_id(node_id)}")
+            for key, value in data.items():
+                predicate = URIRef(f"https://knwl.ai/property/{self.fix_id(key)}")
+                g.add((node_uri, predicate, Literal(value)))
+
+        # Add edges
+        for u, v, data in self.graph.edges(data=True):
+            source_uri = URIRef(f"https://knwl.ai/node/{self.fix_id(u)}")
+            target_uri = URIRef(f"https://knwl.ai/node/{self.fix_id(v)}")
+            for key, value in data.items():
+                predicate = URIRef(f"https://knwl.ai/property/{self.fix_id(key)}")
+                g.add((source_uri, predicate, target_uri))
+                g.add((source_uri, predicate, Literal(value)))
+
+        if format in ("ttl", "turtle"):
+            return g.serialize(format="turtle")
+        elif format == "ntriples":
+            return g.serialize(format="nt")
+        elif format in ("xml", "rdfxml"):
+            return g.serialize(format="xml")
+
+    def to_cypher(self) -> str:
+        cypher_statements = []
+        node_dic = {}  # to rename the node ids
+        # Create nodes
+        for node_id, data in self.graph.nodes(data=True):
+            if node_id not in node_dic:
+                node_dic[node_id] = str(uuid4())
+                id = node_dic[node_id]
+            else:
+                id = node_dic[node_id]
+            data["id"] = id
+            props = ", ".join(
+                [f"{k}: {json.dumps(v, ensure_ascii=False)}" for k, v in data.items()]
+            )
+            props = ", ".join(
+                [f"{k}: {json.dumps(v, ensure_ascii=False)}" for k, v in data.items()]
+            )
+            type_label = data.get("type", "Node").upper().replace(" ", "_").replace(".", "").replace("-", "_")
+            cypher_statements.append(f"CREATE (n:{type_label} {{id:'{id}', {props}}});")
+
+        # Create edges
+        for u, v, data in self.graph.edges(data=True):
+            data["id"] = str(uuid4())
+            if "source_id" in data:
+                del data["source_id"]
+            if "target_id" in data:
+                del data["target_id"]
+            props = ", ".join(
+                [f"{k}: {json.dumps(v, ensure_ascii=False)}" for k, v in data.items()]
+            )
+
+            source_id = node_dic.get(u)
+            target_id = node_dic.get(v)
+            if source_id is None or target_id is None:
+                continue  # skip edges with missing nodes
+            type_label = data.get("type", "EDGE").upper().replace(" ", "_").replace(".", "").replace("-", "_")
+            cypher_statements.append(f"MATCH (a {{id:'{source_id}'}})")
+            cypher_statements.append(f"MATCH (b {{id:'{target_id}'}})")
+            cypher_statements.append(f"CREATE (a)-[:{type_label} {{ {props} }}]->(b);")
+
+        return "\n".join(cypher_statements)
+
+    async def export_graph(self, format: str = "json") -> str:
+        """
+        Export the knowledge graph in the given format.
+        Supported formats: json, csv, ttl (Turtle), ntriples, xml (RDF/XML)
+        """
+        format = format.lower()
+        if format == "json":
+            return json.dumps(self.to_json(), ensure_ascii=False, indent=2)
+        elif format == "csv":
+            nodes_csv, edges_csv = self.to_csv()
+            return f"--- NODES ---\n{nodes_csv}\n--- EDGES ---\n{edges_csv}"
+        elif format in ("ttl", "turtle", "ntriples", "xml", "rdfxml"):
+            return self.to_rdf(format=format)
+        elif format == "cypher":
+            return self.to_cypher()
+        else:
+            raise ValueError(
+                f"Unsupported export format '{format}'. Supported formats: json, csv, ttl, ntriples, xml, cypher"
+            )

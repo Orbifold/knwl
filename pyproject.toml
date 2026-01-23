@@ -1,7 +1,7 @@
 [project]
 name = "knwl"
 license = "MIT"
-version = "1.8.1"
+version = "1.8.2"
 description = "A flexible Graph RAG package with advanced ingestion and augmentation strategies."
 authors = [
     { name = "Francois Vanderseypen (Orbifold Consulting)", email = "swa@orbifold.net" }
@@ -24,6 +24,7 @@ dependencies = [
     "anthropic>=0.72.0",
     "lxml>=6.0.2",
     "typer>=0.20.0",
+    "rdflib>=7.5.0",
 ]
 
 [dependency-groups]
