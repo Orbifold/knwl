@@ -1,7 +1,9 @@
+import pytest
 from typer.testing import CliRunner
 import importlib
 import json
-
+pytestmark = pytest.mark.cli
+    
 
 def test_cli_has_main():
 
