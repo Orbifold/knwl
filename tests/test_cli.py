@@ -162,3 +162,14 @@ def test_graph_type_nodes():
     assert len(nodes) > 0
     found = [u for u in nodes if u["name"] == "John Field"]
     assert len(found) > 0
+
+def test_log_list():
+    """
+    The log list command should run and return log items.
+    """
+
+    module = importlib.import_module("knwl.cli.cli")
+    runner = CliRunner()
+    result = runner.invoke(module.app, ["log", "list"])
+    assert result.exit_code == 0
+    assert "No log items found." in result.stdout or "- " in result.stdout 

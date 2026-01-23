@@ -1,5 +1,6 @@
 import logging
 from logging.handlers import RotatingFileHandler
+import os
 
 from knwl.framework_base import FrameworkBase
 from knwl.utils import get_full_path
@@ -44,12 +45,23 @@ class Log(FrameworkBase):
         - If logging is disabled, messages are printed to stdout instead
         - This class does not use the DI `defaults` mechanism for configuration since this would create a circular dependency.
     """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         config = kwargs.get("override", None)
-        self.enabled = self.get_param(["logging", "enabled"], args, kwargs, default=True, override=config)
-        self.logging_level = self.get_param(["logging", "level"], args, kwargs, default="INFO", override=config)
-        self.path = self.get_param(["logging", "path"], args, kwargs, default="$/user/default/knwl.log", override=config)
+        self.enabled = self.get_param(
+            ["logging", "enabled"], args, kwargs, default=True, override=config
+        )
+        self.logging_level = self.get_param(
+            ["logging", "level"], args, kwargs, default="INFO", override=config
+        )
+        self.path = self.get_param(
+            ["logging", "path"],
+            args,
+            kwargs,
+            default="$/user/default/knwl.log",
+            override=config,
+        )
         self.path = get_full_path(self.path)
 
         # Initialize logger
@@ -68,7 +80,9 @@ class Log(FrameworkBase):
             else:
                 self.info(str(arg0))
         else:
-            raise ValueError("You can only call the log directly with an exception or message.")
+            raise ValueError(
+                "You can only call the log directly with an exception or message."
+            )
 
     def setup_logging(self):
         """Set up both file and console logging"""
@@ -85,7 +99,13 @@ class Log(FrameworkBase):
 
     def get_logging_level(self):
         """Convert string level to logging constant"""
-        level_map = {"DEBUG": logging.DEBUG, "INFO": logging.INFO, "WARNING": logging.WARNING, "ERROR": logging.ERROR, "CRITICAL": logging.CRITICAL}
+        level_map = {
+            "DEBUG": logging.DEBUG,
+            "INFO": logging.INFO,
+            "WARNING": logging.WARNING,
+            "ERROR": logging.ERROR,
+            "CRITICAL": logging.CRITICAL,
+        }
 
         if self.logging_level not in level_map:
             raise ValueError(f"Invalid LOGGING_LEVEL: {self.logging_level}")
@@ -95,12 +115,16 @@ class Log(FrameworkBase):
     def setup_file_logging(self, level) -> None:
         """Set up rotating file handler"""
         try:
-            file_handler = RotatingFileHandler(self.path, maxBytes=10 * 1024 * 1024,  # 10MB per file
+            file_handler = RotatingFileHandler(
+                self.path,
+                maxBytes=10 * 1024 * 1024,  # 10MB per file
                 backupCount=5,  # Keep 5 backup files
                 delay=True,  # Only create log file when needed
             )
 
-            formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+            formatter = logging.Formatter(
+                "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+            )
             file_handler.setFormatter(formatter)
             file_handler.setLevel(level)
 
@@ -158,16 +182,72 @@ class Log(FrameworkBase):
             self.logger.exception(e)
         else:
             import traceback
+
             print(f"EXCEPTION: {e}")
             traceback.print_exc()
 
     def shutdown(self) -> None:
         """Shuts down the logging system"""
         if self.logger:
-            for handler in self.logger.handlers[:]:  # Copy list to avoid modification during iteration
+            for handler in self.logger.handlers[
+                :
+            ]:  # Copy list to avoid modification during iteration
                 handler.close()
                 self.logger.removeHandler(handler)
             print("Logging system shut down successfully.")
 
+    def list_items(self, severity=None, amount: int = 10) -> list[str]:
+        """
+        Returns a list of log entries from the log file.
+
+        Args:
+            severity: Optional severity level to filter by (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+            amount: Maximum number of log entries to return (default: 10)
+
+        Returns:
+            List of log entry strings, newest first
+        """
+        try:
+            if not self.path or not os.path.exists(self.path):
+                return []
+
+            with open(self.path, "r") as f:
+                lines = f.readlines()
+
+            # Filter by severity if provided
+            if severity:
+                severity_upper = severity.upper()
+                if severity_upper not in [
+                    "DEBUG",
+                    "INFO",
+                    "WARNING",
+                    "ERROR",
+                    "CRITICAL",
+                ]:
+                    raise ValueError(f"Invalid severity level: {severity}")
+                lines = [line for line in lines if severity_upper in line]
+
+            # Return last 'amount' items, reversed to show newest first
+            return [line.strip() for line in lines[-amount:]][::-1]
+
+        except Exception as e:
+            self.error(f"Failed to read log items: {e}")
+            return []
+
+    def clear_log(self) -> None:
+        """
+        Clears the log file by truncating its contents.
+        """
+        try:
+            if not self.path or not os.path.exists(self.path):
+                return
+
+            with open(self.path, "w") as f:
+                f.truncate(0)
+
+            self.info("Log file cleared.")
+
+        except Exception as e:
+            self.error(f"Failed to clear log file: {e}")
 
 log = Log()

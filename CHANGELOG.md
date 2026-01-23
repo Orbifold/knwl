@@ -1,7 +1,7 @@
 # Changelog
 
 ## v1.8.2
-- **feature**: lots more CLI
+- **feature**: CLI command to view log entries
 
 ## v1.8.1
 

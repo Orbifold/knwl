@@ -19,6 +19,7 @@ The Knwl CLI provides several command groups to interact with the Knwl knowledge
 - `ask`: Ask questions to the knowledge base using natural language.
 - `extract`: Extract knowledge from text without ingesting it into the database.
 - `add` / `ingest`: Ingest knowledge from text into the knowledge graph.
+- `log`: View and manage Knwl log entries.
 
 ## Info and Configuration Commands
 
@@ -114,6 +115,7 @@ which will return the total number of nodes in the graph. You can also count edg
 ```bash
 knwl graph count edges
 ```
+
 Like other commands, you can use the `--raw` or `-r` flag to get raw JSON output.
 
 ## Chat Commands
@@ -173,14 +175,43 @@ This will return nodes that are semantically similar to "George Washington" alon
 ```bash
 knwl similar "George Washington"
 ```
+
 To find nodes matching specific properties (name and description), you can use:
 
 ```bash
 knwl graph find "George Washington"
 ```
-or 
+
+or
 
 ```bash
 knwl find "George Washington"
 ```
+
 This does not return similarity scores but only nodes that match the given text in their properties.
+
+## Log Commands
+
+The `log` command group allows you to view and manage Knwl log entries. You can list log items with:
+
+```bash
+knwl log list
+```
+
+By default, this will return the 10 most recent log items in a pretty-printed table format. If you want to specify a different number of log items to list, you can use the `--amount` or `-a` option:
+
+```bash
+knwl log list --amount 20
+```
+
+You can also get the raw JSON output of the log items by using the `--raw` or `-r` flag:
+
+```bash
+knwl log list --raw
+```
+
+You can filter log items by severity level using the `--severity` or `-s` option:
+
+```bash
+knwl log list --severity ERROR
+```
