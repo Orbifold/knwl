@@ -26,6 +26,7 @@ dependencies = [
     "typer>=0.20.0",
     "rdflib>=7.5.0",
     "pydot>=4.0.1",
+    "accelerate>=1.12.0",
 ]
 
 [dependency-groups]
@@ -58,3 +59,4 @@ build-backend = "hatchling.build"
 [project.scripts]
 knwl = "knwl.cli.cli:app"
 tests="tests.run:main"
+benchmark="benchmarks.run:main"

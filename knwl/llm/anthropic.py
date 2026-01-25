@@ -81,13 +81,20 @@ class AnthropicClient(LLMBase):
             if cached is not None:
                 return cached
         start_time = time.time()
-        response = await self.client.messages.create(
-            messages=messages,
-            model=self.model,
-            max_tokens=self.context_window,
-            temperature=self.temperature,
-            thinking="enabled" if think else "disabled",
-        )
+        
+        # Build request parameters
+        request_params = {
+            "messages": messages,
+            "model": self.model,
+            "max_tokens": self.context_window,
+            "temperature": self.temperature,
+        }
+        
+        # Only include thinking parameter when enabled
+        if think:
+            request_params["thinking"] = {"type": "enabled", "budget_tokens": 1024}
+        
+        response = await self.client.messages.create(**request_params)
         end_time = time.time()
         content = response.content[0].text
         answer = KnwlAnswer(

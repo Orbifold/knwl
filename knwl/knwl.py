@@ -17,7 +17,7 @@ from knwl.models.KnwlEdge import KnwlEdge
 from knwl.models.KnwlGraph import KnwlGraph
 from knwl.models.KnwlNode import KnwlNode
 from knwl.services import Services
-
+from knwl.logging import log
 
 class PromptType(Enum):
     EXTRACTION = "extraction"
@@ -33,15 +33,27 @@ class Knwl:
     The default configuration behind this API stores everything under the user's home directory in a '.knwl' folder. There is an extensive configuration and dependency injection system behind Knwl that can be used to customize its behavior, but this class abstracts most of that away for simple use cases. It's an invitation to explore the rest of Knwl's capabilities.
     """
 
-    def __init__(self, namespace: str = "default"):
+   
+    def __init__(
+        self,
+        namespace: str = "default",
+        llm: Optional[str] = None,
+        model: Optional[str] = None,
+        override: Optional[dict] = None,
+        enable_logging: bool = True,
+    ):
         """
         Initialize Knwl with optionally the name of knowledge space.
         """
-
+        self._llm_provider = (
+            llm or "ollama"
+        )  # makes Ollama the default LLM provider within this class, but not for Kwnl as a framework
+        self._model = model
         self._llm = None
         self._namespace = namespace
+
         self._config = get_custom_config(
-            namespace
+            namespace, llm_provider=llm, llm_model=model, override=override
         )
         set_active_config(self._config)  # override the whole config
         # tricky thing here: if you use multiple Knwl instances they will share the singletons if accessed via a single global Services instance
@@ -49,6 +61,7 @@ class Knwl:
         self.grag: GraphRAG = services.create_service(
             "graph_rag"
         )  # grag is not a typo but an acronym for Graph RAG
+        log.enabled = enable_logging
 
     @property
     def namespace(self):

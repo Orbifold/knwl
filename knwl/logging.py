@@ -49,7 +49,7 @@ class Log(FrameworkBase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         config = kwargs.get("override", None)
-        self.enabled = self.get_param(
+        self._enabled = self.get_param(
             ["logging", "enabled"], args, kwargs, default=True, override=config
         )
         self.logging_level = self.get_param(
@@ -66,9 +66,37 @@ class Log(FrameworkBase):
 
         # Initialize logger
         self.logger = None
-        if self.enabled:
+        if self._enabled:
             self.logger = logging.getLogger("knwl")
             # Prevent adding duplicate handlers
+            if not self.logger.handlers:
+                self.setup_logging()
+
+    @property
+    def enabled(self) -> bool:
+        """
+        Get the current logging enabled state.
+        
+        Returns:
+            bool: True if logging is enabled, False otherwise
+        """
+        return self._enabled
+
+    @enabled.setter
+    def enabled(self, value: bool) -> None:
+        """
+        Enable or disable logging at runtime.
+        
+        When disabled, log messages will be printed to stdout instead of being logged to file.
+        When re-enabled, the logger will be reinitialized if needed.
+        
+        Args:
+            value (bool): True to enable logging, False to disable
+        """
+        self._enabled = value
+        if value and not self.logger:
+            # Re-initialize logger if it was previously disabled
+            self.logger = logging.getLogger("knwl")
             if not self.logger.handlers:
                 self.setup_logging()
 
@@ -147,38 +175,38 @@ class Log(FrameworkBase):
             print(f"Failed to set up console logging: {e}")
 
     def info(self, message: str) -> None:
-        if self.logger:
+        if self._enabled and self.logger:
             self.logger.info(message)
-        else:
-            print(f"INFO: {message}")
+        # else:
+        #     print(f"INFO: {message}")
 
     def error(self, message: str) -> None:
-        if self.logger:
+        if self._enabled and self.logger:
             self.logger.error(message)
         else:
             print(f"ERROR: {message}")
 
     def warning(self, message: str) -> None:
-        if self.logger:
+        if self._enabled and self.logger:
             self.logger.warning(message)
         else:
             print(f"WARNING: {message}")
 
     def warn(self, message: str) -> None:
-        if self.logger:
+        if self._enabled and self.logger:
             self.logger.warning(message)
         else:
             print(f"WARNING: {message}")
 
     def debug(self, message: str) -> None:
-        if self.logger:
+        if self._enabled and self.logger:
             self.logger.debug(message)
         else:
             print(f"DEBUG: {message}")
 
     def exception(self, e: Exception) -> None:
         """Logs an exception with traceback"""
-        if self.logger:
+        if self._enabled and self.logger:
             self.logger.exception(e)
         else:
             import traceback

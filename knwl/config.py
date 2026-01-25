@@ -208,7 +208,7 @@ _default_config = {
             "path": "$/user/default/llm_cache.json",
         },
     },
-    "logging": {"enabled": True, "level": "INFO", "path": "$/user/default/knwl.log"},
+    "logging": {"enabled": True, "level": "ERROR", "path": "$/user/default/knwl.log"},
     "rag_store": {
         "default": "user",
         "user": {
@@ -622,6 +622,7 @@ def get_custom_config(
     llm_provider: str = None,
     llm_model: str = None,
     override: Optional[dict] = None,
+    logging_enabled: bool = True,
 ) -> dict:
     """
     Get the configuration dictionary adjusted for a specific namespace, LLM provider and LLM model.
