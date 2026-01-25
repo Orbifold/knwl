@@ -130,7 +130,7 @@ class Knwl:
             prompt = prompts.rag.grag_ask(
                 question=input.text, augmentation=augmentation
             )
-            found = await self.llm.ask(prompt)
+            found = await self.llm.ask(prompt, think=False)
             return found
 
     async def add_fact(
@@ -276,7 +276,7 @@ class Knwl:
         Simple LLM QA without knowledge graph.
         This uses the default LLM service configured.
         """
-        found = await self.llm.ask(question)
+        found = await self.llm.ask(question, think=False)
         return found or KnwlAnswer.none()
 
     async def chunk(self, doc: str | KnwlDocument) -> list[KnwlChunk]:

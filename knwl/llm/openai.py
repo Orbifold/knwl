@@ -81,6 +81,7 @@ class OpenAIClient(LLMBase):
         extra_messages: list[dict] = None,
         key: str = None,
         category: str = None,
+        think: bool = False,
     ) -> KnwlAnswer:
         messages = self.assemble_messages(question, system_message, extra_messages)
         if isinstance(messages, str):
@@ -92,7 +93,9 @@ class OpenAIClient(LLMBase):
                 return cached
         start_time = time.time()
         found = await self.client.chat.completions.create(
-            messages=messages, model=self.model
+            messages=messages,
+            model=self.model,
+            reasoning_effort="none" if think else "medium",
         )
         end_time = time.time()
         content = found.choices[0].message.content

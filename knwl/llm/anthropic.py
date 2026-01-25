@@ -70,6 +70,7 @@ class AnthropicClient(LLMBase):
         extra_messages: list[dict] = None,
         key: str = None,
         category: str = None,
+        think: bool = False,
     ) -> KnwlAnswer:
         messages = self.assemble_messages(question, system_message, extra_messages)
         if isinstance(messages, str):
@@ -81,10 +82,11 @@ class AnthropicClient(LLMBase):
                 return cached
         start_time = time.time()
         response = await self.client.messages.create(
-            messages=messages, 
+            messages=messages,
             model=self.model,
             max_tokens=self.context_window,
             temperature=self.temperature,
+            thinking="enabled" if think else "disabled",
         )
         end_time = time.time()
         content = response.content[0].text

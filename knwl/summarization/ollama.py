@@ -60,5 +60,5 @@ class OllamaSummarization(SummarizationBase):
                 description, entity_or_relation_name
             )
         )
-        resp = await self.llm.ask(use_prompt)
+        resp = await self.llm.ask(use_prompt, think=False)
         return resp.answer

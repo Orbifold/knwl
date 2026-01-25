@@ -72,7 +72,7 @@ class BasicEntityExtraction(EntityExtractionBase):
             return None
         extraction_prompt = self.get_extraction_prompt(text, entity_types=entities)
         found = await self._llm.ask(
-            question=extraction_prompt, key=text, category="entity-extraction"
+            question=extraction_prompt, key=text, category="entity-extraction", think=False
         )
         if not found or found.answer.strip() == "":
             return None
@@ -107,7 +107,7 @@ class BasicEntityExtraction(EntityExtractionBase):
             return None
         extraction_prompt = self.get_extraction_prompt(text, entity_types=entities)
         found = await self._llm.ask(
-            question=extraction_prompt, key=text, category="entity-extraction"
+            question=extraction_prompt, key=text, category="entity-extraction", think=False
         )
         if not found or found.answer.strip() == "":
             return None

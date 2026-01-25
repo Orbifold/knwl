@@ -5,6 +5,7 @@
 - **breaking**: Knwl class constructor does not allow to specify LLM provider/model anymore. Use the `set_config_value` function to set LLM provider/model. See the `QuickStart.md` for more details.
 - **feature**: Knwl CLI now has backup/restore for the config. Use `knwl config backup` and `knwl config restore` commands.
 - **feature**: Knwl CLI exports the knowledge graph in DOT format. Use `knwl graph export --format dot > graph.dot` command. To render the DOT file to an image, you can use Graphviz: `dot -Kneato -Tpng graph.dot -o graph.png`.
+- **feature**: `think` parameter added to LLM ask methods to enable/disable "thinking" mode for supported LLMs.
 
 ## v1.8.2
 

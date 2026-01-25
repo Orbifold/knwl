@@ -32,7 +32,7 @@ class BasicGraphExtraction(GraphExtractionBase):
         if not text or text.strip() == "":
             return None
         extraction_prompt = self.get_extraction_prompt(text, entity_types=entities)
-        found = await self.llm.ask(question=extraction_prompt, key=text, category="graph-extraction")
+        found = await self.llm.ask(question=extraction_prompt, key=text, category="graph-extraction", think=False)
         if not found or found.answer.strip() == "":
             return None
         return answer_to_records(found.answer)

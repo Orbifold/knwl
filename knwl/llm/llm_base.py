@@ -16,7 +16,8 @@ class LLMBase(FrameworkBase, ABC):
         system_message: str = None,
         extra_messages: list[dict] = None,
         key: str = None,
-        category: str = None
+        category: str = None,
+        think: bool = False,
     ) -> KnwlAnswer:
         """
         Asynchronously sends a question to the LLM and returns the response.
@@ -32,6 +33,8 @@ class LLMBase(FrameworkBase, ABC):
                 If None, uses the default key configured for the LLM. Defaults to None.
             category (str, optional): A category label for the question, used for tracking or filtering purposes. 
                 Defaults to None.
+            think (bool, optional): Whether the LLM should "think" before answering, enabling more complex reasoning. 
+                Defaults to False.
 
         Returns:
             KnwlLLMAnswer: An object containing the LLM's response and associated metadata.

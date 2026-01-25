@@ -64,6 +64,7 @@ class OllamaClient(LLMBase):
         extra_messages: list[dict] = None,
         key: str = None,
         category: str = None,
+        think: bool = False,
     ) -> KnwlAnswer:
         if not question:
             log.warn("OllamaClient: ask called with empty question.")
@@ -78,6 +79,7 @@ class OllamaClient(LLMBase):
                 return cached
         start_time = time.time()
         response = self.client.chat(
+            think=think, # https://ollama.com/blog/thinking
             model=self._model,
             messages=messages,
             options={"temperature": self._temperature, "num_ctx": self._context_window},

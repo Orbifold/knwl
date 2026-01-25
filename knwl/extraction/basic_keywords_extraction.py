@@ -34,7 +34,7 @@ class BasicKeywordsExtraction(KeywordsExtractionBase):
 
     async def extract(self, text: str, chunk_id: str = None) -> KnwlKeywords | None:
         prompt = prompts.extraction.keywords_extraction(text=text)
-        result = await self.llm.ask(prompt)
+        result = await self.llm.ask(prompt, think=False)
 
         try:
             keywords_data = json.loads(result.answer)
