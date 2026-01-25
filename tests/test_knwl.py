@@ -22,7 +22,10 @@ async def test_quick_start():
     name_space = fake.word()
     print(f"\nUsing knowledge space: {name_space}\n")
     knwl = Knwl(name_space)
+    graph_config = await knwl.get_config("@/graph/user")
+    storage = NetworkXGraphStorage(path=graph_config["path"])
 
+    before_count = await storage.node_count()
     # add a fact
     await knwl.add_fact("gravity", "Gravity is a universal force that attracts two bodies toward each other.", id="fact1", )
     # where is the graph stored?
@@ -32,11 +35,9 @@ async def test_quick_start():
 
     # check if the fact exists
     assert (await knwl.node_exists("fact1")) is True
-    graph_config = await knwl.get_config("@/graph/user")
 
     # can also open the file directly and check this
-    storage = NetworkXGraphStorage(path=graph_config["path"])
-    assert await storage.node_count() == 1
+    assert await storage.node_count() == before_count + 1
     assert await storage.node_exists("fact1") is True
 
     # Note: you can go and double-click the graphml file to open it in a graph viewer like yEd to visualize the graph.
@@ -88,14 +89,7 @@ async def test_quick_start():
     a = await knwl.ask("What is photosynthesis?")
     print_knwl(a.answer)
 
-
-@pytest.mark.asyncio
-async def test_knwl_ask():
-    knwl = Knwl("swa", llm="ollama")
-    a = await knwl.ask("What is the capital of Tanzania?")
-    print_knwl(a)
-
-
+ 
 @pytest.mark.asyncio
 async def test_knwl_nodes():
     k = Knwl()
@@ -164,7 +158,7 @@ async def test_knwl_absolute_path():
     name = fake.word()
     namespace = f"~/knwl_{name}"
     actual_path = os.path.expanduser(namespace)
-    kg = Knwl(namespace=namespace, llm="ollama", model="gemma3:4b")
+    kg = Knwl(namespace=namespace)
     input = KnwlInput(id="", name="John", description="Test node for override config", text="John Field wrote amazing piano concertos.", )
     await kg.add(input)
     assert os.path.exists(os.path.join(actual_path, "vectors")) is True

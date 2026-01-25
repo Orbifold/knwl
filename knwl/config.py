@@ -185,6 +185,8 @@ _default_config = {
             "caching_service": "@/llm_caching/user",
             "temperature": 0.1,
             "context_window": 32768,
+            "api_key": os.getenv("OPENAI_API_KEY", ""),
+            
         },
         "anthropic": {
             "class": "knwl.llm.anthropic.AnthropicClient",
@@ -325,6 +327,7 @@ def reset_config(save: Optional[bool] = False):
     This is an alias for `reset_active_config` to reset the active configuration to the default configuration.
     """
     reset_active_config(save=save)
+
 
 def merge_configs(override: dict, base_config: dict) -> dict:
     """
@@ -703,6 +706,7 @@ def merge_into_active_config(section: dict) -> dict:
     set_active_config(new_config)
     return copy.deepcopy(new_config)
 
+
 def set_config_value(
     value,
     *keys,
@@ -723,7 +727,9 @@ def set_config_value(
     """
     current_config = get_config(config=config, override=override)
     if len(keys) == 0:
-        raise ValueError("set_config_value: At least one key must be provided to set a value.")
+        raise ValueError(
+            "set_config_value: At least one key must be provided to set a value."
+        )
     if "/" in keys[0]:
         # split by /
         keys = tuple(u for u in keys[0].split("/") if u)
@@ -743,3 +749,43 @@ def set_config_value(
     new_config = current_config
     set_active_config(new_config, save=save)
     return copy.deepcopy(new_config)
+
+
+def backup_config(destination_path: str = None) -> str:
+    """
+    Backup the current active configuration to a specified file path in JSON format.
+
+    Args:
+        destination_path (str): The file path where the configuration backup will be saved.
+    """
+    config = get_active_config()
+    if destination_path is None:
+        destination_path = get_full_path("$/user/config_backup.json")
+    else:
+        destination_path = get_full_path(destination_path)
+        # ensure the directory exists
+        os.makedirs(os.path.dirname(destination_path), exist_ok=True)
+    with open(destination_path, "w") as f:
+        json.dump(config, f, indent=2)
+    return destination_path
+
+
+def restore_config(backup_path: str = None) -> str:
+    """
+    Restore the active configuration from a specified backup file path in JSON format.
+
+    Args:
+        backup_path (str): The file path from which the configuration backup will be restored.
+    """
+    if backup_path is None:
+        backup_path = get_full_path("$/user/config_backup.json")
+    else:
+        backup_path = get_full_path(backup_path)
+    if not os.path.exists(backup_path):
+        raise FileNotFoundError(
+            f"Backup file '{backup_path}' does not exist, nothing to restore."
+        )
+    with open(backup_path, "r") as f:
+        config = json.load(f)
+    set_active_config(config, save=True)
+    return backup_path

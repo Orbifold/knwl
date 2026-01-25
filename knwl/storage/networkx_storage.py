@@ -1114,7 +1114,13 @@ class NetworkXGraphStorage(GraphStorageBase):
             props = ", ".join(
                 [f"{k}: {json.dumps(v, ensure_ascii=False)}" for k, v in data.items()]
             )
-            type_label = data.get("type", "Node").upper().replace(" ", "_").replace(".", "").replace("-", "_")
+            type_label = (
+                data.get("type", "Node")
+                .upper()
+                .replace(" ", "_")
+                .replace(".", "")
+                .replace("-", "_")
+            )
             cypher_statements.append(f"CREATE (n:{type_label} {{id:'{id}', {props}}});")
 
         # Create edges
@@ -1132,12 +1138,51 @@ class NetworkXGraphStorage(GraphStorageBase):
             target_id = node_dic.get(v)
             if source_id is None or target_id is None:
                 continue  # skip edges with missing nodes
-            type_label = data.get("type", "EDGE").upper().replace(" ", "_").replace(".", "").replace("-", "_")
+            type_label = (
+                data.get("type", "EDGE")
+                .upper()
+                .replace(" ", "_")
+                .replace(".", "")
+                .replace("-", "_")
+            )
             cypher_statements.append(f"MATCH (a {{id:'{source_id}'}})")
             cypher_statements.append(f"MATCH (b {{id:'{target_id}'}})")
             cypher_statements.append(f"CREATE (a)-[:{type_label} {{ {props} }}]->(b);")
 
         return "\n".join(cypher_statements)
+
+    async def to_graphml(self) -> str:
+        """
+        Export the knowledge graph in GraphML format.
+        """
+        buf = io.StringIO()
+        nx.write_graphml(self.graph, buf, infer_numeric_types=True)
+        return buf.getvalue()
+
+    async def to_dot(self) -> str:
+        """
+        Export the knowledge graph in DOT format.
+
+        pydot.Node has a positional `name` argument. If node attribute dicts include
+        a `name` key, pydot will receive the `name` value twice (positional + kw), which
+        raises "TypeError: Node.__init__() got multiple values for argument 'name'".
+
+        To avoid this, operate on a deep copy of the graph and remove any `name` keys
+        from node attribute dicts before converting to pydot.
+        """
+        from networkx.drawing.nx_pydot import to_pydot
+        import copy as _copy
+
+        # Work on a deep copy to avoid mutating the stored graph
+        g_copy = _copy.deepcopy(self.graph)
+
+        # Remove attributes that conflict with pydot.Node signature
+        for _, attrs in g_copy.nodes(data=True):
+            if "name" in attrs:
+                attrs.pop("name", None)
+
+        pydot_graph = to_pydot(g_copy)
+        return pydot_graph.to_string()
 
     async def export_graph(self, format: str = "json") -> str:
         """
@@ -1154,6 +1199,10 @@ class NetworkXGraphStorage(GraphStorageBase):
             return self.to_rdf(format=format)
         elif format == "cypher":
             return self.to_cypher()
+        elif format == "graphml":
+            return await self.to_graphml()
+        elif format == "dot":
+            return await self.to_dot()
         else:
             raise ValueError(
                 f"Unsupported export format '{format}'. Supported formats: json, csv, ttl, ntriples, xml, cypher"

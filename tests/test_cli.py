@@ -1,3 +1,4 @@
+from time import time
 import pytest
 from typer.testing import CliRunner
 import importlib
@@ -175,3 +176,39 @@ def test_log_list():
     result = runner.invoke(module.app, ["log", "list"])
     assert result.exit_code == 0
     assert "No log items found." in result.stdout or "- " in result.stdout 
+
+def test_direct():
+    """
+    The direct command should run and return a response.
+    """
+
+    module = importlib.import_module("knwl.cli.cli")
+    runner = CliRunner()
+    # First, back up the current config
+    runner.invoke(
+        module.app,
+        ["config", "backup", "-p", f"$/user/test_backup_{int(time())}.json"],
+    )  
+    # change the LLM
+    choices = ["gemma3:4b", "qwen2.5:7b", "llama3.1:latest"]
+    pick = int(time()) % len(choices)
+    names = ["Gemma", "Qwen", "Llama"]
+    model = choices[pick]
+    name = names[pick]
+    runner.invoke(
+        module.app,
+        ["config", "set", "llm.ollama.model", model],
+    )  
+    # direct ask
+    result = runner.invoke(
+        module.app,
+        ["direct", "-r","Who are you?"],
+    )  
+    assert result.exit_code == 0
+    response = json.loads(result.stdout.replace("\n", ""))["answer"]
+    assert name.lower() in response.lower()
+    print("Direct response:", response  )
+    runner.invoke(
+        module.app,
+        ["config", "restore", "-p", f"$/user/test_backup_{int(time())}.json"],
+    )  

@@ -147,9 +147,16 @@ def simple_ask(
             help="A direct question to the LLM without augmentation, ie. without the knowledge graph.",
         ),
     ],
+    raw: Annotated[
+        bool,
+        typer.Option("--raw", "-r", help="Return raw JSON rather than pretty print"),
+    ] = False,
 ) -> None:
     """Asks a question to the knowledge base and returns the answer as a string."""
     answer = asyncio.run(K.simple_ask(question))
+    if raw:
+        console.print(json.dumps(answer.model_dump(), indent=2))
+        return
     console.print(
         Panel(Padding(Markdown(answer.answer), (1, 2)), title="Direct LLM Answer")
     )
@@ -164,9 +171,13 @@ def direct_ask(
             help="A direct question to the LLM without augmentation, ie. without the knowledge graph.",
         ),
     ],
+    raw: Annotated[
+        bool,
+        typer.Option("--raw", "-r", help="Return raw JSON rather than pretty print"),
+    ] = False,
 ) -> None:
     """Alias for 'simple' command."""
-    simple_ask(question)
+    simple_ask(question, raw=raw)
 
 
 @app.callback(invoke_without_command=True)

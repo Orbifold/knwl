@@ -7,7 +7,11 @@ python -m pip install --upgrade pipx
 python -m pipx install .
 ```
 
-It keeps the CLI isolated from system Python packages and uses its own virtual environment.
+It keeps the CLI isolated from system Python packages and uses its own virtual environment. If you had it installed before, you can upgrade it with:
+
+```
+python -m pipx install --force knwl
+```
 
 ## CLI Overview
 
@@ -93,6 +97,18 @@ This will be saved to your user configuration file. If you want to reset the con
 knwl config reset
 ```
 
+In case you want to backup your current configuration, you can use the `backup` command:
+
+```bash
+knwl config backup --path ./backups/
+```
+or simply
+
+```bash
+knwl config backup
+```
+to save to the default location.
+
 ## Graph Commands
 
 The `graph` command group allows you to inspect the knowledge graph stored in Knwl. You can list all node and edges types with:
@@ -137,6 +153,19 @@ knwl graph export --format csv > knowledge_graph.txt
 
 **Important**: the csv export is necessarily two files, one for nodes and one for edges, so the above command will only save both into a text file. You can find the two set delimited by `--- NODES ---` and `--- EDGES ---` headers.
 
+The dot format can be exported with:
+
+```bash
+knwl graph export --format dot > graph.dot
+```
+You need [GraphViz](https://graphviz.org) installed to render the DOT file to an image, you can do this with:
+
+```bash
+dot -Kneato -Tpng graph.dot -o graph.png
+```
+On MacOS you can [install GraphViz via Homebrew](https://formulae.brew.sh/formula/graphviz) `brew install graphviz`.
+
+
 The supported export formats are:
 
 - `json`: Exports the graph as a JSON object containing nodes and edges.
@@ -144,6 +173,8 @@ The supported export formats are:
 - `ttl`: Exports the graph in Turtle (TTL) format for RDF data.
 - `ntriples`: Exports the graph in N-Triples format for RDF data.
 - `xml`: Exports the graph in RDF/XML format.
+- `graphml`: Exports the graph in GraphML format.
+- `dot`: Exports the graph in DOT format.
 - `cypher`: Exports the graph as Cypher commands for use with Neo4j.
 
 You can simply copy/paste the saved Cypher commands into a Neo4j browser to recreate the graph there. Similarly, the RDF formats can be imported into any RDF triple store (e.g. [Apache Jena](https://jena.apache.org), [qlever](https://github.com/ad-freiburg/qlever) and more).

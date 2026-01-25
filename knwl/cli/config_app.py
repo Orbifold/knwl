@@ -2,7 +2,13 @@ import json
 from typing_extensions import Annotated
 from knwl.knwl import Knwl
 import typer
-from knwl.config import get_config, resolve_config, set_config_value
+from knwl.config import (
+    backup_config,
+    get_config,
+    resolve_config,
+    restore_config,
+    set_config_value,
+)
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
@@ -32,7 +38,8 @@ def reset_configuration():
     console.print("[green]Configuration reset to default and saved.[/]")
 
 
-@config_app.command("set",
+@config_app.command(
+    "set",
     help="Set a configuration value.",
     epilog="Example:\n  knwl config set 'llm.ollama.model' 'custom_model:1b'",
 )
@@ -41,9 +48,7 @@ def set_configuration(
     keys: list[str] = typer.Argument(
         None, help="Config key path (e.g. 'llm.ollama.model' or 'llm ollama model')"
     ),
-    value: str = typer.Argument(
-        ..., help="Value to set the configuration key to"
-    ),
+    value: str = typer.Argument(..., help="Value to set the configuration key to"),
 ):
     """
     Sets a configuration value.
@@ -60,9 +65,11 @@ def set_configuration(
     console.print(f"[green]Configuration key '{'.'.join(keys)}' set to '{value}'.[/]")
 
 
-@config_app.command("get",
+@config_app.command(
+    "get",
     help="Get a configuration value.",
-    epilog="Example:\n  knwl config get 'llm.ollama.model'")
+    epilog="Example:\n  knwl config get 'llm.ollama.model'",
+)
 def get_configuration(
     ctx: typer.Context,
     keys: list[str] = typer.Argument(
@@ -113,9 +120,11 @@ def get_configuration(
             console.print(value)
 
 
-@config_app.command("tree",
+@config_app.command(
+    "tree",
     help="Show the configuration as a tree.",
-    epilog="Example:\n  knwl config tree")
+    epilog="Example:\n  knwl config tree",
+)
 def tree(
     ctx: typer.Context,
     raw: Annotated[
@@ -183,9 +192,11 @@ def tree(
     console.print(Panel(Padding(root, (1, 2)), title="Configuration Tree"))
 
 
-@config_app.command("summary",
+@config_app.command(
+    "summary",
     help="Show a summary of the current configuration.",
-    epilog="Example:\n  knwl config summary")
+    epilog="Example:\n  knwl config summary",
+)
 def summary(
     ctx: typer.Context,
     raw: Annotated[
@@ -241,6 +252,51 @@ def summary(
     console.print(
         Panel(Padding(Text.from_ansi(captured), (1, 2)), title="Configuration Summary")
     )
+
+
+@config_app.command(
+    "backup",
+    help="Backup the current configuration to a timestamped file.",
+    epilog="Example:\n  knwl config backup --path ./knwl_backup.json",
+)
+def backup(
+    ctx: typer.Context,
+    path: Annotated[
+        str,
+        typer.Option("--path", "-p", help="Path to save the backup file to"),
+    ] = None,
+):
+    """
+    Backup the current configuration to a timestamped file.
+    """
+
+    knwl = ctx.obj  # type: Knwl
+    backup_file = backup_config(destination_path=path)
+    console.print(f"[green]Configuration backed up to '{backup_file}'.[/]")
+
+
+@config_app.command(
+    "restore",
+    help="Restore the configuration from a backup file.",
+    epilog="Example:\n  knwl config restore --path ./knwl_backup.json",
+)
+def restore(
+    ctx: typer.Context,
+    path: Annotated[
+        str,
+        typer.Option("--path", "-p", help="Path to restore the backup file from"),
+    ] = None,
+):
+    """
+    Restore the configuration from a backup file.
+    """
+
+    knwl = ctx.obj  # type: Knwl
+    try:
+        backup_file = restore_config(backup_path=path)
+        console.print(f"[green]Configuration restored from '{backup_file}'.[/]")
+    except FileNotFoundError as e:
+        console.print(f"[red]{e}[/]")
 
 
 @config_app.command(

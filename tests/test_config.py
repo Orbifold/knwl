@@ -10,12 +10,18 @@ from knwl.config import (
     merge_into_active_config,
     set_config_value,
 )
-from knwl.config import resolve_reference, resolve_config, get_custom_config, reset_config
+from knwl.config import (
+    resolve_reference,
+    resolve_config,
+    get_custom_config,
+    reset_config,
+)
 from knwl.utils import get_full_path
 
 pytestmark = pytest.mark.basic
 
 reset_config(save=True)
+
 
 def test_config_get():
     config = {"a": {"b": {"c": 1}}}
@@ -292,7 +298,7 @@ def test_set_active_config():
     reset_active_config(save=False)
     assert get_config("x", "y") is None
     set_active_config({"x": {"y": 30}}, save=True)
-    
+
     # files should persist
     file_path = get_full_path("$/user/config.json")
     assert os.path.exists(file_path)
@@ -300,6 +306,7 @@ def test_set_active_config():
     reset_active_config(save=True)
     assert get_config("x", "y") is None
     assert not os.path.exists(file_path)
+
 
 def test_set_value():
     reset_active_config()
@@ -311,3 +318,8 @@ def test_set_value():
     assert get_config("llm", "ollama", "model") == "another_model:1b"
     assert os.path.exists(file_path)
     os.remove(file_path)
+
+    set_config_value("openai", "llm.default", save=True)
+    assert get_config("llm", "default") == "openai"
+    set_config_value("abc", "llm.openai.api_key", save=True)
+    assert get_config("llm", "openai", "api_key") == "abc"
