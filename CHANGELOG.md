@@ -6,6 +6,10 @@
 - **feature**: Knwl CLI exports the knowledge graph in DOT format. Use `knwl graph export --format dot > graph.dot` command. To render the DOT file to an image, you can use Graphviz: `dot -Kneato -Tpng graph.dot -o graph.png`.
 - **feature**: `think` parameter added to LLM ask methods to enable/disable "thinking" mode for supported LLMs.
 - **feature**: Benchmarking has been rewritten and extended. More user-friendly and added a summary output with key metrics.
+- **feature**: HuggingFace LLM implementation added. You can now use Knwl with transformers models from HuggingFace, no setup required.
+- **feature**: Wikipedia collector added to Knwl. You can now collect knowledge from Wikipedia articles.
+- **other**: benchmarking tells that gpt-oss:20b is the best Ollama model, so this is now the default.
+- **other**: default LLM changed to OpenAI's gpt-5-mini. Also based on the benchmarks, this is now the default LLM in Knwl.
 
 ## v1.8.2
 

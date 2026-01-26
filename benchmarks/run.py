@@ -21,25 +21,29 @@ console = Console()
 # Configuration
 # ============================================================================================
 models = {
-    # "ollama": ["qwen2.5:7b"],
     "ollama": [
-        # "qwen2.5:7b",
-        # "qwen2.5:14b",
-        # "qwen2.5:32b",
-        # "gemma3:4b",
-        # "gemma3:12b",
-        # "gemma3:27b",
-        # "llama3.1",
-        # "qwen3:8b",
-        # "qwen3:14b",
-        # "gpt-oss:20b",
-        # "mistral",
-        # "devstral-small-2:latest",
-        # "cogito:14b",
+        "qwen2.5:7b",
+        "qwen2.5:14b",
+        "qwen2.5:32b",
+        "gemma3:4b",
+        "gemma3:12b",
+        "gemma3:27b",
+        "llama3.1",
+        "qwen3:8b",
+        "qwen3:14b",
+        "gpt-oss:20b",
+        "mistral",
+        "devstral-small-2:latest",
+        "cogito:14b",
         "glm-4.7-flash:latest",
     ],
-    # "openai": ["gpt-5-mini", "gpt-5-nano-2025-08-07", "gpt-4.1-2025-04-14"],
-    # "anthropic": ["claude-sonnet-4-5-20250929", "claude-haiku-4-5-20251001"],
+    "openai": ["gpt-5-mini", "gpt-5-nano-2025-08-07", "gpt-5.2-2025-12-11"],
+    "anthropic": [
+        "claude-sonnet-4-5-20250929",
+        "claude-haiku-4-5-20251001",
+        "claude-opus-4-5-20251101",
+    ],
+    # "huggingface": ["HuggingFaceTB/SmolLM-1.7B-Instruct"], # it's horrendously slow
 }
 
 strategies = ["local", "global", "hybrid", "naive", "self", "none"]

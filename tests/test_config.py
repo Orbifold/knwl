@@ -36,7 +36,7 @@ def test_config_get():
         get_config("nonexistent", default="default_value", config=config)
         == "default_value"
     )
-    assert get_config("llm", "ollama", "model") == "qwen2.5:7b"
+    assert get_config("llm", "ollama", "model") == "gpt-oss:20b"
     assert get_config("llm", "ollama", "temperature") == 0.1
     assert get_config("llm", "ollama", "context_window") == 32768
     assert get_config("llm", "ollama", "caching_service") == "@/llm_caching/user"
@@ -66,7 +66,7 @@ def test_config_get():
         )
         == 0.56
     )
-    assert get_config("@/llm/ollama/model") == "qwen2.5:7b"
+    assert get_config("@/llm/ollama/model") == "gpt-oss:20b"
     assert get_config("@/a/b", override=config) == {"c": 1}
     assert get_config("@/a/b/", override=config) == {"c": 1}
     # should fetch the default if the reference is only the service name

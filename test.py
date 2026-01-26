@@ -56,25 +56,12 @@
 
 # print(response)
 # ============================================================================================
+from knwl.di import service
+from knwl.format import print_knwl
 
-import typer
-import json
-from typing import Optional
-
-def main():
-    name = typer.prompt("Name")
-    age = typer.prompt("Age", type=int)
-    email = typer.prompt("Email")
-    subscribe = typer.confirm("Subscribe to newsletter", default=True)
-
-    data = {
-        "name": name,
-        "age": age,
-        "email": email,
-        "subscribe": subscribe,
-    }
-
-    typer.echo(json.dumps(data, indent=2))
-
-if __name__ == "__main__":
-    typer.run(main)
+@service("llm", variant="huggingface")
+async def my_func(llm=None):
+    answer = await llm.ask("What is algebraic topology?")
+    print_knwl(answer)
+import asyncio
+asyncio.run(my_func())

@@ -164,10 +164,10 @@ _default_config = {
         },
     },
     "llm": {
-        "default": "ollama",
+        "default": "openai",
         "ollama": {
             "class": "knwl.llm.ollama.OllamaClient",
-            "model": "qwen2.5:7b",
+            "model": "gpt-oss:20b",
             "caching_service": "@/llm_caching/user",
             "temperature": 0.1,
             "context_window": 32768,
@@ -181,12 +181,11 @@ _default_config = {
         },
         "openai": {
             "class": "knwl.llm.openai.OpenAIClient",
-            "model": "gpt-4o-mini",
+            "model": "gpt-5-mini",
             "caching_service": "@/llm_caching/user",
             "temperature": 0.1,
             "context_window": 32768,
-            "api_key": os.getenv("OPENAI_API_KEY", ""),
-            
+            "api_key": os.getenv("OPENAI_API_KEY", "")            
         },
         "anthropic": {
             "class": "knwl.llm.anthropic.AnthropicClient",
@@ -195,6 +194,16 @@ _default_config = {
             "temperature": 0.1,
             "context_window": 4096,  # Max tokens for response (lower to avoid streaming requirement)
             "api_key": os.getenv("ANTHROPIC_API_KEY", ""),
+        },
+        "huggingface": {
+            "class": "knwl.llm.huggingface.HuggingFaceClient",
+            "model": "HuggingFaceTB/SmolLM-1.7B-Instruct",
+            # "model": "Qwen/Qwen2.5-7B-Instruct",
+            "caching_service": "@/llm_caching/user",
+            "temperature": 0.1,     
+            "context_window": 2048,
+            "device": None,  # Auto-detect: cuda, mps, or cpu
+            "api_key": os.getenv("HF_TOKEN", ""), # HF_TOKEN for gated models
         },
     },
     "llm_caching": {
