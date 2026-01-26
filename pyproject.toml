@@ -12,8 +12,7 @@ readme = "README.md"
 requires-python = ">=3.10,<3.13"
 
 dependencies = [
-   
-    "networkx>=3.4.2",   
+    "networkx>=3.4.2",
     "tiktoken>=0.8.0",
     "ollama>=0.4.7",
     "openai>=1.53.0",
@@ -22,7 +21,9 @@ dependencies = [
     "chromadb>=1.1.1",
     "anthropic>=0.72.0",
     "lxml>=6.0.2",
-    "typer>=0.20.0"  
+    "typer>=0.20.0",
+    "torch>=2.5.1"
+
 ]
 
 [dependency-groups]
@@ -42,21 +43,24 @@ s3 = [
      "boto3>=1.42.30"
 ]
 server = [
-    "fastapi>=0.101.1",
-    "uvicorn>=0.24.0"
+    "fastapi>=0.128.0",
+    "uvicorn>=0.40.0",
+    "fastmcp>=2.14.4",
+    "python-multipart>=0.0.20",
+    "taskiq>=0.12.1",
+    "taskiq-redis>=1.0.0"
 ]
 extra = [
     "transformers>=4.46.1",
     "accelerate>=1.12.0",
     "rdflib>=7.5.0",
-    "pydot>=4.0.1",
-    "torch>=2.5.1"
+    "pydot>=4.0.1"
 ]
 collect = [
     "wikipedia-api>=0.8.1"
 ]
 [project.urls]
-Homepage = "https://github.com/Orbifold/knwl"
+Homepage = "https://knwl.ai"
 Repository = "https://github.com/Orbifold/knwl"
 Documentation = "https://github.com/Orbifold/knwl"
 
@@ -68,3 +72,4 @@ build-backend = "hatchling.build"
 knwl = "knwl.cli.cli:app"
 tests="tests.run:main"
 knwl-benchmark="benchmarks.run:main"
+knwl-api="knwl.api.main:main"
