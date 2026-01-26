@@ -177,8 +177,8 @@ class Log(FrameworkBase):
     def info(self, message: str) -> None:
         if self._enabled and self.logger:
             self.logger.info(message)
-        # else:
-        #     print(f"INFO: {message}")
+        else:
+            print(f"INFO: {message}")
 
     def error(self, message: str) -> None:
         if self._enabled and self.logger:

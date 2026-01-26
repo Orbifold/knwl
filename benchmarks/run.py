@@ -23,21 +23,23 @@ console = Console()
 models = {
     # "ollama": ["qwen2.5:7b"],
     "ollama": [
-        "qwen2.5:7b",
-        #     "qwen2.5:14b",
-        #     "qwen2.5:32b",
-        #     "gemma3:4b",
-        #     "gemma3:12b",
-        #     "gemma3:27b",
-        #     "llama3.1",
-        #     "qwen3:8b",
-        #     "qwen3:14b",
-        #     "gpt-oss:20b",
-        #     "mistral",
+        # "qwen2.5:7b",
+        # "qwen2.5:14b",
+        # "qwen2.5:32b",
+        # "gemma3:4b",
+        # "gemma3:12b",
+        # "gemma3:27b",
+        # "llama3.1",
+        # "qwen3:8b",
+        # "qwen3:14b",
+        # "gpt-oss:20b",
+        # "mistral",
+        # "devstral-small-2:latest",
+        # "cogito:14b",
         "glm-4.7-flash:latest",
     ],
     # "openai": ["gpt-5-mini", "gpt-5-nano-2025-08-07", "gpt-4.1-2025-04-14"],
-    "anthropic": ["claude-sonnet-4-5-20250929", "claude-haiku-4-5-20251001"],
+    # "anthropic": ["claude-sonnet-4-5-20250929", "claude-haiku-4-5-20251001"],
 }
 
 strategies = ["local", "global", "hybrid", "naive", "self", "none"]
@@ -49,7 +51,7 @@ default_strategy = (
 # Using different facts of different nature can help to detect model strengths and weaknesses.
 # ============================================================================================
 facts = {
-    "biograph": """Hilbert, the first of two children and only son of Otto, a county judge, and Maria Therese Hilbert (née Erdtmann), the daughter of a merchant, was born in the Province of Prussia, Kingdom of Prussia, either in Königsberg, now Kaliningrad, (according to Hilbert's own statement) or in Wehlau (known since 1946 as Znamensk) near Königsberg where his father worked at the time of his birth. His paternal grandfather was David Hilbert, a judge and Geheimrat. His mother Maria had an interest in philosophy, astronomy and prime numbers, while his father Otto taught him Prussian virtues. After his father became a city judge, the family moved to Königsberg. David's sister, Elise, was born when he was six. He began his schooling aged eight, two years later than the usual starting age.
+    "biography": """Hilbert, the first of two children and only son of Otto, a county judge, and Maria Therese Hilbert (née Erdtmann), the daughter of a merchant, was born in the Province of Prussia, Kingdom of Prussia, either in Königsberg, now Kaliningrad, (according to Hilbert's own statement) or in Wehlau (known since 1946 as Znamensk) near Königsberg where his father worked at the time of his birth. His paternal grandfather was David Hilbert, a judge and Geheimrat. His mother Maria had an interest in philosophy, astronomy and prime numbers, while his father Otto taught him Prussian virtues. After his father became a city judge, the family moved to Königsberg. David's sister, Elise, was born when he was six. He began his schooling aged eight, two years later than the usual starting age.
 In late 1872, Hilbert entered the Friedrichskolleg Gymnasium (Collegium fridericianum, the same school that Immanuel Kant had attended 140 years before); but, after an unhappy period, he transferred to (late 1879) and graduated from (early 1880) the more science-oriented Wilhelm Gymnasium. Upon graduation, in autumn 1880, Hilbert enrolled at the University of Königsberg, the Albertina. In early 1882, Hermann Minkowski (two years younger than Hilbert and also a native of Königsberg but had gone to Berlin for three semesters), returned to Königsberg and entered the university. Hilbert developed a lifelong friendship with the shy, gifted Minkowski.""",
     "biomed": """Aspirin, also known as acetylsalicylic acid (ASA), is a medication used to reduce pain, fever, or inflammation. Specific inflammatory conditions which aspirin is used to treat include Kawasaki disease, pericarditis, and rheumatic fever. It has an antiplatelet effect and is often used in the prevention of heart attacks, strokes, and blood clots in people at high risk. Aspirin is also used as a component of some drug cocktails to treat tuberculosis. 
     Common side effects of aspirin include upset stomach, heartburn, and drowsiness. More serious side effects include stomach ulcers, gastrointestinal bleeding, and allergic reactions. Aspirin should not be used in children or teenagers with influenza or chickenpox due to the risk of Reye syndrome. Aspirin works by inhibiting the production of certain natural substances that cause inflammation and pain in the body. It is classified as a nonsteroidal anti-inflammatory drug (NSAID) and is related to other NSAIDs such as ibuprofen and naproxen.""",
@@ -138,6 +140,8 @@ def main():
         )
     )
     specs = collect()
+    if not specs:
+        return
     benchmark = Benchmark(
         models=specs["models"], facts=specs["facts"], strategy=specs["strategy"]
     )

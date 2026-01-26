@@ -27,7 +27,7 @@ class TestLog:
         """Test Log initialization with default settings"""
         log = Log()
         assert log.enabled is True
-        assert log.logging_level == "INFO"
+        assert log.logging_level == "ERROR"
         assert log.logger is not None
         assert log.logger.name == "knwl"
         log.shutdown()
@@ -161,7 +161,7 @@ class TestLog:
             log_path = Path(tmpdir) / "test.log"
             override = {"logging": {"path": str(log_path)}}
             log = Log(override=override)
-            log.info("Test message")
+            log.error("Error message")
             log.shutdown()
             assert log_path.exists()
 

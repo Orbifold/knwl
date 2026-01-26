@@ -59,4 +59,4 @@ build-backend = "hatchling.build"
 [project.scripts]
 knwl = "knwl.cli.cli:app"
 tests="tests.run:main"
-benchmark="benchmarks.run:main"
+knwl-benchmark="benchmarks.run:main"
