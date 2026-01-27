@@ -159,3 +159,12 @@ class WikipediaCollector:
 
         article = random.choice(library[category])
         return await WikipediaCollector.fetch_article(article)
+
+    @staticmethod
+    def take_random_wiki_title() -> str:
+        """
+        Returns a random Wikipedia article title from the library.
+        """
+        category = random.choice(list(library.keys()))
+        title = random.choice(library[category])
+        return title  

@@ -3,7 +3,7 @@ from fastapi import Request
 from knwl import KnwlParams, KnwlAnswer, KnwlContext
 
 from knwl.api.knwl_api.models.JobStatus import JobStatus, JobResponse
-from knwl.api.knwl_api.models.KnwlFact import KnwlFact
+from knwl.models.KnwlFact import KnwlFact
 from knwl.api.knwl_api.routes.kg import service
 
 router = APIRouter()

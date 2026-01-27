@@ -1,7 +1,7 @@
 from knwl import Knwl, KnwlInput, KnwlParams, KnwlAnswer, KnwlContext
 
 from knwl.api.knwl_api.models.JobStatus import JobStatus, JobState
-from knwl.api.knwl_api.models.KnwlFact import KnwlFact
+from knwl.models.KnwlFact import KnwlFact
 from knwl.api.knwl_api.taskiq_broker import broker
 
 knwl = Knwl()  # Initialize Knwl instance with default namespace

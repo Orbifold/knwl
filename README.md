@@ -206,6 +206,21 @@ uv init
 uv add --editable ../knwl
 ```
 
+There are many optional dependencies for Knwl. You can install them as needed. For example, to install the dependencies for graph databases and advanced LLMs, you can run:
+
+```bash
+uv add 'knwl[server,collect]'
+```
+and if you want to include all optional dependencies:
+
+```bash 
+uv add 'knwl[all]'
+```
+or 
+```bash
+uv sync --all-groups'
+```
+
 ## Formatting & Rendering
 
 KNWL provides sophisticated formatting utilities for beautiful output across multiple mediums: **terminal**, **HTML**, and **Markdown**. The formatting system is protocol-based and extensible, allowing custom formatters for any Pydantic model.

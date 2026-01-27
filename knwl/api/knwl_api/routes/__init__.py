@@ -1,7 +1,19 @@
 from fastapi import FastAPI
 
-from .kg import register_kg_routes
+from knwl.api.knwl_api.routes.collect import register_collect_routes
+from knwl.api.knwl_api.routes.kg import register_kg_routes
+from knwl.knwl import Knwl
+
+
+# one and only instance of Knwl for the API
+knwl = Knwl()
+
+
+def get_knwl() -> Knwl:
+    """ """
+    return knwl
 
 
 def register_routes(app: "FastAPI") -> None:
-    register_kg_routes(app)
+    # register_kg_routes(app)
+    register_collect_routes(app)

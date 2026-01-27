@@ -13,3 +13,4 @@ from knwl.di import (
 )
 from knwl.prompts import prompts
 from knwl.knwl import Knwl
+from knwl.collect import WikipediaCollector

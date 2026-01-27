@@ -34,7 +34,7 @@ app = FastAPI(
     title="Knwl API",
     summary="Knwl Web Services",
     version=knwl_version,
-    description="The Knwl class is just a basic example of how you can assemble a graph RAG gateway for ingestion and augmentation. This API is a wrapper around the Knwl class and can be used to interact with the knowledge graph.",
+    description="This API is a wrapper around the Knwl class and can be used to interact with your knowledge graph, see <a href='http://knwl.ai' target='_blank' title='Knwl AI'>http://knwl.ai</a>.",
     docs_url="/docs",
     redoc_url="/redoc",
     openapi_url="/api/openapi.json",
@@ -61,7 +61,7 @@ async def root():
     """
     Root endpoint that returns a welcome message.
     """
-    return JSONResponse(f"Knwl API v{knwl_version}", status_code=200)
+    return JSONResponse(f"Knwl API v{knwl_version}. Swagger at /docs and ReDoc at /redoc.", status_code=200)
 
 
 @app.get("/info", tags=["Info"])
@@ -69,16 +69,15 @@ async def info():
     """
     Info endpoint that returns project information.
     """
-    return JSONResponse(f"Knwl API v{knwl_version}", status_code=200)
+    return JSONResponse(f"Knwl API v{knwl_version}. Swagger at /docs and ReDoc at /redoc.", status_code=200)
 
 # app.add_middleware(BaseHTTPMiddleware, dispatch=authentication_middleware)
 register_routes(app)
 
 # Mount MCP app at root - it provides /mcp route
-app.mount("/", mcp_app)
+# app.mount("/", mcp_app)
 
 
 if __name__ == "__main__":
     import uvicorn
-
-    uvicorn.run(app, host="0.0.0.0", port=9030)
+    uvicorn.run(app, host="0.0.0.0", port=10000)

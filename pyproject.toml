@@ -59,6 +59,7 @@ extra = [
 collect = [
     "wikipedia-api>=0.8.1"
 ]
+
 [project.urls]
 Homepage = "https://knwl.ai"
 Repository = "https://github.com/Orbifold/knwl"
@@ -73,3 +74,4 @@ knwl = "knwl.cli.cli:app"
 tests="tests.run:main"
 knwl-benchmark="benchmarks.run:main"
 knwl-api="knwl.api.main:main"
+server="knwl.api.main:main" # alias for knwl-api
