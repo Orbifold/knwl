@@ -57,7 +57,8 @@ extra = [
     "pydot>=4.0.1"
 ]
 collect = [
-    "wikipedia-api>=0.8.1"
+    "markdownify>=1.2.2",
+    "wikipedia-api>=0.8.1",
 ]
 
 [project.urls]

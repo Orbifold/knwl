@@ -24,6 +24,7 @@ The Knwl CLI provides several command groups to interact with the Knwl knowledge
 - `extract`: Extract knowledge from text without ingesting it into the database.
 - `add` / `ingest`: Ingest knowledge from text into the knowledge graph.
 - `log`: View and manage Knwl log entries.
+- `collect`: Collect knowledge from external sources like Wikipedia or a URL.
 
 Most commands support a `--raw` or `-r` flag to return raw JSON output instead of pretty-printed tables, this allows you to easily pipe the output to other tools or scripts. For example, you write graph types stats to json like so:
 
@@ -276,4 +277,25 @@ You can filter log items by severity level using the `--severity` or `-s` option
 
 ```bash
 knwl log list --severity ERROR
+```
+
+## Collect Commands
+
+The following commands allow you to collect knowledge from external sources in order to ingest it into the Knwl knowledge graph.
+Note that you need to install the extra dependencies for this to work, you can do so via pipx with:
+
+```bash
+pipx install --include-deps knwl[collect]
+```
+
+The `collect` command group allows you to collect knowledge from external sources like Wikipedia or a URL. You can collect information from Wikipedia using:
+
+```bash
+knwl collect wiki "Quantum Computing"
+```
+
+This will fetch and ingest knowledge about "Quantum Computing" from Wikipedia into the Knwl knowledge graph. You can also collect information from a specific URL using:
+
+```bash
+knwl collect url "https://orbifold.net"
 ```
