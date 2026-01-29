@@ -1897,6 +1897,7 @@ dependencies = [
 
 [package.dev-dependencies]
 collect = [
+    { name = "beautifulsoup4" },
     { name = "markdownify" },
     { name = "wikipedia-api" },
 ]
@@ -1947,6 +1948,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 collect = [
+    { name = "beautifulsoup4", specifier = ">=4.14.2" },
     { name = "markdownify", specifier = ">=1.2.2" },
     { name = "wikipedia-api", specifier = ">=0.8.1" },
 ]

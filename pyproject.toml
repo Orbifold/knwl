@@ -57,6 +57,7 @@ extra = [
     "pydot>=4.0.1"
 ]
 collect = [
+    "beautifulsoup4>=4.14.2",
     "markdownify>=1.2.2",
     "wikipedia-api>=0.8.1",
 ]

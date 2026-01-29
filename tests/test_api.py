@@ -2,6 +2,8 @@ import json
 from uuid import uuid4
 
 from knwl.collect.wikipedia import WikipediaCollector
+from knwl.format import print_knwl
+from knwl.models import KnwlDocument
 from tests.fixtures import *
 
 
@@ -154,3 +156,28 @@ async def test_article_endpoint(client):
     assert article["name"] == title
     assert "content" in article
     assert len(article["content"]) > 0
+
+
+@pytest.mark.asyncio
+async def test_url_endpoint(client):
+    """
+    Test the /collect/url endpoint to fetch content from a specified URL.
+    1. Defines a test URL (example: Wikipedia page for "Ludwig Boltzmann").
+    2. Calls the /collect/url endpoint with the test URL.
+    3. Verifies the response status and content.
+    4. Validates that the returned document contains expected content related to Ludwig Boltzmann.
+    """
+    url = "https://en.wikipedia.org/wiki/Ludwig_Boltzmann"
+    print(f"Testing /url endpoint with URL: {url}")
+    response = client.get(f"/collect/url?url={url}")
+    assert response.status_code == 200, f"Failed to fetch content from URL '{url}'"
+    document = response.json()
+    assert "Ludwig Boltzmann" in document["name"]
+    assert "content" in document
+    assert len(document["content"]) > 0
+    assert (
+        "Boltzmann spent a great deal of effort in his final years defending his theories."
+        in document["content"]
+    )
+    doc = KnwlDocument(**document)
+    print_knwl(doc)
