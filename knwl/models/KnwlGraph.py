@@ -105,6 +105,40 @@ class KnwlGraph(BaseModel):
             keywords=list(set(self.keywords + other.keywords)),
         )
 
+    def to_json(self) -> dict:
+        return self.model_dump(mode="json")
+
+    def to_dict(self) -> dict:
+        return self.model_dump()
+
+    @staticmethod
+    def from_json(data: dict) -> "KnwlGraph":
+        if data is None:
+            return None
+        if not isinstance(data, dict):
+            raise TypeError("KnwlGraph.from_json: data must be a dictionary.")
+        if "type_name" not in data or data["type_name"] != "KnwlGraph":
+            raise ValueError(
+                "KnwlGraph.from_json: data does not represent a KnwlGraph."
+            )
+        if "nodes" not in data or not isinstance(data["nodes"], list):
+            raise ValueError(
+                "KnwlGraph.from_json: data must contain a list of nodes under the 'nodes' key."
+            )
+        if "edges" not in data or not isinstance(data["edges"], list):
+            raise ValueError(
+                "KnwlGraph.from_json: data must contain a list of edges under the 'edges' key."
+            )
+        return KnwlGraph.model_validate(data)
+
+    def __str__(self):
+        return self.__repr__()
+
+    def __repr__(self):
+        return (
+            f"KnwlGraph(id={self.id}, nodes={len(self.nodes)}, edges={len(self.edges)})"
+        )
+
     @model_validator(mode="after")
     def validate_consistency(self):
         """Validate that the graph is consistent after initialization."""

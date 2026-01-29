@@ -193,3 +193,28 @@ class VectorStorageBase(StorageBase, ABC):
 
     @abstractmethod
     async def exists(self, id: str) -> bool: ...
+
+    @abstractmethod
+    async def get_vector(self, text: str) -> list[float]: 
+        """
+        Generate the vector embedding for the given text.
+
+        This does not store the embedding, it only generates it.
+
+        Args:
+            text (str): The input text to generate or retrieve the vector embedding for.
+
+        Returns:
+            list[float]: A list of floats representing the vector embedding of the input text.
+
+        Raises:
+            NotImplementedError: If the concrete storage backend does not implement this method.
+            ValueError: If the input text is invalid or cannot be processed.
+            RuntimeError: On I/O, model inference, or backend-specific failures that prevent
+                          generating or retrieving the embedding.
+
+        Example:
+            embedding = await storage.get_vector("example text")
+        """
+        ...
+    

@@ -203,3 +203,67 @@ async def test_node_by_name():
     first = found[0]
     assert first.id == n1.id
     print_knwl(first)
+
+
+@pytest.mark.asyncio
+async def test_consolidate_graphs():
+    j1 = {
+        "type_name": "KnwlGraph",
+        "nodes": [
+            {
+                "id": "A",
+                "name": "A1",
+                "description": "A1",
+                "type": "T1",
+            },
+            {
+                "id": "B",
+                "name": "B",
+                "description": "B",
+                "type": "TypeB",
+            },
+        ],
+        "edges": [
+            {
+                "source_id": "A",
+                "target_id": "B",
+                "description": "Edge from A to B.",
+                "type": "Relation",
+            }
+        ],
+    }
+    g = KnwlGraph.from_json(j1)
+    assert g is not None
+    assert len(g.nodes) == 2
+    assert len(g.edges) == 1
+    assert g.node_exists("A")
+    assert g.node_exists("B")
+    assert g.edge_exists(g.edges[0].id)
+    print("")
+    print_knwl(g)
+
+    j2 = {
+        "type_name": "KnwlGraph",
+        "nodes": [
+            {
+                "id": "A",
+                "name": "A2",
+                "description": "A2",
+                "type": "T2",
+            }
+        ],
+        "edges": [],
+    }
+    g2 = KnwlGraph.from_json(j2)
+    semantic_graph = SemanticGraph()
+    assert semantic_graph.summarization is not None
+    g_consolidated = await semantic_graph.consolidate_graphs(g, g2)
+    assert g_consolidated is not None
+    assert len(g_consolidated.nodes) == 2
+    node_a = g_consolidated.get_node_by_id("A")
+    assert node_a is not None
+    # description has been summarized/merged
+    assert node_a.description == "A1 A2"
+    assert node_a.type == "T1"  # type from first graph is kept
+    print("")
+    print_knwl(g_consolidated)

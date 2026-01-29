@@ -1,4 +1,5 @@
-from typing import Annotated
+import sys
+from typing import Annotated, Optional
 from knwl.format import print_knwl
 from knwl.knwl import Knwl
 from knwl.models.KnwlInput import KnwlInput
@@ -25,6 +26,31 @@ app.add_typer(info_app, name="info", context_settings={"obj": K})
 app.add_typer(log_app, name="log", context_settings={"obj": K})
 app.add_typer(graph_app, name="graph", context_settings={"obj": K})
 app.add_typer(collect_app, name="collect", context_settings={"obj": K})
+
+
+def try_get_text(obj: Optional[str]) -> str:
+    if obj is None:
+        data = sys.stdin.read().strip()
+    else:
+        data = obj.strip()
+    try:
+        if "{" in data:
+            j = json.loads(data.replace("\n", ""))
+            if "type_name" in j:
+                type_name = j["type_name"]
+                if type_name == "KnwlInput" and "text" in j:
+                    return j["text"]
+                elif type_name == "KnwlDocument" and "content" in j:
+                    return j["content"]
+            else:
+                if "text" in j:
+                    return j["text"]
+                elif "content" in j:
+                    return j["content"]
+        return data
+    except json.JSONDecodeError as e:
+        # console.print(f"Input is not valid JSON: {e}", style="bold yellow")
+        return obj if obj is not None else ""
 
 
 @app.command(
@@ -69,17 +95,42 @@ def similar(
     epilog="Example:\n  knwl extract 'John Field was an Irish composer.'",
 )
 def extract(
-    text: Annotated[str, typer.Argument(..., help="Text to extract knowledge from")],
+    obj: Annotated[
+        Optional[str], typer.Argument(..., help="Text to extract knowledge from")
+    ] = None,
     raw: Annotated[
         bool,
         typer.Option("--raw", "-r", help="Return raw JSON rather than pretty print"),
     ] = False,
 ) -> None:
-    g = asyncio.run(K.extract(text))
+    if obj is None:
+        data = sys.stdin.read().strip()
+    else:
+        data = obj.strip()
+    if not data:
+        console.print("No input text provided for extraction.", style="bold red")
+        return
+    # if passed via pipe, data is a string
+
+    g = asyncio.run(K.extract(data))
     if raw:
         console.print(json.dumps(g.model_dump(), indent=2))
     else:
         print_knwl(g)
+
+
+@app.command("inspect")
+def inspect(
+    obj: Annotated[Optional[str], typer.Argument(...)] = None,
+) -> None:
+    found = try_get_text(obj)
+    if found is None:
+        console.print(
+            "Could not extract text or content from the provided input.",
+            style="bold red",
+        )
+    else:
+        console.print(f"[blue]Extracted text/content:[/]\n\n{found}")
 
 
 @app.command(
@@ -88,7 +139,9 @@ def extract(
     epilog="Example:\n  knwl add 'John Field was an Irish composer.'",
 )
 def add(
-    text: Annotated[str, typer.Argument(..., help="Text to ingest into the database")],
+    text: Annotated[
+        Optional[str], typer.Argument(..., help="Text to ingest into the database")
+    ] = None,
 ) -> None:
     """Ingests the given text into the database."""
     g = asyncio.run(K.add(text))
@@ -97,10 +150,19 @@ def add(
 
 @app.command("ingest", hidden=True)  # hidden=True keeps it out of help text
 def ingest(
-    text: Annotated[str, typer.Argument(..., help="Text to ingest into the database")],
+    obj: Annotated[
+        Optional[str], typer.Argument(..., help="Text to ingest into the database")
+    ] = None,
 ) -> None:
     """Alias for 'add' command."""
-    add(text)
+    found = try_get_text(obj)
+    if found is None:
+        console.print(
+            "Could not extract text or content from the provided input.",
+            style="bold red",
+        )
+    else:
+        add(found)
 
 
 @app.command(
@@ -142,44 +204,51 @@ def ask(
     epilog="Example:\n  knwl simple 'What is spacetime?'",
 )
 def simple_ask(
-    question: Annotated[
-        str,
+    obj: Annotated[
+        Optional[str],
         typer.Argument(
             ...,
             help="A direct question to the LLM without augmentation, ie. without the knowledge graph.",
         ),
-    ],
+    ] = None,
     raw: Annotated[
         bool,
         typer.Option("--raw", "-r", help="Return raw JSON rather than pretty print"),
     ] = False,
 ) -> None:
     """Asks a question to the knowledge base and returns the answer as a string."""
-    answer = asyncio.run(K.simple_ask(question))
-    if raw:
-        console.print(json.dumps(answer.model_dump(), indent=2))
-        return
-    console.print(
-        Panel(Padding(Markdown(answer.answer), (1, 2)), title="Direct LLM Answer")
-    )
+    found = try_get_text(obj)
+    if found is None:
+        console.print(
+            "Could not extract text or content from the provided input.",
+            style="bold red",
+        )
+    else:
+        answer = asyncio.run(K.simple_ask(found))
+        if raw:
+            console.print(json.dumps(answer.model_dump(), indent=2))
+            return
+        console.print(
+            Panel(Padding(Markdown(answer.answer), (1, 2)), title="Direct LLM Answer")
+        )
 
 
 @app.command("direct", hidden=True)  # hidden=True keeps it out of help text
 def direct_ask(
-    question: Annotated[
-        str,
+    obj: Annotated[
+        Optional[str],
         typer.Argument(
             ...,
             help="A direct question to the LLM without augmentation, ie. without the knowledge graph.",
         ),
-    ],
+    ] = None,
     raw: Annotated[
         bool,
         typer.Option("--raw", "-r", help="Return raw JSON rather than pretty print"),
     ] = False,
 ) -> None:
     """Alias for 'simple' command."""
-    simple_ask(question, raw=raw)
+    simple_ask(obj, raw=raw)
 
 
 @app.callback(invoke_without_command=True)

@@ -299,3 +299,10 @@ This will fetch and ingest knowledge about "Quantum Computing" from Wikipedia in
 ```bash
 knwl collect url "https://orbifold.net"
 ```
+In order to ingest the knowledge you can pipe the output to the `ingest` command like so:
+
+```bash
+knwl collect wiki --raw "Quantum Computing" | knwl ingest
+```
+It's important to use the `--raw` flag here to get the raw JSON output that can be ingested. By default the various CLI commands return pretty-printed tables which cannot be ingested.
+

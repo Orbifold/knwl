@@ -935,6 +935,9 @@ class NetworkXGraphStorage(GraphStorageBase):
             return {"id": id, **node_data}
 
     async def merge(self, nodes: list[dict], edges: list[dict]) -> None:
+        """
+        This is really just an upsert of nodes and edges.
+        """
         for node in nodes:
             await self.upsert_node(node)
         for edge in edges:

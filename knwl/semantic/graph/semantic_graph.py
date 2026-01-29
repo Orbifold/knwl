@@ -171,7 +171,7 @@ class SemanticGraph(SemanticGraphBase):
 
             coll.append(n)
 
-        # embedding of the nodes
+        # upsert embeddings of the nodes
         await self.node_embeddings.upsert(data)
         return [KnwlNode(**d) for d in coll]
 
@@ -274,8 +274,11 @@ class SemanticGraph(SemanticGraphBase):
     ) -> KnwlGraph | None:
         """
         Consolidate two knowledge graphs into one, merging (descriptions of) nodes and edges.
-        Does not store anything, just returns the consolidated graph.
-        The returned graph has the id of g1.
+        
+        - Does not store anything, just returns the consolidated graph.
+        - The returned graph has the id of g1.
+        - Merges on the basis of the node and edge ids, not the names or types.
+        - Since a KnwlNode has only on type, we do not merge types and the type of the (node in the) first graph is kept.
         """
         if g1 is None and g2 is None:
             return None

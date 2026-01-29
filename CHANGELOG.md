@@ -8,6 +8,8 @@
 - **feature**: Benchmarking has been rewritten and extended. More user-friendly and added a summary output with key metrics.
 - **feature**: HuggingFace LLM implementation added. You can now use Knwl with transformers models from HuggingFace, no setup required.
 - **feature**: Wikipedia collector added to Knwl. You can now collect knowledge from Wikipedia articles.
+- **feature**: URL collector added to Knwl. You can now collect knowledge from web pages by providing a URL.
+- **feature**: CLI pipes support added. You can now pipe input directly into Knwl CLI commands. For example, `echo "What is Knwl?" | knwl ask` or `knwl collect wiki 'Physics' | knwl extrct`.
 - **other**: benchmarking tells that gpt-oss:20b is the best Ollama model, so this is now the default.
 - **other**: default LLM changed to OpenAI's gpt-5-mini. Also based on the benchmarks, this is now the default LLM in Knwl.
 
