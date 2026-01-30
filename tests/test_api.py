@@ -80,7 +80,7 @@ async def test_facts(client):
 @pytest.mark.asyncio
 async def test_ingest(client):
     ingest_data = {
-        "text": "Boltzmann spent a great deal of effort in his final years defending his theories. He did not get along with some of his colleagues in Vienna, particularly Ernst Mach, who became a professor of philosophy and history of sciences in 1895. That same year Georg Helm and Wilhelm Ostwald presented their position on energetics at a meeting in Lübeck. They saw energy, and not matter, as the chief component of the universe. Boltzmann's position carried the day among other physicists who supported his atomic theories in the debate. In 1900, Boltzmann went to the University of Leipzig, on the invitation of Wilhelm Ostwald. Ostwald offered Boltzmann the professorial chair in physics, which became vacant when Gustav Heinrich Wiedemann died. After Mach retired due to bad health, Boltzmann returned to Vienna in 1902. In 1903, Boltzmann, together with Gustav von Escherich and Emil Müller, founded the Austrian Mathematical Society. His students included Karl Pribram, Paul Ehrenfest and Lise Meitner.",
+        "content": "Boltzmann spent a great deal of effort in his final years defending his theories. He did not get along with some of his colleagues in Vienna, particularly Ernst Mach, who became a professor of philosophy and history of sciences in 1895. That same year Georg Helm and Wilhelm Ostwald presented their position on energetics at a meeting in Lübeck. They saw energy, and not matter, as the chief component of the universe. Boltzmann's position carried the day among other physicists who supported his atomic theories in the debate. In 1900, Boltzmann went to the University of Leipzig, on the invitation of Wilhelm Ostwald. Ostwald offered Boltzmann the professorial chair in physics, which became vacant when Gustav Heinrich Wiedemann died. After Mach retired due to bad health, Boltzmann returned to Vienna in 1902. In 1903, Boltzmann, together with Gustav von Escherich and Emil Müller, founded the Austrian Mathematical Society. His students included Karl Pribram, Paul Ehrenfest and Lise Meitner.",
         "name": "Ludwig Boltzmann Bio",
         "description": "A brief biography of Boltzmann.",
     }
@@ -120,7 +120,7 @@ async def test_ask(client):
     assert response.status_code == 200
     answer = response.json()
     # assert "answer" in answer
-    # assert "Ernst Mach" in answer["answer"]
+    assert "Ernst Mach" in answer["answer"]
     print(f"\n\nANSWER: {answer['answer']}")
     print(json.dumps(answer, indent=2))
 
@@ -181,3 +181,4 @@ async def test_url_endpoint(client):
     )
     doc = KnwlDocument(**document)
     print_knwl(doc)
+

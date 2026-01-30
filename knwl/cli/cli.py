@@ -16,6 +16,7 @@ from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.padding import Padding
+from rich.spinner import Spinner
 
 console = Console()
 app = typer.Typer()
@@ -111,18 +112,19 @@ def extract(
         console.print("No input text provided for extraction.", style="bold red")
         return
     # if passed via pipe, data is a string
+    with console.status("Extracting...\n", spinner="dots"):
+        g = asyncio.run(K.extract(data))
+        if raw:
+            console.print(json.dumps(g.model_dump(), indent=2))
+        else:
+            print_knwl(g)
 
-    g = asyncio.run(K.extract(data))
-    if raw:
-        console.print(json.dumps(g.model_dump(), indent=2))
-    else:
-        print_knwl(g)
 
-
-@app.command("inspect")
+@app.command("inspect", hidden=True)  # hidden=True keeps it out of help text
 def inspect(
     obj: Annotated[Optional[str], typer.Argument(...)] = None,
 ) -> None:
+    """A simple command to inspect the text/content passed via pipes."""
     found = try_get_text(obj)
     if found is None:
         console.print(
@@ -144,8 +146,10 @@ def add(
     ] = None,
 ) -> None:
     """Ingests the given text into the database."""
-    g = asyncio.run(K.add(text))
-    print_knwl(g)
+    with console.status("Ingesting...\n", spinner="dots"):
+        g = asyncio.run(K.add(text))
+        print("")
+        print_knwl(g)
 
 
 @app.command("ingest", hidden=True)  # hidden=True keeps it out of help text

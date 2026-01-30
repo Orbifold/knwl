@@ -164,10 +164,17 @@ _default_config = {
         },
     },
     "llm": {
-        "default": "openai",
+        "default": "anthropic",
         "ollama": {
             "class": "knwl.llm.ollama.OllamaClient",
             "model": "gpt-oss:20b",
+            "caching_service": "@/llm_caching/user",
+            "temperature": 0.1,
+            "context_window": 32768,
+        },
+        "ollama_cloud": {
+            "class": "knwl.llm.ollama.OllamaClient",
+            "model": "gpt-oss:20b-cloud",
             "caching_service": "@/llm_caching/user",
             "temperature": 0.1,
             "context_window": 32768,
@@ -189,7 +196,7 @@ _default_config = {
         },
         "anthropic": {
             "class": "knwl.llm.anthropic.AnthropicClient",
-            "model": "claude-sonnet-4-5-20250929",  # Sonnet 4.5 model
+            "model": "claude-haiku-4-5-20251001", #"claude-sonnet-4-5-20250929", 
             "caching_service": "@/llm_caching/user",
             "temperature": 0.1,
             "context_window": 4096,  # Max tokens for response (lower to avoid streaming requirement)

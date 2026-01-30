@@ -15,5 +15,5 @@ def get_knwl() -> Knwl:
 
 
 def register_routes(app: "FastAPI") -> None:
-    # register_kg_routes(app)
+    register_kg_routes(app)
     register_collect_routes(app)

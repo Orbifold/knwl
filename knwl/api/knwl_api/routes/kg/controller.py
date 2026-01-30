@@ -3,6 +3,7 @@ from fastapi import Request
 from knwl import KnwlParams, KnwlAnswer, KnwlContext
 
 from knwl.api.knwl_api.models.JobStatus import JobStatus, JobResponse
+from knwl.models import KnwlDocument
 from knwl.models.KnwlFact import KnwlFact
 from knwl.api.knwl_api.routes.kg import service
 
@@ -51,18 +52,31 @@ async def delete_node_by_id(id: str):
 
 
 @router.post("/ingest", description="Ingests data into the knowledge graph.", response_model=JobResponse)
-async def ingest_data(request: Request):
+async def ingest_data(doc:KnwlDocument):
     """
     Ingests data into the knowledge graph.
     Expects a JSON body with a 'text' field, optionally 'name', 'description'.
     """
     try:
-        data = await request.json()
-        if not "text" in data:
-            raise HTTPException(status_code=400, detail="Missing 'text' field in request body")
-        job_id = await service.add_job("ingest", data)
+
+        job_id = await service.add_job("ingest", doc.model_dump())
 
         return JobResponse(job_id=job_id, message="Ingestion job started successfully")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/extract", description="Extracts data into the knowledge graph.", response_model=JobResponse)
+async def extract_data(doc:KnwlDocument):
+    """
+    Extracts data into the knowledge graph.
+    Expects a JSON body with a 'text' field, optionally 'name', 'description'.
+    """
+    try:
+
+        job_id = await service.add_job("extract", doc.model_dump())
+
+        return JobResponse(job_id=job_id, message="Extraction job started successfully")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -122,7 +136,7 @@ async def augment_text(request: Request):
     try:
         data = await request.json()
         if not "question" in data:
-            raise HTTPException(status_code=400, detail="Missing 'text' field in request body")
+            raise HTTPException(status_code=400, detail="Missing 'question' field in request body")
         if not "strategy" in data:
             data["strategy"] = KnwlParams.model_fields["strategy"].default
         context = await service.augment(data["question"], data["strategy"])

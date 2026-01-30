@@ -18,13 +18,10 @@ class LocalGragStrategy(GragStrategyBase):
         The local strategy uses low-level keywords and semantic node search based on these low-level keywords to find relevant nodes and edges.
         """
         keywords = await self.grag.extract_keywords(input.text)
-        if not keywords:
+        if not keywords or len(keywords.low_level) == 0:
             log.debug("No keywords found for local strategy.")
-            return KnwlContext.empty(input)
-        if len(keywords.low_level) == 0:
-            log.debug("No low level keywords found for local strategy.")
-            return KnwlContext.empty(input)
-        input.text = ", ".join(
-            keywords.low_level
-        )  # Override input text with keywords for local topics
+        else:
+            input.text = ", ".join(
+                keywords.low_level
+            )  # Override input text with keywords for local topics
         return await self.augment_via_nodes(input)
