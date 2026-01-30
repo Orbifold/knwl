@@ -5,7 +5,7 @@ from knwl.collect.wikipedia import WikipediaCollector
 from knwl.format import print_knwl
 from knwl.models import KnwlDocument
 from tests.fixtures import *
-
+from fastapi import status
 
 # ============================================================================================
 # Tests for Knowledge Graph API endpoints
@@ -28,16 +28,16 @@ async def test_facts(client):
     9. Cleans up by deleting the created fact node
 
     """
-    previous_count = client.get("/kg/node_count").json()
+    previous_count = client.get("/kg/node_count").json()["count"]
     id = str(uuid4())
     fact_data = {
-        "name": "Test Fact",
+        "name": f"Test Fact {id}",
         "content": "This is a test fact content.",
         "type": "test_type",
         "id": id,
     }
     response = client.post("/kg/fact", json=fact_data)
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_202_ACCEPTED
     job = response.json()  # Get the job response
     job_id = job["job_id"]
     # Poll for job completion
@@ -45,7 +45,7 @@ async def test_facts(client):
 
     for _ in range(20):
         job_status_response = client.get(f"/kg/job/{job_id}")
-        assert job_status_response.status_code == 200
+        assert job_status_response.status_code == status.HTTP_200_OK
         job_status = job_status_response.json()
         if job_status["state"] == "completed":
             break
@@ -67,10 +67,10 @@ async def test_facts(client):
     assert retrieved_fact["description"] == fact_data["content"]
     assert retrieved_fact["type"] == fact_data["type"]
     assert retrieved_fact["id"] == fact_data["id"]
-    current_count = client.get("/kg/node_count").json()
+    current_count = client.get("/kg/node_count").json()["count"]
     assert current_count == previous_count + 1
     client.delete(f"/kg/node/{fact_data['id']}")
-    current_count = client.get("/kg/node_count").json()
+    current_count = client.get("/kg/node_count").json()["count"]
     assert current_count == previous_count
 
     job_status_response = client.get(f"/kg/job/abcdefg12345")
@@ -85,7 +85,7 @@ async def test_ingest(client):
         "description": "A brief biography of Boltzmann.",
     }
     response = client.post("/kg/ingest", json=ingest_data)
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_202_ACCEPTED
     job = response.json()  # Get the job response
     job_id = job["job_id"]
     # Poll for job completion
@@ -93,7 +93,7 @@ async def test_ingest(client):
 
     for i in range(20):
         job_status_response = client.get(f"/kg/job/{job_id}")
-        assert job_status_response.status_code == 200
+        assert job_status_response.status_code == status.HTTP_200_OK
         job_status = job_status_response.json()
         if job_status["state"] == "completed":
             break
