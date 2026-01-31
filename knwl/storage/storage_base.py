@@ -49,3 +49,9 @@ class StorageBase(FrameworkBase, ABC):
         Future improvements will define a MongoDB-like query language for more complex queries.
         """
         return []
+
+    async def count(self) -> int:
+        """
+        Returns the total number of objects in storage.
+        """
+        return 0

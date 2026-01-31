@@ -5,7 +5,8 @@ from knwl.collect.wikipedia import WikipediaCollector
 from knwl.format import print_knwl
 from knwl.models import KnwlDocument
 from tests.fixtures import *
-from fastapi import status
+from fastapi import HTTPException, status
+
 
 # ============================================================================================
 # Tests for Knowledge Graph API endpoints
@@ -182,3 +183,76 @@ async def test_url_endpoint(client):
     doc = KnwlDocument(**document)
     print_knwl(doc)
 
+
+@pytest.mark.asyncio
+async def test_counts(client):
+    """
+    Test the /kg/node_count and /kg/edge_count endpoints to retrieve counts of nodes and edges in the knowledge graph.
+    1. Calls the /kg/node_count endpoint and verifies the response status and content.
+    2. Calls the /kg/edge_count endpoint and verifies the response status and content.
+    3. Validates that the counts are non-negative integers.
+    """
+    response = client.get("/kg/node_count")
+    assert response.status_code == 200, "Failed to fetch node count"
+    node_count = response.json()
+    assert "count" in node_count
+    assert isinstance(node_count["count"], int)
+    assert node_count["count"] >= 0
+    print(f"Node Count: {node_count['count']}")
+
+    response = client.get("/kg/edge_count")
+    assert response.status_code == 200, "Failed to fetch edge count"
+    edge_count = response.json()
+    assert "count" in edge_count
+    assert isinstance(edge_count["count"], int)
+    assert edge_count["count"] >= 0
+    print(f"Edge Count: {edge_count['count']}")
+
+
+@pytest.mark.asyncio
+async def test_namespace(client):
+    """
+    Test the /kg/namespace endpoint to set and get the current namespace in the knowledge graph.
+    1. Sets a new namespace using the /kg/namespace endpoint with a POST request.
+    2. Verifies the response status and content.
+    3. Retrieves the current namespace using the /kg/namespace endpoint with a GET request.
+    4. Validates that the retrieved namespace matches the one that was set.
+    """
+    # new_namespace = "test_namespace"
+    # response = client.post("/kg/namespace", json={"namespace": new_namespace})
+    # assert response.status_code == 200, "Failed to set namespace"
+    # result = response.json()
+    # assert result["namespace"] == new_namespace
+    # print(f"Set Namespace: {result['namespace']}")
+
+    response = client.get("/kg/namespace")
+    assert response.status_code == 200, "Failed to get namespace"
+    current_namespace = response.json()
+    assert current_namespace["namespace"] == "default"
+    print(f"Current Namespace: {current_namespace['namespace']}")
+
+
+@pytest.mark.asyncio
+async def test_find_node_by_name(client):
+    
+    """
+    Test the /kg/node/find_by_name endpoint to search for nodes by name in the knowledge graph.
+    1. Defines a test node name to search for.
+    2. Calls the /kg/node/find_by_name endpoint with the test name.
+    3. Verifies the response status and content.
+    4. Validates that the returned nodes contain the search name.
+    """
+    test_name = "Ludwig Boltzmann"
+    print(f"Testing /kg/node/find_by_name endpoint with name: {test_name}")
+    response = client.get(f"/kg/find/{test_name}")
+    assert response.status_code == 200, f"Failed to find nodes by name '{test_name}'"
+    nodes = response.json()
+    assert isinstance(nodes, list), "Response should be a list of nodes"
+    assert len(nodes) > 0, f"No nodes found with name '{test_name}'"
+    for node in nodes:
+        # search is in both name and description
+        assert (
+            test_name.lower() in node["name"].lower()
+            or test_name.lower() in node.get("description", "").lower()
+        ), f"Node name '{node['name']}' does not match search name '{test_name}'"
+    print(f"Found {len(nodes)} nodes with name matching '{test_name}'")

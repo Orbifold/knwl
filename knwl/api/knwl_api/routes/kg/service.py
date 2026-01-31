@@ -13,6 +13,7 @@ Thread Safety:
     - The knwl instance is shared across requests
     - All operations are async-safe
 """
+
 import logging
 import time
 from enum import Enum
@@ -30,6 +31,7 @@ logger = logging.getLogger(__name__)
 
 class JobType(str, Enum):
     """Enumeration of supported background job types."""
+
     INGEST = "ingest"
     EXTRACT = "extract"
     FACT = "fact"
@@ -60,7 +62,9 @@ async def process_ingest_job(doc_data: dict) -> dict:
     started_at = time.time()
 
     try:
-        logger.info(f"Starting ingestion job for document: {doc_data.get('name', 'unnamed')}")
+        logger.info(
+            f"Starting ingestion job for document: {doc_data.get('name', 'unnamed')}"
+        )
         doc = KnwlDocument(**doc_data)
         result = await knwl.ingest(doc)
 
@@ -103,7 +107,9 @@ async def process_extract_job(doc_data: dict) -> dict:
     started_at = time.time()
 
     try:
-        logger.info(f"Starting extraction job for document: {doc_data.get('name', 'unnamed')}")
+        logger.info(
+            f"Starting extraction job for document: {doc_data.get('name', 'unnamed')}"
+        )
         doc = KnwlDocument(**doc_data)
         result = await knwl.extract(doc)
 
@@ -123,7 +129,9 @@ async def process_extract_job(doc_data: dict) -> dict:
     except Exception as e:
         finished_at = time.time()
         duration = finished_at - started_at
-        logger.error(f"Extraction failed after {duration:.2f}s: {str(e)}", exc_info=True)
+        logger.error(
+            f"Extraction failed after {duration:.2f}s: {str(e)}", exc_info=True
+        )
         raise
 
 
@@ -147,13 +155,12 @@ async def process_fact_job(fact_data: dict) -> dict:
     started_at = time.time()
 
     try:
-        logger.info(f"Starting fact addition job for: {fact_data.get('name', 'unnamed')}")
+        logger.info(
+            f"Starting fact addition job for: {fact_data.get('name', 'unnamed')}"
+        )
         fact = KnwlFact(**fact_data)
         result = await knwl.add_fact(
-            name=fact.name,
-            content=fact.content,
-            type=fact.type,
-            id=fact.id
+            name=fact.name, content=fact.content, type=fact.type, id=fact.id
         )
 
         finished_at = time.time()
@@ -172,7 +179,9 @@ async def process_fact_job(fact_data: dict) -> dict:
     except Exception as e:
         finished_at = time.time()
         duration = finished_at - started_at
-        logger.error(f"Fact addition failed after {duration:.2f}s: {str(e)}", exc_info=True)
+        logger.error(
+            f"Fact addition failed after {duration:.2f}s: {str(e)}", exc_info=True
+        )
         raise
 
 
@@ -275,7 +284,9 @@ async def get_job_status(job_id: str) -> Optional[JobStatus]:
         started_at = job_result.get("started_at", 0)
         finished_at = job_result.get("finished_at", 0)
         job_type = job_result.get("job_type", "Unknown")
-        duration = job_result.get("duration", finished_at - started_at if finished_at else 0)
+        duration = job_result.get(
+            "duration", finished_at - started_at if finished_at else 0
+        )
 
         logger.debug(f"Job {job_id} completed in {duration:.2f}s")
 
@@ -297,7 +308,7 @@ async def get_job_status(job_id: str) -> Optional[JobStatus]:
         error=error,
         started_at=started_at,
         finished_at=finished_at,
-        job_type=job_type
+        job_type=job_type,
     )
 
 
@@ -532,8 +543,7 @@ async def augment(text: str, strategy: Optional[str] = None) -> KnwlContext:
 
     try:
         knwl_input = KnwlInput(
-            text=text,
-            params=KnwlParams(strategy=strategy, return_chunks=True)
+            text=text, params=KnwlParams(strategy=strategy, return_chunks=True)
         )
         context = await knwl.augment(knwl_input)
 
@@ -546,4 +556,28 @@ async def augment(text: str, strategy: Optional[str] = None) -> KnwlContext:
 
     except Exception as e:
         logger.error(f"Failed to augment text: {str(e)}", exc_info=True)
+        raise
+
+
+async def find_node_by_name(name: str, amount: int = 10) -> Optional[KnwlNode]:
+    """
+    Find a node in the knowledge graph by its name.
+
+    Args:
+        name: The name of the node to search for
+    Returns:
+        KnwlNode if found, None otherwise
+    Example:
+        >>> node = await find_node_by_name("Einstein")
+        >>> if node:
+        >>>     print(f"Found node: {node.name} ({node.type})")
+    """
+    try:
+        logger.debug(f"Searching for node by name: {name}")
+        nodes = await knwl.find_nodes(name, amount)
+
+        return nodes
+
+    except Exception as e:
+        logger.error(f"Error finding node by name {name}: {str(e)}", exc_info=True)
         raise

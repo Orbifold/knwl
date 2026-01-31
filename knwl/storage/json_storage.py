@@ -221,6 +221,27 @@ class JsonStorage(KeyValueStorageBase):
     async def nearest(self, query: str, top_k: int = 5) -> list[KnwlModel]:
         raise NotImplemented("JsonStorage: semantic search is not available.")
 
+    async def count(self) -> int:
+        """
+        Returns the total number of objects in storage.
+        """
+        return len(self.data)
+
+    async def get_all(self, amount: int = 10) -> list[KnwlModel]:
+        """
+        Retrieve all objects up to the specified amount.
+
+        Args:
+            amount (int): The number of objects to retrieve.
+
+        Returns:
+            list[KnwlModel]: A list of retrieved objects.
+        """
+        all_items = list(self.data.values())
+        # sort by name
+        all_items.sort(key=lambda x: x.get("name", "") if isinstance(x, dict) else "")
+        return all_items[:amount]
+
     def __repr__(self):
         return f"<JsonStorage,path={self._path}, save_to_disk={self._save_to_disk}, items={len(self.data)}>"
 

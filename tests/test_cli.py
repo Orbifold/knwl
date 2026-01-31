@@ -212,3 +212,19 @@ def test_direct():
         module.app,
         ["config", "restore", "-p", f"$/user/test_backup_{int(time())}.json"],
     )  
+def test_find():
+    """
+    The find command should run and return matching nodes.
+    """
+
+    module = importlib.import_module("knwl.cli.cli")
+    runner = CliRunner()
+    test_text = "Marie Curie was a physicist and chemist."
+    extract_result = runner.invoke(
+        module.app, ["add",  test_text]
+    )
+    assert extract_result.exit_code == 0
+
+    result = runner.invoke(module.app, ["find", "Curie"])
+    assert result.exit_code == 0
+    assert "Marie Curie" in result.stdout

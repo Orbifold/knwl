@@ -158,6 +158,21 @@ class SemanticGraph(SemanticGraphBase):
         return edge
 
     async def embed_nodes(self, nodes: list[KnwlNode]) -> list[KnwlNode]:
+        """
+        Asynchronously embeds a list of KnwlNode objects by merging their descriptions, upserting them into the graph store, 
+        and updating their embeddings.
+
+        Args:
+            nodes (list[KnwlNode]): A list of KnwlNode objects to be embedded and upserted.
+
+        Returns:
+            list[KnwlNode]: A list of KnwlNode objects after embedding and upserting.
+
+        Notes:
+            - If the input list is None or empty, returns an empty list.
+            - Each node is first merged with its descriptions, then upserted into the graph store.
+            - Embeddings for the nodes are upserted in batch after processing all nodes.
+        """
         if nodes is None or len(nodes) == 0:
             return []
         coll = []

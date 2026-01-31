@@ -164,7 +164,7 @@ _default_config = {
         },
     },
     "llm": {
-        "default": "anthropic",
+        "default": "ollama",
         "ollama": {
             "class": "knwl.llm.ollama.OllamaClient",
             "model": "gpt-oss:20b",

@@ -208,7 +208,19 @@ class GraphRAGBase(FrameworkBase, ABC):
         Get the total number of nodes in the knowledge graph.
         """
         ...
-
+    @abstractmethod
+    async def document_count(self) -> int:
+        """
+        Get the total number of documents in the knowledge graph.
+        """
+        ...
+    @abstractmethod
+    async def get_all_documents(self, amount: int = 10) -> list[KnwlDocument]:
+        """
+        Retrieve all documents from the knowledge graph up to the specified amount.
+        """
+        ...
+        
     @abstractmethod
     async def edge_count(self) -> int:
         """

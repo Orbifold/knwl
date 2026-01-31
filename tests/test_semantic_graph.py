@@ -267,3 +267,25 @@ async def test_consolidate_graphs():
     assert node_a.type == "T1"  # type from first graph is kept
     print("")
     print_knwl(g_consolidated)
+
+@pytest.mark.asyncio
+async def test_find():
+    g = get_service("semantic_graph", "memory")
+    await g.clear()
+    n1 = KnwlNode(
+        name="Einstein",
+        description="Albert Einstein was a theoretical physicist who developed the theory of relativity.",
+        type="Person",
+    )
+    n2 = KnwlNode(
+        name="Magnesium",
+        description="Magnesium is a chemical element with the symbol Mg and atomic number 12.",
+        type="Theory",
+    )
+    await g.embed_nodes([n1, n2])
+    results = await g.find_nodes("Einstein", amount=20)
+    assert results is not None
+    assert len(results) == 1
+    assert results[0].id == n1.id
+    for r in results:
+        print_knwl(r)

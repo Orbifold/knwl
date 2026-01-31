@@ -105,3 +105,13 @@ class RagStore(RagBase):
             return True
         chunk_exists = await self.chunk_store.exists(obj_id)
         return chunk_exists
+    async def document_count(self) -> int:
+        """
+        Get the total number of documents in the system.
+        """
+        return await self.document_store.count()
+    async def get_all_documents(self, amount: int = 10) -> list[KnwlDocument]:
+        """
+        Retrieve all documents from the system up to the specified amount.
+        """
+        return await self.document_store.get_all(amount=amount)

@@ -45,3 +45,14 @@ class DocumentStore(DocumentBase):
 
     async def exists(self, document_id: str) -> bool:
         return await self.document_storage.exists(document_id)
+    async def count(self) -> int:
+        return await self.document_storage.count()
+    async def get_all(self, amount: int = 10) -> list[KnwlDocument]:
+        results = await self.document_storage.get_all(amount=amount)
+        documents: list[KnwlDocument] = []
+        for item in results:
+            if isinstance(item, KnwlDocument):
+                documents.append(item)
+            else:
+                documents.append(KnwlDocument.model_validate(item))
+        return documents

@@ -4,6 +4,7 @@ Knowledge Graph API Controller
 This module provides FastAPI endpoints for interacting with the Knwl knowledge graph,
 including CRUD operations on nodes, data ingestion, extraction, and RAG queries.
 """
+
 from typing import Dict
 
 from fastapi import APIRouter, HTTPException, status
@@ -20,17 +21,24 @@ router = APIRouter()
 
 class QuestionRequest(BaseModel):
     """Request model for asking questions or augmenting text."""
-    question: str = Field(..., description="The question or text to process", min_length=1)
-    strategy: str | None = Field(None, description="Graph RAG strategy (local, global, hybrid, naive, self)")
+
+    question: str = Field(
+        ..., description="The question or text to process", min_length=1
+    )
+    strategy: str | None = Field(
+        None, description="Graph RAG strategy (local, global, hybrid, naive, self)"
+    )
 
 
 class CountResponse(BaseModel):
     """Response model for count endpoints."""
+
     count: int = Field(..., description="The count value")
 
 
 class NamespaceResponse(BaseModel):
     """Response model for namespace endpoint."""
+
     namespace: str = Field(..., description="The current namespace")
 
 
@@ -41,8 +49,8 @@ class NamespaceResponse(BaseModel):
     description="Returns the total number of nodes in the knowledge graph.",
     responses={
         200: {"description": "Successfully retrieved node count"},
-        500: {"description": "Internal server error"}
-    }
+        500: {"description": "Internal server error"},
+    },
 )
 async def get_node_count() -> CountResponse:
     """
@@ -60,7 +68,7 @@ async def get_node_count() -> CountResponse:
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve node count: {str(e)}"
+            detail=f"Failed to retrieve node count: {str(e)}",
         )
 
 
@@ -71,8 +79,8 @@ async def get_node_count() -> CountResponse:
     description="Returns the total number of edges in the knowledge graph.",
     responses={
         200: {"description": "Successfully retrieved edge count"},
-        500: {"description": "Internal server error"}
-    }
+        500: {"description": "Internal server error"},
+    },
 )
 async def get_edge_count() -> CountResponse:
     """
@@ -90,7 +98,7 @@ async def get_edge_count() -> CountResponse:
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve edge count: {str(e)}"
+            detail=f"Failed to retrieve edge count: {str(e)}",
         )
 
 
@@ -101,8 +109,8 @@ async def get_edge_count() -> CountResponse:
     description="Returns the current namespace of the knowledge graph.",
     responses={
         200: {"description": "Successfully retrieved namespace"},
-        500: {"description": "Internal server error"}
-    }
+        500: {"description": "Internal server error"},
+    },
 )
 async def get_namespace() -> NamespaceResponse:
     """
@@ -120,7 +128,7 @@ async def get_namespace() -> NamespaceResponse:
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve namespace: {str(e)}"
+            detail=f"Failed to retrieve namespace: {str(e)}",
         )
 
 
@@ -132,8 +140,8 @@ async def get_namespace() -> NamespaceResponse:
     responses={
         200: {"description": "Successfully retrieved node"},
         404: {"description": "Node not found"},
-        500: {"description": "Internal server error"}
-    }
+        500: {"description": "Internal server error"},
+    },
 )
 async def get_node_by_id(id: str) -> KnwlNode:
     """
@@ -153,7 +161,7 @@ async def get_node_by_id(id: str) -> KnwlNode:
         if node is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Node with ID '{id}' not found"
+                detail=f"Node with ID '{id}' not found",
             )
         return node
     except HTTPException:
@@ -161,19 +169,19 @@ async def get_node_by_id(id: str) -> KnwlNode:
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve node: {str(e)}"
+            detail=f"Failed to retrieve node: {str(e)}",
         )
 
 
 @router.delete(
     "/node/{id}",
-    summary="Delete node by ID",
-    description="Deletes a specific node from the knowledge graph by its ID.",
+    summary="Delete node by Id",
+    description="Deletes a specific node from the knowledge graph by its Id.",
     responses={
         200: {"description": "Successfully deleted node"},
         404: {"description": "Node not found"},
-        500: {"description": "Internal server error"}
-    }
+        500: {"description": "Internal server error"},
+    },
 )
 async def delete_node_by_id(id: str) -> Dict[str, str]:
     """
@@ -193,7 +201,7 @@ async def delete_node_by_id(id: str) -> Dict[str, str]:
         if result is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Node with ID '{id}' not found"
+                detail=f"Node with Id '{id}' not found",
             )
         return {"message": f"Node '{id}' deleted successfully", "id": id}
     except HTTPException:
@@ -201,7 +209,7 @@ async def delete_node_by_id(id: str) -> Dict[str, str]:
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete node: {str(e)}"
+            detail=f"Failed to delete node: {str(e)}",
         )
 
 
@@ -209,13 +217,13 @@ async def delete_node_by_id(id: str) -> Dict[str, str]:
     "/ingest",
     response_model=JobResponse,
     summary="Ingest document",
-    description="Ingests a document into the knowledge graph (async job).",
+    description="Ingests a document into the knowledge graph (async scheduled job).",
     status_code=status.HTTP_202_ACCEPTED,
     responses={
         202: {"description": "Ingestion job accepted and queued"},
         400: {"description": "Invalid document data"},
-        500: {"description": "Internal server error"}
-    }
+        500: {"description": "Internal server error"},
+    },
 )
 async def ingest_data(doc: KnwlDocument) -> JobResponse:
     """
@@ -239,14 +247,11 @@ async def ingest_data(doc: KnwlDocument) -> JobResponse:
         job_id = await service.add_job("ingest", doc.model_dump())
         return JobResponse(job_id=job_id, message="Ingestion job started successfully")
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to start ingestion job: {str(e)}"
+            detail=f"Failed to start ingestion job: {str(e)}",
         )
 
 
@@ -254,13 +259,13 @@ async def ingest_data(doc: KnwlDocument) -> JobResponse:
     "/extract",
     response_model=JobResponse,
     summary="Extract graph from document",
-    description="Extracts entities and relationships from a document (async job).",
+    description="Extracts entities and relationships from a document (async scheduled job).",
     status_code=status.HTTP_202_ACCEPTED,
     responses={
         202: {"description": "Extraction job accepted and queued"},
         400: {"description": "Invalid document data"},
-        500: {"description": "Internal server error"}
-    }
+        500: {"description": "Internal server error"},
+    },
 )
 async def extract_data(doc: KnwlDocument) -> JobResponse:
     """
@@ -284,14 +289,11 @@ async def extract_data(doc: KnwlDocument) -> JobResponse:
         job_id = await service.add_job("extract", doc.model_dump())
         return JobResponse(job_id=job_id, message="Extraction job started successfully")
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to start extraction job: {str(e)}"
+            detail=f"Failed to start extraction job: {str(e)}",
         )
 
 
@@ -303,8 +305,8 @@ async def extract_data(doc: KnwlDocument) -> JobResponse:
     responses={
         200: {"description": "Successfully retrieved job status"},
         404: {"description": "Job not found"},
-        500: {"description": "Internal server error"}
-    }
+        500: {"description": "Internal server error"},
+    },
 )
 async def get_job_status(job_id: str) -> JobStatus:
     """
@@ -326,7 +328,7 @@ async def get_job_status(job_id: str) -> JobStatus:
         if job_status is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Job '{job_id}' not found"
+                detail=f"Job '{job_id}' not found",
             )
         return job_status
     except HTTPException:
@@ -334,7 +336,7 @@ async def get_job_status(job_id: str) -> JobStatus:
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve job status: {str(e)}"
+            detail=f"Failed to retrieve job status: {str(e)}",
         )
 
 
@@ -342,13 +344,13 @@ async def get_job_status(job_id: str) -> JobStatus:
     "/fact",
     response_model=JobResponse,
     summary="Add fact to graph",
-    description="Adds a single fact to the knowledge graph (async job).",
+    description="Adds a single fact to the knowledge graph (async scheduled job).",
     status_code=status.HTTP_202_ACCEPTED,
     responses={
         202: {"description": "Fact job accepted and queued"},
         400: {"description": "Invalid fact data"},
-        500: {"description": "Internal server error"}
-    }
+        500: {"description": "Internal server error"},
+    },
 )
 async def add_fact(fact: KnwlFact) -> JobResponse:
     """
@@ -370,14 +372,11 @@ async def add_fact(fact: KnwlFact) -> JobResponse:
         job_id = await service.add_job("fact", fact.model_dump())
         return JobResponse(job_id=job_id, message="Fact job started successfully")
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to start fact job: {str(e)}"
+            detail=f"Failed to start fact job: {str(e)}",
         )
 
 
@@ -389,8 +388,8 @@ async def add_fact(fact: KnwlFact) -> JobResponse:
     responses={
         200: {"description": "Successfully generated answer"},
         400: {"description": "Invalid request"},
-        500: {"description": "Internal server error"}
-    }
+        500: {"description": "Internal server error"},
+    },
 )
 async def ask_question(request: QuestionRequest) -> KnwlAnswer:
     """
@@ -416,14 +415,11 @@ async def ask_question(request: QuestionRequest) -> KnwlAnswer:
         answer = await service.ask_question(request.question, request.strategy)
         return answer
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to answer question: {str(e)}"
+            detail=f"Failed to answer question: {str(e)}",
         )
 
 
@@ -435,8 +431,8 @@ async def ask_question(request: QuestionRequest) -> KnwlAnswer:
     responses={
         200: {"description": "Successfully retrieved context"},
         400: {"description": "Invalid request"},
-        500: {"description": "Internal server error"}
-    }
+        500: {"description": "Internal server error"},
+    },
 )
 async def augment_text(request: QuestionRequest) -> KnwlContext:
     """
@@ -470,12 +466,40 @@ async def augment_text(request: QuestionRequest) -> KnwlContext:
         context = await service.augment(request.question, request.strategy)
         return context
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to augment text: {str(e)}"
+            detail=f"Failed to augment text: {str(e)}",
+        )
+
+
+@router.get(
+    "/find/{name}",
+    response_model=list[KnwlNode],
+    summary="Find nodes by name",
+    description="Retrieves nodes from the knowledge graph that match the given name.",
+    responses={
+        200: {"description": "Successfully retrieved nodes"},
+        500: {"description": "Internal server error"},
+    },
+)
+async def find_nodes_by_name(name: str) -> list[KnwlNode]:
+    """
+    Find nodes in the knowledge graph by their name.
+
+    Args:
+        name: The name of the nodes to search for
+    Returns:
+        List of KnwlNode objects that match the given name
+    Raises:
+        HTTPException: 500 error if the operation fails
+    """
+    try:
+        nodes = await service.find_node_by_name(name)
+        return nodes
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve nodes: {str(e)}",
         )

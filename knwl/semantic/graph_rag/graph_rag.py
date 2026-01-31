@@ -375,3 +375,32 @@ class GraphRAG(GraphRAGBase):
         Returns True if the node was deleted, False if it did not exist.
         """
         return await self.semantic_graph.delete_node_by_id(node_id)
+
+    async def document_count(self) -> int:
+        """
+        Get the total number of documents in the knowledge graph.
+        """
+        if self.ragger is None:
+            raise ValueError("GraphRAG: attempt to get document count but no ragger (ChunkingBase or RagBase instance) is provided.")
+        else:
+            if isinstance(self.ragger, ChunkingBase):
+                raise ValueError("GraphRAG: attempt to get document count but ragger is a ChunkingBase instance, which does not support document storage.")
+            elif isinstance(self.ragger, RagBase):
+                ragger = cast(RagBase, self.ragger)
+                return await ragger.document_count()
+            else:
+                raise ValueError(f"GraphRAG: provided ragger of type '{type(self.ragger)}' is not supported.")
+    async def get_all_documents(self, amount: int = 10) -> list[KnwlDocument]:
+        """
+        Retrieve all documents from the knowledge graph up to the specified amount.
+        """
+        if self.ragger is None:
+            raise ValueError("GraphRAG: attempt to get all documents but no ragger (ChunkingBase or RagBase instance) is provided.")
+        else:
+            if isinstance(self.ragger, ChunkingBase):
+                raise ValueError("GraphRAG: attempt to get all documents but ragger is a ChunkingBase instance, which does not support document storage.")
+            elif isinstance(self.ragger, RagBase):
+                ragger = cast(RagBase, self.ragger)
+                return await ragger.get_all_documents(amount)
+            else:
+                raise ValueError(f"GraphRAG: provided ragger of type '{type(self.ragger)}' is not supported.")  

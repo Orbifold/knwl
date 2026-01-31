@@ -177,7 +177,17 @@ class Knwl:
         Get the total number of nodes in the knowledge graph.
         """
         return await self.grag.node_count()
-
+    async def document_count(self) -> Optional[int]:
+        """
+        Get the total number of documents in the system.
+        """
+        return await self.grag.document_count()
+    async def get_all_documents(self, amount: int = 10) -> Optional[list[KnwlDocument]]:
+        """
+        Get all documents in the system, up to the specified amount.
+        """
+        return await self.grag.get_all_documents(amount=amount)
+    
     async def edge_count(self) -> int:
         """
         Get the total number of edges in the knowledge graph.
