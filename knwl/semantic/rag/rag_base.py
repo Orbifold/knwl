@@ -120,3 +120,21 @@ class RagBase(FrameworkBase, ABC):
             list[KnwlDocument]: A list of retrieved documents.
         """
         ...
+    @abstractmethod
+    async def chunk_count(self) -> int:
+        """
+        Get the total number of chunks in the system.
+        """
+        ...
+    @abstractmethod
+    async def get_all_chunks(self, amount: int = 10, include_content: bool = False) -> list[KnwlChunk]:
+        """
+        Retrieve all chunks up to the specified amount.
+
+        Args:
+            amount (int): The number of chunks to retrieve.
+
+        Returns:
+            list[KnwlChunk]: A list of retrieved chunks.
+        """
+        ...

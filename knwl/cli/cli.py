@@ -11,6 +11,7 @@ from knwl.cli.info_app import info_app
 from knwl.cli.log_app import log_app
 from knwl.cli.collect_app import collect_app
 from knwl.cli.document_app import document_app
+from knwl.cli.chunk_app import chunk_app
 from knwl.cli.graph_app import graph_app, similar_nodes, find_nodes
 
 from rich.console import Console
@@ -29,6 +30,7 @@ app.add_typer(log_app, name="log", context_settings={"obj": K})
 app.add_typer(graph_app, name="graph", context_settings={"obj": K})
 app.add_typer(collect_app, name="collect", context_settings={"obj": K})
 app.add_typer(document_app, name="document", context_settings={"obj": K})
+app.add_typer(chunk_app, name="chunk", context_settings={"obj": K})
 
 
 def try_get_text(obj: Optional[str]) -> str:

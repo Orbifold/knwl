@@ -78,3 +78,20 @@ class ChunkBase(FrameworkBase, ABC):
             list[KnwlChunk]: A list of KnwlChunk objects associated with the source key.
         """
         ...
+    @abstractmethod
+    async def count() -> int:
+        """
+        Returns the total number of chunks stored.
+
+        Returns:
+            int: The total number of chunks.
+        """
+        ...
+    @abstractmethod
+    async def get_all(
+        self, amount: int = 10, include_content: bool = False
+    ) -> list[KnwlChunk]:
+        """
+        Retrieve all chunks from the system up to the specified amount.
+        """
+        ...

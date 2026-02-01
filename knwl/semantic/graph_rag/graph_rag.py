@@ -404,3 +404,35 @@ class GraphRAG(GraphRAGBase):
                 return await ragger.get_all_documents(amount, include_content=include_content)
             else:
                 raise ValueError(f"GraphRAG: provided ragger of type '{type(self.ragger)}' is not supported.")  
+
+    async def chunk_count(self) -> int:
+        """
+        Get the total number of chunks in the knowledge graph.
+        """
+        if self.ragger is None:
+            raise ValueError("GraphRAG: attempt to get chunk count but no ragger (ChunkingBase or RagBase instance) is provided.")
+        else:
+            if isinstance(self.ragger, ChunkingBase):
+                chunker = cast(ChunkingBase, self.ragger)
+                return await chunker.chunk_count()
+            elif isinstance(self.ragger, RagBase):
+                ragger = cast(RagBase, self.ragger)
+                return await ragger.chunk_count()
+            else:
+                raise ValueError(f"GraphRAG: provided ragger of type '{type(self.ragger)}' is not supported.")
+
+    async def get_all_chunks(self, amount: int = 10, include_content: bool = False) -> list[KnwlChunk]:
+        """
+        Retrieve all chunks from the knowledge graph up to the specified amount.
+        """
+        if self.ragger is None:
+            raise ValueError("GraphRAG: attempt to get all chunks but no ragger (ChunkingBase or RagBase instance) is provided.")
+        else:
+            if isinstance(self.ragger, ChunkingBase):
+                chunker = cast(ChunkingBase, self.ragger)
+                return await chunker.get_all_chunks(amount, include_content=include_content)
+            elif isinstance(self.ragger, RagBase):
+                ragger = cast(RagBase, self.ragger)
+                return await ragger.get_all_chunks(amount, include_content=include_content)
+            else:
+                raise ValueError(f"GraphRAG: provided ragger of type '{type(self.ragger)}' is not supported.")

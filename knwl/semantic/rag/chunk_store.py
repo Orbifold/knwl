@@ -8,6 +8,7 @@ from knwl.storage.storage_base import StorageBase
 from knwl.storage.vector_storage_base import VectorStorageBase
 from knwl.logging import log
 
+
 @defaults("chunk_store")
 class ChunkStore(ChunkBase):
     """
@@ -122,7 +123,9 @@ class ChunkStore(ChunkBase):
             list[KnwlChunk]: A list of the nearest KnwlChunk objects.
         """
         results = await self.chunk_embeddings.nearest(query, top_k)
-        log.debug(f"ChunkStore: nearest search for query '{query}' returned {len(results)} results.")
+        log.debug(
+            f"ChunkStore: nearest search for query '{query}' returned {len(results)} results."
+        )
         chunks = []
         for result in results:
             found = await self.get_by_id(result["id"])
@@ -132,3 +135,15 @@ class ChunkStore(ChunkBase):
                 else:
                     chunks.append(KnwlChunk.model_validate(found))
         return chunks
+
+    async def count(self) -> int:
+        """
+        Returns the total number of chunks stored.
+
+        Returns:
+            int: The total number of chunks.
+        """
+        return await self.chunk_storage.count()
+
+    async def get_all(self, amount=10, include_content=False):
+        return await super().get_all(amount, include_content)

@@ -33,7 +33,7 @@ class RagStore(RagBase):
         self.chunker: ChunkingBase = chunker
         self.auto_chunk: bool = auto_chunk
         self.validate_config()
-        
+
     def validate_config(self) -> None:
         if self.document_store is None:
             raise ValueError("RagStore: document_store is not configured")
@@ -105,13 +105,35 @@ class RagStore(RagBase):
             return True
         chunk_exists = await self.chunk_store.exists(obj_id)
         return chunk_exists
+
     async def document_count(self) -> int:
         """
         Get the total number of documents in the system.
         """
         return await self.document_store.count()
-    async def get_all_documents(self, amount: int = 10, include_content: bool = False) -> list[KnwlDocument]:
+
+    async def get_all_documents(
+        self, amount: int = 10, include_content: bool = False
+    ) -> list[KnwlDocument]:
         """
         Retrieve all documents from the system up to the specified amount.
         """
-        return await self.document_store.get_all(amount=amount, include_content=include_content)
+        return await self.document_store.get_all(
+            amount=amount, include_content=include_content
+        )
+
+    async def chunk_count(self) -> int:
+        """
+        Get the total number of chunks in the system.
+        """
+        return await self.chunk_store.count()
+
+    async def get_all_chunks(
+        self, amount: int = 10, include_content: bool = False
+    ) -> list[KnwlChunk]:
+        """
+        Retrieve all chunks from the system up to the specified amount.
+        """
+        return await self.chunk_store.get_all(
+            amount=amount, include_content=include_content
+        )

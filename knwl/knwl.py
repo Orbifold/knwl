@@ -19,6 +19,7 @@ from knwl.models.KnwlNode import KnwlNode
 from knwl.services import Services
 from knwl.logging import log
 
+
 class PromptType(Enum):
     EXTRACTION = "extraction"
     SUMMARIZATION = "summarization"
@@ -33,7 +34,6 @@ class Knwl:
     The default configuration behind this API stores everything under the user's home directory in a '.knwl' folder. There is an extensive configuration and dependency injection system behind Knwl that can be used to customize its behavior, but this class abstracts most of that away for simple use cases. It's an invitation to explore the rest of Knwl's capabilities.
     """
 
-   
     def __init__(
         self,
         namespace: str = "default",
@@ -91,7 +91,9 @@ class Knwl:
                 self._llm = services.create_service("llm")
             except Exception:
                 provider = get_config("llm", "default")
-                print(f"Error initializing LLM provider '{provider}'. Check your config.")
+                print(
+                    f"Error initializing LLM provider '{provider}'. Check your config."
+                )
         return self._llm
 
     async def add(self, input: str | KnwlInput) -> KnwlGraph:
@@ -177,17 +179,39 @@ class Knwl:
         Get the total number of nodes in the knowledge graph.
         """
         return await self.grag.node_count()
+
     async def document_count(self) -> Optional[int]:
         """
         Get the total number of documents in the system.
         """
         return await self.grag.document_count()
-    async def get_all_documents(self, amount: int = 10, include_content: bool = False) -> Optional[list[KnwlDocument]]:
+
+    async def chunk_count(self) -> Optional[int]:
+        """
+        Get the total number of chunks in the system.
+        """
+        return await self.grag.chunk_count()
+
+    async def get_all_chunks(
+        self, amount: int = 10, include_content: bool = False
+    ) -> Optional[list[KnwlChunk]]:
+        """
+        Get all chunks in the system, up to the specified amount.
+        """
+        return await self.grag.get_all_chunks(
+            amount=amount, include_content=include_content
+        )
+
+    async def get_all_documents(
+        self, amount: int = 10, include_content: bool = False
+    ) -> Optional[list[KnwlDocument]]:
         """
         Get all documents in the system, up to the specified amount.
         """
-        return await self.grag.get_all_documents(amount=amount, include_content=include_content)
-    
+        return await self.grag.get_all_documents(
+            amount=amount, include_content=include_content
+        )
+
     async def edge_count(self) -> int:
         """
         Get the total number of edges in the knowledge graph.

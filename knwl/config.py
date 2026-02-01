@@ -164,7 +164,7 @@ _default_config = {
         },
     },
     "llm": {
-        "default": "ollama",
+        "default": "openai",
         "ollama": {
             "class": "knwl.llm.ollama.OllamaClient",
             "model": "glm-4.7-flash",
