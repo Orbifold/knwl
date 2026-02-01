@@ -43,8 +43,16 @@ def get_document_count(
             )
     else:
         console.print("No documents found.")
+
+@document_app.command(
+    "ls",
+    short_help="Lists documents in the system.",
+    help="Lists documents in the system.",
+    epilog="Example:\n  knwl document ls --amount 5",
+)
 @document_app.command(
     "list",
+    short_help="Lists documents in the system.",
     help="Lists documents in the system.",
     epilog="Example:\n  knwl document list --amount 5",
 )
@@ -60,12 +68,12 @@ def get_documents(
     ] = 10,
 ):
     knwl = ctx.obj  # type: Knwl
-    documents = asyncio.run(knwl.get_all_documents(amount=amount))
+    documents = asyncio.run(knwl.get_all_documents(amount=amount, include_content=False))
     if documents is not None:
         if raw:
             console.print(json.dumps([doc.model_dump() for doc in documents], indent=2))
         else:
-        #    render a table of documents
+            #    render a table of documents
             table = Table(title="Documents")
             table.add_column("Id", justify="right", style="cyan", no_wrap=True)
             table.add_column("Name", style="magenta")

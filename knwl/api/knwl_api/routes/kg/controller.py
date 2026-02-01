@@ -1,45 +1,17 @@
-"""
-Knowledge Graph API Controller
-
-This module provides FastAPI endpoints for interacting with the Knwl knowledge graph,
-including CRUD operations on nodes, data ingestion, extraction, and RAG queries.
-"""
-
 from typing import Dict
 
 from fastapi import APIRouter, HTTPException, status
 from knwl import KnwlAnswer, KnwlContext
+from knwl.api.knwl_api.models.QuestionRequest import QuestionRequest
+from knwl.api.knwl_api.models.NamespaceResponse import NamespaceResponse
+from knwl.api.knwl_api.models.CountResponse import CountResponse
 from knwl.models import KnwlDocument, KnwlNode
 from knwl.models.KnwlFact import KnwlFact
-from pydantic import BaseModel, Field
 
 from knwl.api.knwl_api.models.JobStatus import JobStatus, JobResponse
 from knwl.api.knwl_api.routes.kg import service
-
+from knwl.api.knwl_api.tasks import add_job, get_job_status
 router = APIRouter()
-
-
-class QuestionRequest(BaseModel):
-    """Request model for asking questions or augmenting text."""
-
-    question: str = Field(
-        ..., description="The question or text to process", min_length=1
-    )
-    strategy: str | None = Field(
-        None, description="Graph RAG strategy (local, global, hybrid, naive, self)"
-    )
-
-
-class CountResponse(BaseModel):
-    """Response model for count endpoints."""
-
-    count: int = Field(..., description="The count value")
-
-
-class NamespaceResponse(BaseModel):
-    """Response model for namespace endpoint."""
-
-    namespace: str = Field(..., description="The current namespace")
 
 
 @router.get(
@@ -244,7 +216,7 @@ async def ingest_data(doc: KnwlDocument) -> JobResponse:
         HTTPException: 400 for invalid data, 500 if job creation fails
     """
     try:
-        job_id = await service.add_job("ingest", doc.model_dump())
+        job_id = await add_job("ingest", doc.model_dump())
         return JobResponse(job_id=job_id, message="Ingestion job started successfully")
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -286,7 +258,7 @@ async def extract_data(doc: KnwlDocument) -> JobResponse:
         HTTPException: 400 for invalid data, 500 if job creation fails
     """
     try:
-        job_id = await service.add_job("extract", doc.model_dump())
+        job_id = await add_job("extract", doc.model_dump())
         return JobResponse(job_id=job_id, message="Extraction job started successfully")
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -308,7 +280,7 @@ async def extract_data(doc: KnwlDocument) -> JobResponse:
         500: {"description": "Internal server error"},
     },
 )
-async def get_job_status(job_id: str) -> JobStatus:
+async def fetch_job_status(job_id: str) -> JobStatus:
     """
     Get the status of a background job.
 
@@ -324,7 +296,7 @@ async def get_job_status(job_id: str) -> JobStatus:
         HTTPException: 404 if job not found, 500 if operation fails
     """
     try:
-        job_status = await service.get_job_status(job_id)
+        job_status = await get_job_status(job_id)
         if job_status is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -369,7 +341,7 @@ async def add_fact(fact: KnwlFact) -> JobResponse:
         HTTPException: 400 for invalid data, 500 if job creation fails
     """
     try:
-        job_id = await service.add_job("fact", fact.model_dump())
+        job_id = await add_job("fact", fact.model_dump())
         return JobResponse(job_id=job_id, message="Fact job started successfully")
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))

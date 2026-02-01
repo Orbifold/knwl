@@ -110,8 +110,8 @@ class RagStore(RagBase):
         Get the total number of documents in the system.
         """
         return await self.document_store.count()
-    async def get_all_documents(self, amount: int = 10) -> list[KnwlDocument]:
+    async def get_all_documents(self, amount: int = 10, include_content: bool = False) -> list[KnwlDocument]:
         """
         Retrieve all documents from the system up to the specified amount.
         """
-        return await self.document_store.get_all(amount=amount)
+        return await self.document_store.get_all(amount=amount, include_content=include_content)

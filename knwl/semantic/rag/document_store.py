@@ -47,8 +47,8 @@ class DocumentStore(DocumentBase):
         return await self.document_storage.exists(document_id)
     async def count(self) -> int:
         return await self.document_storage.count()
-    async def get_all(self, amount: int = 10) -> list[KnwlDocument]:
-        results = await self.document_storage.get_all(amount=amount)
+    async def get_all(self, amount: int = 10, include_content: bool = False) -> list[KnwlDocument]:
+        results = await self.document_storage.get_all(amount=amount, include_content=include_content)
         documents: list[KnwlDocument] = []
         for item in results:
             if isinstance(item, KnwlDocument):

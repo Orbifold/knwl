@@ -182,11 +182,11 @@ class Knwl:
         Get the total number of documents in the system.
         """
         return await self.grag.document_count()
-    async def get_all_documents(self, amount: int = 10) -> Optional[list[KnwlDocument]]:
+    async def get_all_documents(self, amount: int = 10, include_content: bool = False) -> Optional[list[KnwlDocument]]:
         """
         Get all documents in the system, up to the specified amount.
         """
-        return await self.grag.get_all_documents(amount=amount)
+        return await self.grag.get_all_documents(amount=amount, include_content=include_content)
     
     async def edge_count(self) -> int:
         """

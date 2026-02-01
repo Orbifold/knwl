@@ -3,7 +3,6 @@ from typing import Any, cast
 
 from pydantic import BaseModel
 
-from knwl import KnwlModel
 from knwl.di import defaults
 from knwl.logging import log
 from knwl.storage.kv_storage_base import KeyValueStorageBase
@@ -218,7 +217,7 @@ class JsonStorage(KeyValueStorageBase):
                 results.append(item)
         return results
 
-    async def nearest(self, query: str, top_k: int = 5) -> list[KnwlModel]:
+    async def nearest(self, query: str, top_k: int = 5) -> list[dict]:
         raise NotImplemented("JsonStorage: semantic search is not available.")
 
     async def count(self) -> int:
@@ -227,7 +226,7 @@ class JsonStorage(KeyValueStorageBase):
         """
         return len(self.data)
 
-    async def get_all(self, amount: int = 10) -> list[KnwlModel]:
+    async def get_all(self, amount: int = 10, include_content: bool = False) -> list[dict]:
         """
         Retrieve all objects up to the specified amount.
 
@@ -235,9 +234,15 @@ class JsonStorage(KeyValueStorageBase):
             amount (int): The number of objects to retrieve.
 
         Returns:
-            list[KnwlModel]: A list of retrieved objects.
+            list[dict]: A list of retrieved objects.
         """
         all_items = list(self.data.values())
+        for u in all_items:
+            if not include_content and isinstance(u, dict) :
+                if "content" in u:
+                    u["content"] = "<content omitted>"
+                if "text" in u:
+                    u["text"] = "<text omitted>"
         # sort by name
         all_items.sort(key=lambda x: x.get("name", "") if isinstance(x, dict) else "")
         return all_items[:amount]

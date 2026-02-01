@@ -15,5 +15,6 @@ from .KnwlContext import KnwlContext
 from .KnwlText import KnwlText
 from .KnwlReference import KnwlReference
 from .KnwlModel import KnwlModel
+from .KnwlFact import KnwlFact
 
-__all__ = ["KnwlNode", "KnwlEdge", "KnwlGraph", "KnwlExtraction", "KnwlDocument", "KnwlChunk", "KnwlInput",   "KnwlAnswer", "KnwlEntity", "KnwlBlob", "KnwlIngestion", "KnwlParams", "KnwlKeywords", "KnwlContext",  "KnwlText", "KnwlReference", "KnwlModel"]
+__all__ = ["KnwlNode", "KnwlEdge", "KnwlGraph", "KnwlExtraction", "KnwlDocument", "KnwlChunk", "KnwlInput",   "KnwlAnswer", "KnwlEntity", "KnwlBlob", "KnwlIngestion", "KnwlParams", "KnwlKeywords", "KnwlContext",  "KnwlText", "KnwlReference", "KnwlModel", "KnwlFact"]

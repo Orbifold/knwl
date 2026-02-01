@@ -109,7 +109,7 @@ class RagBase(FrameworkBase, ABC):
         """
         ...
     @abstractmethod
-    async def get_all_documents(self, amount: int = 10) -> list[KnwlDocument]:
+    async def get_all_documents(self, amount: int = 10, include_content: bool = False) -> list[KnwlDocument]:
         """
         Retrieve all documents up to the specified amount.
 

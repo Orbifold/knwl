@@ -390,7 +390,7 @@ class GraphRAG(GraphRAGBase):
                 return await ragger.document_count()
             else:
                 raise ValueError(f"GraphRAG: provided ragger of type '{type(self.ragger)}' is not supported.")
-    async def get_all_documents(self, amount: int = 10) -> list[KnwlDocument]:
+    async def get_all_documents(self, amount: int = 10, include_content: bool = False) -> list[KnwlDocument]:
         """
         Retrieve all documents from the knowledge graph up to the specified amount.
         """
@@ -401,6 +401,6 @@ class GraphRAG(GraphRAGBase):
                 raise ValueError("GraphRAG: attempt to get all documents but ragger is a ChunkingBase instance, which does not support document storage.")
             elif isinstance(self.ragger, RagBase):
                 ragger = cast(RagBase, self.ragger)
-                return await ragger.get_all_documents(amount)
+                return await ragger.get_all_documents(amount, include_content=include_content)
             else:
                 raise ValueError(f"GraphRAG: provided ragger of type '{type(self.ragger)}' is not supported.")  
