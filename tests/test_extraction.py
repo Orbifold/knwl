@@ -129,6 +129,4 @@ async def test_fast_entity_extraction():
     result: list[KnwlEntity] = await extractor.extract(text)
     assert result is None
 
-@pytest.mark.asyncio
-async def test_ambiguity():
-    pass
+ 

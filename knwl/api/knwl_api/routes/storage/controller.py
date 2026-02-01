@@ -63,10 +63,55 @@ async def get_documents(amount: int = 10, include_content: bool = False) -> Dict
         HTTPException: 500 error if the operation fails
     """
     try:
-        documents = await service.get_all_documents(amount=amount, include_content=include_content)
+        documents = await service.get_all_documents(
+            amount=amount, include_content=include_content
+        )
         return documents
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve documents: {str(e)}",
         )
+
+
+@router.get(
+    "/documents/{document_id}",
+    response_model=KnwlDocument,
+    summary="Get document by Id",
+    description="Retrieve a document by its Id from storage.",
+    responses={
+        200: {"description": "Successfully retrieved document"},
+        404: {"description": "Document not found"},
+        500: {"description": "Internal server error"},
+    },
+)
+async def get_document_by_id(document_id: str) -> KnwlDocument:
+    """
+    Retrieve a document by its Id.
+
+    Args:
+        document_id (str): The Id of the document to retrieve
+
+    Returns:
+        KnwlDocument: The retrieved document
+
+    Raises:
+        HTTPException: 404 error if the document is not found
+        HTTPException: 500 error if the operation fails
+    """
+    try:
+        document = await service.get_document_by_id(document_id=document_id)
+        if document is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Document with ID {document_id} not found",
+            )
+        return document
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve document: {str(e)}",
+        )
+

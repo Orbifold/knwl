@@ -45,7 +45,12 @@ class OllamaSummarization(SummarizationBase):
         self, content: str | list[str], entity_or_relation_name: str | list[str] = None
     ) -> str:
         if isinstance(content, list):
-            content = " ".join(content)
+            # prevent concat of the same content multiple times            
+            content = " "
+            for part in content:
+                if part not in content:
+                    content += part + " "
+            
         tokens = await self.chunker.encode(content)
 
         if len(tokens) <= self.max_tokens:

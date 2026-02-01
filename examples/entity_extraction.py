@@ -2,7 +2,12 @@
 # Use VSCode Interactive Python for best experience but you can also run this script directly.
 # See https://code.visualstudio.com/docs/python/jupyter-support-py
 # ============================================================================================
-# %%
+# %% Specify the entity type to extract.
+"""
+==============================================================================================
+You can use Knwl for standard entity extraction tasks. 
+==============================================================================================
+"""
 from knwl import services
 
 extractor = services.get_service("entity_extraction")

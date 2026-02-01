@@ -1,7 +1,9 @@
+import os
 import sys
 from typing import Annotated, Optional
 from knwl.format import print_knwl
 from knwl.knwl import Knwl
+from knwl.models import KnwlDocument
 from knwl.models.KnwlInput import KnwlInput
 import typer
 import asyncio
@@ -35,6 +37,8 @@ app.add_typer(chunk_app, name="chunk", context_settings={"obj": K})
 
 def try_get_text(obj: Optional[str]) -> str:
     if obj is None:
+        if sys.stdin.isatty():
+            return ""
         data = sys.stdin.read().strip()
     else:
         data = obj.strip()
@@ -109,6 +113,9 @@ def extract(
     ] = False,
 ) -> None:
     if obj is None:
+        if sys.stdin.isatty():
+            console.print("No input provided. Pass an argument or pipe input via stdin.", style="bold red")
+            return
         data = sys.stdin.read().strip()
     else:
         data = obj.strip()
@@ -156,20 +163,45 @@ def add(
         print_knwl(g)
 
 
-@app.command("ingest", hidden=True)  # hidden=True keeps it out of help text
+@app.command("ingest")  
 def ingest(
+    ctx: typer.Context,
     obj: Annotated[
         Optional[str], typer.Argument(..., help="Text to ingest into the database")
+    ] = None,
+    file_path: Annotated[
+        str, typer.Option("--file", "-f", help="Path to the document file")
     ] = None,
 ) -> None:
     """Alias for 'add' command."""
     found = try_get_text(obj)
-    if found is None:
-        console.print(
-            "Could not extract text or content from the provided input.",
-            style="bold red",
-        )
+    if found is None or found == "":
+        if not file_path:
+            console.print(
+                "Could not extract text or content from the provided input.",
+                style="bold red",
+            )
+        else:
+            if not os.path.exists(file_path):
+                console.print(f"File not found: {file_path}")
+                return
+            # only markdown files for now
+            if not file_path.endswith(".md"):
+                console.print("Only markdown (.md) files are supported for ingestion.")
+                return
+            knwl = ctx.obj  # type: Knwl            
+
+            doc = KnwlDocument.from_file(file_path)
+            with console.status("Ingesting document...", spinner="dots"):
+                asyncio.run(knwl.ingest(doc))
+            console.print(f"Document ingested with Id: {doc.id}")
+
     else:
+        if file_path:
+            console.print(
+                "[orange]Both text input and file path provided. Using the content.[/]"
+            )
+        console.print("Ingesting text...")
         add(found)
 
 

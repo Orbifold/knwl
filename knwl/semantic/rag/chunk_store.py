@@ -145,5 +145,44 @@ class ChunkStore(ChunkBase):
         """
         return await self.chunk_storage.count()
 
-    async def get_all(self, amount=10, include_content=False):
-        return await super().get_all(amount, include_content)
+    async def get_all(self, amount=10, include_content=False) -> list[KnwlChunk]:
+        found = await self.chunk_storage.get_all(
+            amount=amount, include_content=include_content
+        )
+        chunks: list[KnwlChunk] = []
+        for item in found:
+            if isinstance(item, KnwlChunk):
+                chunks.append(item)
+            else:
+                chunks.append(KnwlChunk.model_validate(item))
+        return chunks
+
+    async def get_document_chunks(
+        self, document_id: str, include_content: bool = False
+    ) -> Optional[list[KnwlChunk]]:
+        """
+        Retrieve all chunks associated with a specific document.
+
+        Args:
+            document_id (str): The unique identifier of the document.
+            include_content (bool): Whether to include the content of the chunks.
+
+        Returns:
+            Optional[list[KnwlChunk]]: A list of KnwlChunk objects associated with the document, or None if no chunks are found.
+        """
+        found = await self.chunk_storage.get_by_metadata(source_id=document_id)
+        if not found:
+            return None
+        chunks: list[KnwlChunk] = []
+        for c in found:
+            if isinstance(c, KnwlChunk):
+                if not include_content:
+                    c.content = "<content omitted>"
+                chunks.append(c)
+            else:
+                chunk = KnwlChunk.model_validate(c)
+                if not include_content:
+                    chunk.content = "<content omitted>"
+                chunks.append(chunk)
+
+        return chunks

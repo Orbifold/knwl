@@ -38,3 +38,25 @@ async def get_all_documents(amount: int = 10, include_content: bool = False) -> 
     except Exception as e:
         log(e)
         raise
+
+async def get_document_by_id(document_id: str) -> KnwlDocument | None:
+    """
+    Retrieve a document by its ID.
+
+    Args:
+        document_id (str): The ID of the document to retrieve
+
+    Returns:
+        KnwlDocument | None: The retrieved document or None if not found
+    """
+    try:
+        document = await knwl.get_document_by_id(id=document_id)
+        if document:
+            log.debug(f"Document with Id {document_id} retrieved.")
+        else:
+            log.debug(f"Document with Id {document_id} not found.")
+        return document
+
+    except Exception as e:
+        log(e)
+        raise

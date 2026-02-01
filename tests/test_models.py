@@ -1,4 +1,6 @@
+import os
 import pytest
+import tempfile
 from pydantic import ValidationError
 
 from knwl.format import render_mermaid
@@ -10,6 +12,7 @@ from knwl.models import (
     KnwlInput,
     KnwlDocument,
 )
+from tests.library.collect import get_random_library_article
 
 pytestmark = pytest.mark.basic
 
@@ -128,3 +131,19 @@ def test_merge_graphs():
     assert g_merged.id == g1.id  # id of merged graph is same as first graph
 
     render_mermaid(g_merged)
+
+
+@pytest.mark.asyncio
+async def test_knwldocument():
+    content = await get_random_library_article()
+    temp_path = tempfile.NamedTemporaryFile(suffix=".md", delete=False).name
+    file_name = os.path.basename(temp_path)
+    with open(temp_path, "w") as f:
+        f.write(content)
+    doc = KnwlDocument.from_file(temp_path)
+    assert doc.content == content
+    assert doc.name == file_name
+    assert doc.description == f"Document ingested from file: {temp_path}"
+    assert doc.id is not None
+    # remove temp file
+    os.remove(temp_path)

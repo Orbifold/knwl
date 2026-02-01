@@ -76,10 +76,11 @@ def get_chunks(
             #    render a table of chunks
             table = Table(title="Chunks")
             table.add_column("Id", justify="right", style="cyan", no_wrap=True)
-            table.add_column("Name", style="magenta")
-            table.add_column("Description", style="green")
+            table.add_column("Document", style="magenta")
+            table.add_column("Index", style="green")
+            table.add_column("Tokens", style="green")
             for chunk in chunks:
-                table.add_row(str(chunk.id), chunk.name, str(chunk.description))
+                table.add_row(str(chunk.id), chunk.origin_id, str(chunk.index), str(chunk.tokens))
             console.print(table)
     else:
         console.print("No chunks found.")

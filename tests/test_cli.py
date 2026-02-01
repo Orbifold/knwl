@@ -3,8 +3,9 @@ import pytest
 from typer.testing import CliRunner
 import importlib
 import json
+
 pytestmark = pytest.mark.cli
-    
+
 
 def test_cli_has_main():
 
@@ -120,6 +121,7 @@ def test_config_set():
 
     assert result.stdout.replace("\n", "") == "custom_model:1b"
 
+
 def test_graph_count():
     """
     The graph count command should run and return counts.
@@ -132,6 +134,7 @@ def test_graph_count():
     counts = json.loads(result.stdout.replace("\n", ""))  # stdout ends with a newline
     assert "nodes" in counts
     assert "edges" in counts
+
 
 def test_graph_types():
     """
@@ -146,6 +149,7 @@ def test_graph_types():
     assert "nodes" in types
     assert "edges" in types
 
+
 def test_graph_type_nodes():
     """
     The graph type command should run and return nodes of a specific type.
@@ -154,9 +158,7 @@ def test_graph_type_nodes():
     module = importlib.import_module("knwl.cli.cli")
     runner = CliRunner()
     test_text = "John Field was an Irish composer."
-    extract_result = runner.invoke(
-        module.app, ["add",  test_text]
-    )
+    extract_result = runner.invoke(module.app, ["add", test_text])
     assert extract_result.exit_code == 0
 
     result = runner.invoke(module.app, ["graph", "type", "Person", "--raw"])
@@ -165,6 +167,7 @@ def test_graph_type_nodes():
     assert len(nodes) > 0
     found = [u for u in nodes if u["name"] == "John Field"]
     assert len(found) > 0
+
 
 def test_log_list():
     """
@@ -175,7 +178,8 @@ def test_log_list():
     runner = CliRunner()
     result = runner.invoke(module.app, ["log", "list"])
     assert result.exit_code == 0
-    assert "No log items found." in result.stdout or "- " in result.stdout 
+    assert "No log items found." in result.stdout or "- " in result.stdout
+
 
 def test_direct():
     """
@@ -188,7 +192,7 @@ def test_direct():
     runner.invoke(
         module.app,
         ["config", "backup", "-p", f"$/user/test_backup_{int(time())}.json"],
-    )  
+    )
     # change the LLM
     choices = ["gemma3:4b", "qwen2.5:7b", "llama3.1:latest"]
     pick = int(time()) % len(choices)
@@ -198,20 +202,22 @@ def test_direct():
     runner.invoke(
         module.app,
         ["config", "set", "llm.ollama.model", model],
-    )  
+    )
     # direct ask
     result = runner.invoke(
         module.app,
-        ["direct", "-r","Who are you?"],
-    )  
+        ["direct", "-r", "Who are you?"],
+    )
     assert result.exit_code == 0
     response = json.loads(result.stdout.replace("\n", ""))["answer"]
     assert name.lower() in response.lower()
-    print("Direct response:", response  )
+    print("Direct response:", response)
     runner.invoke(
         module.app,
         ["config", "restore", "-p", f"$/user/test_backup_{int(time())}.json"],
-    )  
+    )
+
+
 def test_find():
     """
     The find command should run and return matching nodes.
@@ -220,11 +226,35 @@ def test_find():
     module = importlib.import_module("knwl.cli.cli")
     runner = CliRunner()
     test_text = "Marie Curie was a physicist and chemist."
-    extract_result = runner.invoke(
-        module.app, ["add",  test_text]
-    )
+    extract_result = runner.invoke(module.app, ["add", test_text])
     assert extract_result.exit_code == 0
 
     result = runner.invoke(module.app, ["find", "Curie"])
     assert result.exit_code == 0
     assert "Marie Curie" in result.stdout
+
+
+def test_ingest_file():
+    """
+    The ingest command should run and ingest a file.
+    """
+
+    module = importlib.import_module("knwl.cli.cli")
+    runner = CliRunner()
+    test_file_path = "/Users/swa/Desktop/AI/knwl/tests/library/short.md"
+    result = runner.invoke(module.app, ["ingest", "-f", test_file_path])
+    assert result.exit_code == 0
+    assert "Document ingested with Id:" in result.stdout
+
+
+def test_ingest_stdin():
+    """
+    The ingest command should run and ingest from stdin.
+    """
+
+    module = importlib.import_module("knwl.cli.cli")
+    runner = CliRunner()
+    test_input = "Adam Smith was a Scottish economist and philosopher."
+    result = runner.invoke(module.app, ["ingest"], input=test_input)
+    assert result.exit_code == 0
+    assert "👁️ Knowledge Graph" in result.stdout

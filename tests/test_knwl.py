@@ -27,7 +27,11 @@ async def test_quick_start():
 
     before_count = await storage.node_count()
     # add a fact
-    await knwl.add_fact("gravity", "Gravity is a universal force that attracts two bodies toward each other.", id="fact1", )
+    await knwl.add_fact(
+        "gravity",
+        "Gravity is a universal force that attracts two bodies toward each other.",
+        id="fact1",
+    )
     # where is the graph stored?
     actual_graphml_path = resolve_reference("@/graph/user/path")
     print(f"GraphML path: {actual_graphml_path}")
@@ -37,13 +41,18 @@ async def test_quick_start():
     assert (await knwl.node_exists("fact1")) is True
 
     # can also open the file directly and check this
+    storage = NetworkXGraphStorage(path=graph_config["path"])
     assert await storage.node_count() == before_count + 1
     assert await storage.node_exists("fact1") is True
 
     # Note: you can go and double-click the graphml file to open it in a graph viewer like yEd to visualize the graph.
 
     # add another fact
-    await knwl.add_fact("photosynthesis", "Photosynthesis is the process by which green plants and some other organisms use sunlight to synthesize foods from carbon dioxide and water.", id="fact2", )
+    await knwl.add_fact(
+        "photosynthesis",
+        "Photosynthesis is the process by which green plants and some other organisms use sunlight to synthesize foods from carbon dioxide and water.",
+        id="fact2",
+    )
     # two nodes should be present now
     assert await knwl.node_count() == 2
 
@@ -54,7 +63,11 @@ async def test_quick_start():
     found = await knwl.get_nodes_by_name("photosynthesis")
     assert len(found) == 1
     photosynthesis_node = found[0]
-    await knwl.connect(source_name=gravity_node.name, target_name=photosynthesis_node.name, relation="Both are fundamental natural processes.", )
+    await knwl.connect(
+        source_name=gravity_node.name,
+        target_name=photosynthesis_node.name,
+        relation="Both are fundamental natural processes.",
+    )
 
     # one edge
     assert await knwl.edge_count() == 1
@@ -89,7 +102,7 @@ async def test_quick_start():
     a = await knwl.ask("What is photosynthesis?")
     print_knwl(a.answer)
 
- 
+
 @pytest.mark.asyncio
 async def test_knwl_nodes():
     k = Knwl()
@@ -159,7 +172,12 @@ async def test_knwl_absolute_path():
     namespace = f"~/knwl_{name}"
     actual_path = os.path.expanduser(namespace)
     kg = Knwl(namespace=namespace)
-    input = KnwlInput(id="", name="John", description="Test node for override config", text="John Field wrote amazing piano concertos.", )
+    input = KnwlInput(
+        id="",
+        name="John",
+        description="Test node for override config",
+        text="John Field wrote amazing piano concertos.",
+    )
     await kg.add(input)
     assert os.path.exists(os.path.join(actual_path, "vectors")) is True
     import shutil
@@ -189,3 +207,21 @@ async def test_knwl_prompt_access():
 
     constants_prompts = knwl.get_prompt(PromptType.CONSTANTS)
     assert constants_prompts is not None
+
+
+@pytest.mark.asyncio
+async def test_add_fact():
+    knwl = Knwl()
+    n = await knwl.add_fact(
+        "gravity",
+        "Gravity is a universal force that attracts two bodies toward each other.",
+        type="Fact",
+        id="fact_gravity",
+    )
+    assert n.id == "fact_gravity"
+    assert n.name == "gravity"
+    assert n.description == "Gravity is a universal force that attracts two bodies toward each other."
+    assert await knwl.node_exists("fact_gravity")
+    found = await knwl.get_node_by_id("fact_gravity")
+    assert found is not None
+    assert found.id == "fact_gravity"

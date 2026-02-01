@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 
+from typing import Optional
+
 from knwl.framework_base import FrameworkBase
 from knwl.models.KnwlChunk import KnwlChunk
 from knwl.models.KnwlDocument import KnwlDocument
@@ -136,5 +138,20 @@ class RagBase(FrameworkBase, ABC):
 
         Returns:
             list[KnwlChunk]: A list of retrieved chunks.
+        """
+        ...
+    @abstractmethod
+    async def get_document_chunks(
+        self, document_id: str, include_content: bool = False
+    ) -> Optional[list[KnwlChunk]]:
+        """
+        Retrieve all chunks associated with a specific document.
+
+        Args:
+            document_id (str): The unique identifier of the document.
+            include_content (bool): Whether to include the content of the chunks.
+
+        Returns:
+            Optional[list[KnwlChunk]]: A list of KnwlChunk objects associated with the document, or None if no chunks are found.
         """
         ...

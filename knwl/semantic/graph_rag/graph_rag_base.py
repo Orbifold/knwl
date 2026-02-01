@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Optional
 
 from knwl.framework_base import FrameworkBase
 from knwl.models import (
@@ -222,7 +222,36 @@ class GraphRAGBase(FrameworkBase, ABC):
         Retrieve all documents from the knowledge graph up to the specified amount.
         """
         ...
+    @abstractmethod
+    async def get_document_chunks(
+        self, document_id: str, include_content: bool = False
+    ) -> Optional[list[KnwlChunk]]:
+        """
+        Retrieve all chunks associated with a specific document from the knowledge graph.
 
+        Args:
+            document_id (str): The unique identifier of the document.
+            include_content (bool): Whether to include the content of the chunks.
+
+        Returns:
+            Optional[list[KnwlChunk]]: A list of KnwlChunk objects associated with the document, or None if no chunks are found.
+        """
+        ...
+    @abstractmethod
+    async def get_document_of_chunk(
+        self, chunk_id: str, include_content: bool = False
+    ) -> Optional[KnwlDocument]:
+        """
+        Retrieve the document associated with a specific chunk from the knowledge graph.
+
+        Args:
+            chunk_id (str): The unique identifier of the chunk.
+            include_content (bool): Whether to include the content of the document.
+
+        Returns:
+            Optional[KnwlDocument]: The KnwlDocument object associated with the chunk, or None if no document is found.
+        """
+        ...
     @abstractmethod
     async def chunk_count(self) -> int:
         """
@@ -256,5 +285,12 @@ class GraphRAGBase(FrameworkBase, ABC):
     async def chunk(self, document: KnwlDocument) -> list[KnwlChunk]:
         """
         Chunk the given document into smaller KnwlChunk objects.
+        """
+        ...
+
+    @abstractmethod
+    async def get_document_by_id(self, document_id: str) -> KnwlDocument | None:
+        """
+        Retrieve a document by its Id.
         """
         ...

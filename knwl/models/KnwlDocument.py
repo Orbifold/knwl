@@ -1,3 +1,4 @@
+import os
 from knwl.models.KnwlInput import KnwlInput
 from knwl.utils import hash_with_prefix
 from pydantic import BaseModel, Field, field_validator, model_validator
@@ -35,7 +36,6 @@ class KnwlDocument(BaseModel):
     )
     # todo: have ontology in a separate ontology store
 
-
     @field_validator("content")
     def content_not_empty(cls, v):
         if v is None or len(str.strip(v)) == 0:
@@ -44,7 +44,11 @@ class KnwlDocument(BaseModel):
 
     @model_validator(mode="after")
     def set_id(self) -> "KnwlDocument":
-        if self.id is None and self.content is not None and len(str.strip(self.content)) > 0:
+        if (
+            self.id is None
+            and self.content is not None
+            and len(str.strip(self.content)) > 0
+        ):
             object.__setattr__(
                 self, "id", self.hash_keys(self.content, self.name, self.description)
             )
@@ -53,8 +57,29 @@ class KnwlDocument(BaseModel):
     @staticmethod
     def from_input(input: KnwlInput):
         return KnwlDocument(
-            content=input.text, name=input.name, description=input.description, id=input.id
+            content=input.text,
+            name=input.name,
+            description=input.description,
+            id=input.id,
         )
+
+    @staticmethod
+    def from_file(file_path: str) -> "KnwlDocument":
+        if not file_path:
+            raise ValueError(
+                "file_path must be provided to create KnwlDocument from file."
+            )
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"File not found: {file_path}")
+        if not file_path.endswith(".md"):
+            raise ValueError("Only markdown (.md) files are supported for ingestion.")
+        with open(file_path, "r") as f:
+            content = f.read()
+        name = file_path.split("/")[-1]
+        # remove extension
+        name = name.rsplit(".", 1)[0]
+        description = f"Document ingested from file: {file_path}"
+        return KnwlDocument(content=content, name=name, description=description)
 
     @staticmethod
     def hash_keys(content: str, name: str = None, description: str = None) -> str:

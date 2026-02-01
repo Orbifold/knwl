@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Optional
 from knwl import KnwlChunk, KnwlDocument
 from knwl.chunking.chunking_base import ChunkingBase
 from knwl.di import defaults
@@ -121,6 +121,24 @@ class RagStore(RagBase):
         return await self.document_store.get_all(
             amount=amount, include_content=include_content
         )
+
+    async def get_document_chunks(
+        self, document_id: str, include_content: bool = False
+    ) -> Optional[list[KnwlChunk]]:
+        return await self.chunk_store.get_by_origin_id(
+            origin_id=document_id, include_content=include_content
+        )
+
+    async def get_document_of_chunk(
+        self, chunk_id: str, include_content: bool = False
+    ) -> Optional[KnwlDocument]:
+        chunk = await self.chunk_store.get_by_id(chunk_id, include_content=False)
+        if chunk is None:
+            return None
+        document = await self.document_store.get_by_id(
+            chunk.origin_id, include_content=include_content
+        )
+        return document
 
     async def chunk_count(self) -> int:
         """

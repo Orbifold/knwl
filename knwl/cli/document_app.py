@@ -1,5 +1,6 @@
 import asyncio
 import json
+import os
 from typing_extensions import Annotated
 import typer
 from knwl.config import get_config, resolve_config
@@ -12,6 +13,7 @@ from rich.table import Table
 from knwl.collect.wikipedia import WikipediaCollector
 from knwl.format import print_knwl
 from knwl.knwl import Knwl
+from knwl.models import KnwlDocument
 
 console = Console()
 document_app = typer.Typer(help="Utility to manage documents.")
@@ -44,6 +46,7 @@ def get_document_count(
     else:
         console.print("No documents found.")
 
+
 @document_app.command(
     "ls",
     short_help="Lists documents in the system.",
@@ -68,7 +71,9 @@ def get_documents(
     ] = 10,
 ):
     knwl = ctx.obj  # type: Knwl
-    documents = asyncio.run(knwl.get_all_documents(amount=amount, include_content=False))
+    documents = asyncio.run(
+        knwl.get_all_documents(amount=amount, include_content=False)
+    )
     if documents is not None:
         if raw:
             console.print(json.dumps([doc.model_dump() for doc in documents], indent=2))
@@ -83,3 +88,30 @@ def get_documents(
             console.print(table)
     else:
         console.print("No documents found.")
+
+
+@document_app.command("ingest", help="Ingest a document into the system.")
+def ingest_document(
+    ctx: typer.Context,
+    file_path: Annotated[
+        str, typer.Option("--file", "-f", help="Path to the document file")
+    ],
+):
+    if not file_path:
+        console.print("Please provide a file path using --file or -f option.")
+        return
+    if not os.path.exists(file_path):
+        console.print(f"File not found: {file_path}")
+        return
+    # only markdown files for now
+    if not file_path.endswith(".md"):
+        console.print("Only markdown (.md) files are supported for ingestion.")
+        return
+    knwl = ctx.obj  # type: Knwl
+    with open(file_path, "r") as f:
+        content = f.read()
+
+    doc = KnwlDocument.from_file(file_path)
+    with console.status("Ingesting document...", spinner="dots"):
+        asyncio.run(knwl.ingest(doc))
+    console.print(f"Document ingested with Id: {doc.id}")

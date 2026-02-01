@@ -20,7 +20,11 @@ class SimpleConcatenation(SummarizationBase):
 
     async def summarize(self, content: str | list[str], entity_or_relation_name: str|list[str] = None) -> str:
         if isinstance(content, list):
-            content = "\n".join(content)
+            # prevent concat of the same content multiple times            
+            content = " "
+            for part in content:
+                if part not in content:
+                    content += part + " "
         if self.max_tokens is not None and len(content) > self.max_tokens:
             return content[: self.max_tokens] + "..."
         return content

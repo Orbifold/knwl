@@ -7,11 +7,11 @@ from knwl.models.KnwlChunk import KnwlChunk
 from knwl.storage.storage_base import StorageBase
 from knwl.storage.vector_storage_base import VectorStorageBase
 
+
 class ChunkBase(FrameworkBase, ABC):
     """
     Base class for creating and managing text chunks.
     """
-
 
     @abstractmethod
     async def upsert(self, obj: str | KnwlChunk) -> str:
@@ -25,8 +25,9 @@ class ChunkBase(FrameworkBase, ABC):
             str: The unique identifier of the upserted chunk.
         """
         ...
+
     @abstractmethod
-    async def get_by_id(self, chunk_id: str) -> KnwlChunk|None:
+    async def get_by_id(self, chunk_id: str) -> KnwlChunk | None:
         """
         Retrieves a text chunk by its unique identifier.
 
@@ -57,6 +58,7 @@ class ChunkBase(FrameworkBase, ABC):
             chunk_id (str): The unique identifier of the chunk.
         """
         ...
+
     @abstractmethod
     async def delete_source(self, source_key: str) -> None:
         """
@@ -66,6 +68,7 @@ class ChunkBase(FrameworkBase, ABC):
             source_key (str): The source key whose associated chunks are to be deleted.
         """
         ...
+
     @abstractmethod
     async def get_source_chunks(self, source_key: str) -> list[KnwlChunk]:
         """
@@ -78,6 +81,7 @@ class ChunkBase(FrameworkBase, ABC):
             list[KnwlChunk]: A list of KnwlChunk objects associated with the source key.
         """
         ...
+
     @abstractmethod
     async def count() -> int:
         """
@@ -87,6 +91,7 @@ class ChunkBase(FrameworkBase, ABC):
             int: The total number of chunks.
         """
         ...
+
     @abstractmethod
     async def get_all(
         self, amount: int = 10, include_content: bool = False
@@ -95,3 +100,20 @@ class ChunkBase(FrameworkBase, ABC):
         Retrieve all chunks from the system up to the specified amount.
         """
         ...
+
+    @abstractmethod
+    async def get_document_chunks(
+        self, document_id: str, include_content: bool = False
+    ) -> Optional[list[KnwlChunk]]:
+        """
+        Retrieve all chunks associated with a specific document.
+
+        Args:
+            document_id (str): The unique identifier of the document.
+            include_content (bool): Whether to include the content of the chunks.
+
+        Returns:
+            Optional[list[KnwlChunk]]: A list of KnwlChunk objects associated with the document, or None if no chunks are found.
+        """
+        ...
+

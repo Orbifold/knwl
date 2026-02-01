@@ -96,7 +96,7 @@ class Knwl:
                 )
         return self._llm
 
-    async def add(self, input: str | KnwlInput) -> KnwlGraph:
+    async def add(self, input: str | KnwlInput | KnwlDocument) -> KnwlGraph:
         """
         Add input to be processed by Knwl, i.e. ingest the given text or KnwlInput object.
         """
@@ -104,13 +104,13 @@ class Knwl:
             input = KnwlInput(text=input)
         return await self.grag.ingest(input)
 
-    async def ingest(self, input: str | KnwlInput) -> KnwlGraph:
+    async def ingest(self, input: str | KnwlInput | KnwlDocument) -> KnwlGraph:
         """
         This is an alias for `add()`.
         """
         return await self.add(input)
 
-    async def extract(self, input: str | KnwlInput) -> KnwlGraph:
+    async def extract(self, input: str | KnwlInput | KnwlDocument) -> KnwlGraph:
         """
         Extract knowledge from the given text or KnwlInput object without adding it to the knowledge graph.
         """
@@ -129,6 +129,22 @@ class Knwl:
         return await self.grag.augment(input)
 
     async def ask(self, question: str | KnwlInput) -> KnwlAnswer:
+        """
+        Asynchronously processes a question using the specified strategy.
+
+        If the input is a string, it is converted to a KnwlInput object. If the input's strategy is not specified,
+        a simple ask is performed. Otherwise, the method attempts to augment the input using the grag augmenter.
+        If augmentation is successful, a prompt is generated and passed to the language model for an answer.
+
+        Args:
+            question (str | KnwlInput): The question to be answered, either as a string or a KnwlInput object.
+
+        Returns:
+            KnwlAnswer: The answer to the question, or a default 'none' answer if augmentation fails.
+
+        Raises:
+            TypeError: If the input is not a string or KnwlInput.
+        """
 
         if isinstance(question, str):
             input = KnwlInput(text=question)
@@ -210,6 +226,31 @@ class Knwl:
         """
         return await self.grag.get_all_documents(
             amount=amount, include_content=include_content
+        )
+
+    async def get_document_by_id(self, document_id: str) -> Optional[KnwlDocument]:
+        """
+        Get a document by its Id.
+        """
+        return await self.grag.get_document_by_id(document_id)
+
+    async def get_document_chunks(
+        self, document_id: str, include_content: bool = False
+    ) -> Optional[list[KnwlChunk]]:
+        """
+        Get all chunks for a given document Id.
+        """
+        return await self.grag.get_document_chunks(
+            document_id=document_id, include_content=include_content
+        )
+    async def get_document_of_chunk(
+        self, chunk_id: str, include_content: bool = False
+    ) -> Optional[KnwlDocument]:
+        """
+        Get the document for a given chunk Id.
+        """
+        return await self.grag.get_document_of_chunk(
+            chunk_id=chunk_id, include_content=include_content
         )
 
     async def edge_count(self) -> int:
