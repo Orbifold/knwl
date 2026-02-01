@@ -3,15 +3,15 @@ Given a text document that is potentially relevant to this activity and a list o
 
 -Steps-
 1. Identify all entities. For each identified entity, extract the following information:
-- entity_name: Name of the entity, capitalized
+- entity_name: Name of the entity, capitalized. If the name is lexically ambiguous — that is, the same word or phrase refers to more than one distinct entity in the text (e.g., "Apple" as a fruit and "Apple" as a technology company) — disambiguate by appending the entity type in parentheses, e.g. "Apple (fruit)" and "Apple (company)". Use these disambiguated names consistently in all relationship references in step 2.
 - entity_type: One of the following types: [{entities}]
 - entity_description: Comprehensive description of the entity's attributes and activities
 Format each entity as ("entity"{tuple_delimiter}<entity_name>{tuple_delimiter}<entity_type>{tuple_delimiter}<entity_description>
 
 2. From the entities identified in step 1, identify all pairs of (source_entity, target_entity) that are *clearly related* to each other.
 For each pair of related entities, extract the following information:
-- source_entity: name of the source entity, as identified in step 1
-- target_entity: name of the target entity, as identified in step 1
+- source_entity: name of the source entity, exactly as identified in step 1 (including any disambiguation qualifiers in parentheses)
+- target_entity: name of the target entity, exactly as identified in step 1 (including any disambiguation qualifiers in parentheses)
 - relationship_description: explanation as to why you think the source entity and the target entity are related to each other
 - relationship_strength: a numeric score indicating strength of the relationship between the source entity and target entity
 - relationship_keywords: one or more high-level key words that summarize the overarching nature of the relationship, focusing on concepts or themes rather than specific details
@@ -96,6 +96,23 @@ Output:
 ("relationship"{tuple_delimiter}"Alex"{tuple_delimiter}"Humanity's Response"{tuple_delimiter}"Alex and his team are the key figures in Humanity's Response to the unknown intelligence."{tuple_delimiter}"collective action, cosmic significance"{tuple_delimiter}8){record_delimiter}
 ("relationship"{tuple_delimiter}"Control"{tuple_delimiter}"Intelligence"{tuple_delimiter}"The concept of Control is challenged by the Intelligence that writes its own rules."{tuple_delimiter}"power dynamics, autonomy"{tuple_delimiter}7){record_delimiter}
 ("content_keywords"{tuple_delimiter}"first contact, control, communication, cosmic significance"){completion_delimiter}
+#############################
+Example 4 (lexical ambiguity):
+
+Entity_types: [company, product, location, event, food]
+Text:
+Apple announced its latest iPhone at WWDC. Meanwhile, the apple orchard in Upstate New York reported record yields this harvest season, with the fruit being shipped to markets across the country. Apple's stock rose 3% on the news of the new product launch.
+#############
+Output:
+("entity"{tuple_delimiter}"Apple (company)"{tuple_delimiter}"company"{tuple_delimiter}"Apple is a technology company known for consumer electronics; its stock rose 3% following the iPhone announcement."){record_delimiter}
+("entity"{tuple_delimiter}"Apple (food)"{tuple_delimiter}"food"{tuple_delimiter}"Apple refers to the fruit produced by the orchard in Upstate New York, shipped to markets across the country."){record_delimiter}
+("entity"{tuple_delimiter}"iPhone"{tuple_delimiter}"product"{tuple_delimiter}"iPhone is the latest product announced by Apple at WWDC."){record_delimiter}
+("entity"{tuple_delimiter}"WWDC"{tuple_delimiter}"event"{tuple_delimiter}"WWDC is the event at which Apple announced its latest iPhone."){record_delimiter}
+("entity"{tuple_delimiter}"Upstate New York"{tuple_delimiter}"location"{tuple_delimiter}"Upstate New York is the location of the apple orchard that reported record yields."){record_delimiter}
+("relationship"{tuple_delimiter}"Apple (company)"{tuple_delimiter}"iPhone"{tuple_delimiter}"Apple (company) announced the iPhone as its latest product."{tuple_delimiter}"product launch, announcement"{tuple_delimiter}9){record_delimiter}
+("relationship"{tuple_delimiter}"Apple (company)"{tuple_delimiter}"WWDC"{tuple_delimiter}"Apple (company) used WWDC as the venue for its product announcement."{tuple_delimiter}"event hosting, announcement"{tuple_delimiter}8){record_delimiter}
+("relationship"{tuple_delimiter}"Apple (food)"{tuple_delimiter}"Upstate New York"{tuple_delimiter}"The apple orchard located in Upstate New York is the source of the fruit."{tuple_delimiter}"production, location"{tuple_delimiter}9){record_delimiter}
+("content_keywords"{tuple_delimiter}"product launch, agriculture, disambiguation"){completion_delimiter}
 #############################
 -Real Data-
 ######################
