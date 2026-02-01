@@ -13,6 +13,14 @@ if_loop_prompt = prompts.extraction.glean_break
 
 @defaults("graph_extraction")
 class BasicGraphExtraction(GraphExtractionBase):
+    """
+    The extraction is only basic in the sense that it does not use gleaning. 
+    
+    - It tells the LLM to extract entities and relations in one go, without iterative refinement.
+    - It does not rely on structured (JSON) output and this means that we get 'records' from the LLM output with custom delimiters (defined in the `PromptConstants`).
+
+    
+    """
     def __init__(self, llm: LLMBase = None, mode: str = "full"):
         super().__init__()
         if llm is None:
@@ -24,9 +32,7 @@ class BasicGraphExtraction(GraphExtractionBase):
 
     @property
     def llm(self) -> LLMBase:
-        return self._llm
-
-    
+        return self._llm    
 
     async def extract_records(self, text: str, entities: list[str] = None) -> list[list] | None:
         if not text or text.strip() == "":

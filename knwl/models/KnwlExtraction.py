@@ -13,7 +13,7 @@ class KnwlExtraction(BaseModel):
     """
     A class used to represent a Knowledge Extraction.
     Note that the id's of the nodes and edges are semantic, ie. actual names.
-    The conversion to real identifiers happens downstream when this is merged into the knowledge graph.
+    The conversion to real identifiers happens downstream when this is merged into the knowledge graph (see `KnwlGraph`).
 
     Attributes
     ----------

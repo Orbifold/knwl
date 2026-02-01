@@ -62,7 +62,11 @@ async def test_extraction_multi_type():
     assert "company" in g.get_all_node_types() and "fruit" in g.get_all_node_types()
     print("")
     print(g.model_dump_json(indent=2))
-
+    
+    gr = BasicGraphExtraction.extraction_to_graph(g)
+    assert gr is not None
+    print("----Graph----")
+    print(gr.model_dump_json(indent=2))
 
 @pytest.mark.asyncio
 async def test_extraction_multiple():
@@ -124,3 +128,7 @@ async def test_fast_entity_extraction():
     text = "This text has no recognizable entities and none should be found."
     result: list[KnwlEntity] = await extractor.extract(text)
     assert result is None
+
+@pytest.mark.asyncio
+async def test_ambiguity():
+    pass

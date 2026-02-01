@@ -12,7 +12,7 @@ from knwl.prompts import prompts
 class GraphExtractionBase(FrameworkBase, ABC):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-       
+
     @abstractmethod
     async def extract(
         self, text: str, entities: list[str] = None, chunk_id: str = None
@@ -54,6 +54,7 @@ class GraphExtractionBase(FrameworkBase, ABC):
                     )
                 except Exception as e:
                     from knwl.logging import log
+
                     log.error(f"Error parsing entity record: {rec}: \n{e}")
             elif rec[0] == "relationship":
                 try:
@@ -72,6 +73,7 @@ class GraphExtractionBase(FrameworkBase, ABC):
                     )
                 except Exception as e:
                     from knwl.logging import log
+
                     log.error(f"Error parsing relationship record: {rec}: \n{e}")
             elif rec[0] == "content_keywords":
                 result["keywords"].extend(rec[1].split(", "))
@@ -152,7 +154,7 @@ class GraphExtractionBase(FrameworkBase, ABC):
                     keywords=e.keywords,
                     weight=e.weight,
                     chunk_ids=e.chunk_ids,
-                    type=e.type
+                    type=e.type,
                 )
                 corrected_edges[key].append(corrected_edge)
         return KnwlExtraction(
@@ -169,6 +171,9 @@ class GraphExtractionBase(FrameworkBase, ABC):
                 nodes.append(node)
         for key in extraction.edges:
             for edge in extraction.edges[key]:
+                edge.source_name = key.split(",")[0][1:]  # remove (
+                edge.target_name = key.split(",")[1][:-1]  # remove )
+
                 edges.append(edge)
         return KnwlGraph(nodes=nodes, edges=edges, keywords=extraction.keywords or [])
 
