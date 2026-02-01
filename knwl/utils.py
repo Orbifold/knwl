@@ -168,6 +168,54 @@ def write_json(json_obj, file_name):
         json.dump(json_obj, f, indent=2, ensure_ascii=False)
 
 
+def load_jsonl(file_name):
+    """
+    Loads a JSONL (JSON Lines) file and returns its contents as a Python dict.
+
+    Each line in the file must be a JSON object with the structure:
+        {"_id": <key>, "_data": <value>}
+
+    Empty lines are skipped.
+
+    Args:
+        file_name (str): The path to the JSONL file to be loaded.
+
+    Returns:
+        dict: A dictionary mapping each _id to its _data value.
+        None: If the file does not exist.
+    """
+    if not os.path.exists(file_name):
+        return None
+    result = {}
+    with open(file_name, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            entry = json.loads(line)
+            result[entry["_id"]] = entry["_data"]
+    return result
+
+
+def write_jsonl(data, file_name):
+    """
+    Write a dictionary to a JSONL (JSON Lines) file.
+
+    Each key-value pair in the dictionary is written as a single JSON line
+    with the structure: {"_id": <key>, "_data": <value>}
+
+    Args:
+        data (dict): The dictionary to write. Keys become _id, values become _data.
+        file_name (str): The path to the JSONL file to write.
+
+    Returns:
+        None
+    """
+    with open(file_name, "w", encoding="utf-8") as f:
+        for key, value in data.items():
+            f.write(json.dumps({"_id": key, "_data": value}, ensure_ascii=False) + "\n")
+
+
 def pack_messages(*args: str):
     """
     Packs a variable number of string arguments into a list of dictionaries with alternating roles.

@@ -83,13 +83,13 @@ async def test_service_simplicity():
             "json": {
                 "custom": {
                     "class": "knwl.storage.json_storage.JsonStorage",
-                    "path": "$/tests/custom.json",
+                    "path": "$/tests/custom.jsonl",
                 }
             }
         },
     )
     await json_service_custom.upsert({"key1": {"data": 123}})
-    assert os.path.exists(get_full_path("$/tests/custom.json"))
+    assert os.path.exists(get_full_path("$/tests/custom.jsonl"))
 
 
 def test_service_instantiation():

@@ -5,7 +5,7 @@ import pytest
 import random
 from knwl.models.KnwlDocument import KnwlDocument
 from knwl.storage.json_storage import JsonStorage
-from knwl.utils import random_name, load_json
+from knwl.utils import random_name, load_jsonl
 from faker import Faker
 pytestmark = pytest.mark.basic
 
@@ -38,7 +38,7 @@ async def test_all_keys(test_store):
 @pytest.mark.asyncio
 async def test_save_somewhere():
 
-    storage = JsonStorage(f"$/tests/{fake.word()}.json")
+    storage = JsonStorage(f"$/tests/{fake.word()}.jsonl")
     data = {"key1": {"value": "data1"}}
     await storage.upsert(data)
     await storage.save()
@@ -112,7 +112,7 @@ async def test_save():
     file_path = store.path
     await asyncio.sleep(1)  # give os a moment to write the file
     assert os.path.exists(file_path)
-    data = load_json(file_path)
+    data = load_jsonl(file_path)
     assert data == {"key1": {"value": "data1"}}
     await store.clear_cache()
     assert not os.path.exists(file_path)

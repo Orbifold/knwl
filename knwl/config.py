@@ -129,31 +129,31 @@ _default_config = {
         "default": "basic",
         "basic": {
             "class": "knwl.storage.json_storage.JsonStorage",
-            "path": "$/data/data.json",
+            "path": "$/data/data.jsonl",
         },
         "node_store": {
             "class": "knwl.storage.json_storage.JsonStorage",
-            "path": "$/tests/graphrag/node_store.json",
+            "path": "$/tests/graphrag/node_store.jsonl",
         },
         "edge_store": {
             "class": "knwl.storage.json_storage.JsonStorage",
-            "path": "$/tests/graphrag/edge_store.json",
+            "path": "$/tests/graphrag/edge_store.jsonl",
         },
         "document_store": {
             "class": "knwl.storage.json_storage.JsonStorage",
-            "path": "$/tests/graphrag/document_store.json",
+            "path": "$/tests/graphrag/document_store.jsonl",
         },
         "chunk_store": {
             "class": "knwl.storage.json_storage.JsonStorage",
-            "path": "$/tests/graphrag/chunk_store.json",
+            "path": "$/tests/graphrag/chunk_store.jsonl",
         },
         "user_documents": {
             "class": "knwl.storage.json_storage.JsonStorage",
-            "path": "$/user/default/documents.json",
+            "path": "$/user/default/documents.jsonl",
         },
         "user_chunks": {
             "class": "knwl.storage.json_storage.JsonStorage",
-            "path": "$/user/default/chunks.json",
+            "path": "$/user/default/chunks.jsonl",
         },
     },
     "keywords_extraction": {
@@ -217,11 +217,11 @@ _default_config = {
         "default": "user",
         "tests": {
             "class": "knwl.llm.json_llm_cache.JsonLLMCache",
-            "path": "$/tests/llm.json",
+            "path": "$/tests/llm.jsonl",
         },
         "user": {
             "class": "knwl.llm.json_llm_cache.JsonLLMCache",
-            "path": "$/user/default/llm_cache.json",
+            "path": "$/user/default/llm_cache.jsonl",
         },
     },
     "logging": {"enabled": True, "level": "ERROR", "path": "$/user/default/knwl.log"},

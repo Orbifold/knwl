@@ -40,7 +40,7 @@ def test_config_get():
     assert get_config("llm", "ollama", "temperature") == 0.1
     assert get_config("llm", "ollama", "context_window") == 32768
     assert get_config("llm", "ollama", "caching_service") == "@/llm_caching/user"
-    assert get_config("llm_caching", "user", "path") == "$/user/default/llm_cache.json"
+    assert get_config("llm_caching", "user", "path") == "$/user/default/llm_cache.jsonl"
     assert get_config("nonexistent", default="default_value") == "default_value"
     assert get_config("llm", "nonexistent", default={"key": "value"}) == {
         "key": "value"

@@ -7,15 +7,15 @@ from knwl.di import defaults
 from knwl.logging import log
 from knwl.storage.kv_storage_base import KeyValueStorageBase
 from knwl.storage.storage_adapter import StorageAdapter
-from knwl.utils import load_json, write_json, get_full_path
+from knwl.utils import load_jsonl, write_jsonl, get_full_path
 
 
 @defaults("json")
 class JsonStorage(KeyValueStorageBase):
     """
-    Basic JSON storage implementation with everything in a single file.
-    Note that this stores a dictionary of objects, where each object must have a unique 'id' field.
-    It doesn't allow arrays of objects at the top level.
+    JSONL (JSON Lines) storage implementation with everything in a single file.
+    Each entry is stored as one line: {"_id": <key>, "_data": <value>}.
+    The in-memory representation is a plain dict {id: value}.
     """
 
     def __init__(self, path: str = "memory", save_to_disk: bool = True):
@@ -39,17 +39,17 @@ class JsonStorage(KeyValueStorageBase):
                 self._save_to_disk = False
                 self._path = None
             else:
-                if not self._path.endswith(".json"):
+                if not self._path.endswith(".jsonl"):
                     log.warn(
-                        f"Json storage path '{self._path}' does not end with .json, appending .json"
+                        f"Json storage path '{self._path}' does not end with .jsonl, appending .jsonl"
                     )
-                    self._path += ".json"
+                    self._path += ".jsonl"
                 self._path = get_full_path(self._path)
                 self._save_to_disk = True
 
             if self._save_to_disk:
                 if os.path.exists(self._path) and not os.path.isdir(self._path):
-                    self.data = load_json(self._path) or {}
+                    self.data = load_jsonl(self._path) or {}
                     if len(self.data) > 0:
                         log(f"Loaded '{self._path}' JSON with {len(self.data)} items.")
                 else:
@@ -82,7 +82,7 @@ class JsonStorage(KeyValueStorageBase):
         Returns: None
         """
         if self._save_to_disk:
-            write_json(self.data, self._path)
+            write_jsonl(self.data, self._path)
 
     async def clear_cache(self):
         """
@@ -226,7 +226,9 @@ class JsonStorage(KeyValueStorageBase):
         """
         return len(self.data)
 
-    async def get_all(self, amount: int = 10, include_content: bool = False) -> list[dict]:
+    async def get_all(
+        self, amount: int = 10, include_content: bool = False
+    ) -> list[dict]:
         """
         Retrieve all objects up to the specified amount.
 
@@ -238,7 +240,7 @@ class JsonStorage(KeyValueStorageBase):
         """
         all_items = list(self.data.values())
         for u in all_items:
-            if not include_content and isinstance(u, dict) :
+            if not include_content and isinstance(u, dict):
                 if "content" in u:
                     u["content"] = "<content omitted>"
                 if "text" in u:
