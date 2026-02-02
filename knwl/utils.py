@@ -340,6 +340,7 @@ def get_full_path(
     - $/data: Resolves to the project's data directory
     - $/root: Resolves to the project root directory
     - $/tests: Resolves to the test data directory
+    - $/library: Resolves to the test library directory
     - "$/user": Resolves to the user's Knwl directory (e.g., ~/.knwl)
 
     Args:
@@ -365,6 +366,7 @@ def get_full_path(
     if file_path.lower() == "test":
         timestamp = round(datetime.now().timestamp())
         return get_full_path(f"test_{timestamp}.json", "$/tests", create_dirs)
+    
 
     # Process special prefixes
     file_path, resolved_reference = _resolve_special_prefixes(file_path)
@@ -395,6 +397,7 @@ def _resolve_special_prefixes(file_path: str) -> tuple[str, str | None]:
         "$/data": ("$/data", 6),
         "$/root": ("$/root", 6),
         "$/user": ("$/user", 6),
+        "$/library": ("$/library", 9),
     }
 
     for prefix, (ref_path, prefix_len) in prefix_map.items():
@@ -419,6 +422,7 @@ def _resolve_reference_path(reference_path: str, create_dirs: bool) -> str:
         "$/root": os.path.join(current_dir, ".."),
         "$/user": os.path.join(os.path.expanduser("~"), ".knwl"),
         "$/tests": os.path.join(current_dir, "..", "tests", "data"),
+        "$/library": os.path.join(current_dir, "..", "tests", "library"),
     }
 
     if reference_path in special_paths:

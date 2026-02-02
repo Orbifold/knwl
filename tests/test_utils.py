@@ -483,6 +483,9 @@ def test_get_full_path_nested_path():
     result = get_full_path("$/tests/subdir/nested/test.txt")
     assert result is not None
     assert result.endswith("subdir/nested/test.txt")
+    result = get_full_path("$/library/subdir/nested/test.txt")
+    assert result is not None
+    assert result.endswith("subdir/nested/test.txt")
 
 
 def test_get_full_path_absolute_result():
@@ -508,6 +511,11 @@ def test_resolve_special_prefixes():
     path, ref = _resolve_special_prefixes("$/root/file.txt")
     assert path == "./file.txt"
     assert ref == "$/root"
+
+    # Test $/library prefix
+    path, ref = _resolve_special_prefixes("$/library/file.txt")
+    assert path == "./file.txt"
+    assert ref == "$/library"
 
     # Test no prefix
     path, ref = _resolve_special_prefixes("file.txt")

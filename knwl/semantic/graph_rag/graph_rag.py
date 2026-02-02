@@ -495,6 +495,26 @@ class GraphRAG(GraphRAGBase):
                     f"GraphRAG: provided ragger of type '{type(self.ragger)}' is not supported."
                 )
 
+    async def get_graph_of_chunk(self, chunk_id: str) -> Optional[KnwlGraph]:
+        """
+        Get the knowledge graph for a given chunk Id.
+        """
+        return await self.semantic_graph.get_graph_of_chunk(chunk_id=chunk_id)
+
+    async def get_graph_of_document(self, document_id: str) -> Optional[KnwlGraph]:
+        """
+        Get the knowledge graph for a given document Id.
+        """
+        chunks = await self.get_document_chunks(
+            document_id=document_id, include_content=False
+        )
+        g = None
+        for chunk in chunks:
+            g_island = await self.get_graph_of_chunk(chunk_id=chunk.id)
+            # not need to semantically consolidate things here as they are already consolidated during ingestion
+            g = g_island.merge(g) if g is not None else g_island
+        return g
+
     async def get_document_chunks(
         self, document_id: str, include_content: bool = False
     ) -> Optional[list[KnwlChunk]]:

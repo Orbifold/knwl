@@ -117,3 +117,17 @@ class ChunkBase(FrameworkBase, ABC):
         """
         ...
 
+    @abstractmethod
+    async def get_by_origin_id(
+        self, origin_id: str, include_content: bool = False
+    ) -> Optional[list[KnwlChunk]]:
+        """
+        Retrieve all chunks associated with a specific origin identifier.
+
+        Args:
+            origin_id (str): The origin identifier of the chunks.
+            include_content (bool): Whether to include the content of the chunks.
+        Returns:
+            Optional[list[KnwlChunk]]: A list of KnwlChunk objects associated with the origin identifier, or None if no chunks are found.
+        """
+        ...

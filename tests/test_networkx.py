@@ -1,8 +1,11 @@
 import os
+from platform import node
 import random
 
 import pytest
 
+from knwl.models import KnwlEdge
+from knwl.models.KnwlGraph import KnwlGraph
 from knwl.models.KnwlNode import KnwlNode
 from knwl.storage.networkx_storage import NetworkXGraphStorage
 
@@ -277,3 +280,73 @@ async def test_get_edges():
     assert edges[0]["type"] == "relates_to"
     assert edges[1]["id"] == e2["id"]
     assert edges[1]["type"] == "connected_to"
+
+
+@pytest.mark.asyncio
+async def test_get_by_metadata(test_storage):
+    await test_storage.upsert_node(
+        KnwlNode(
+            name="a", description="value1", degree=133, type="T1", metadata={"key": 5}
+        )
+    )
+    nodes = await test_storage.get_nodes_by_metadata(degree=133)
+    assert nodes is not None
+    assert nodes[0]["description"] == "value1"
+
+    # also works with lists
+    await test_storage.upsert_node(
+        KnwlNode(
+            name="a",
+            description="value2",
+            degree=133,
+            type="T1",
+            chunk_ids=["c1", "c2"],
+        )
+    )
+    nodes = await test_storage.get_nodes_by_metadata(chunk_ids="c2")
+    assert nodes is not None
+    assert nodes[0]["description"] == "value2"
+
+
+@pytest.mark.asyncio
+async def test_graph_from_chunk_id(test_storage):
+    n1 = KnwlNode(
+        id="n1",
+        name="n1",
+        description="chunk node",
+        type="Chunk",
+        chunk_ids=["c1", "c2"],
+    )
+    n2 = KnwlNode(
+        id="n2",
+        name="n2",
+        description="chunk node",
+        type="Chunk",
+        chunk_ids=["c1"],
+    )
+    n3 = KnwlNode(
+        id="n3",
+        name="n3",
+        description="other node",
+        type="Other",
+        chunk_ids=["c2"],
+    )
+    e1 = KnwlEdge(
+        id="e1",
+        source_id="n1",
+        target_id="n2",
+        type="related_to",
+        chunk_ids=["c1"],
+    )
+
+    await test_storage.upsert_node(n1)
+    await test_storage.upsert_node(n2)
+    await test_storage.upsert_node(n3)
+    await test_storage.upsert_edge(e1)
+    g = await test_storage.get_graph_by_metadata(chunk_ids="c1")
+    assert g is not None
+    graph = KnwlGraph(**g)
+    assert graph.node_exists("n1")
+    assert graph.node_exists("n2")
+    assert not graph.node_exists("n3")
+    assert graph.edge_exists("e1")

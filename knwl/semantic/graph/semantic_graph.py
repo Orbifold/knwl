@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Optional, Union
 
 from knwl.di import defaults
 from knwl.logging import log
@@ -159,7 +159,7 @@ class SemanticGraph(SemanticGraphBase):
 
     async def embed_nodes(self, nodes: list[KnwlNode]) -> list[KnwlNode]:
         """
-        Asynchronously embeds a list of KnwlNode objects by merging their descriptions, upserting them into the graph store, 
+        Asynchronously embeds a list of KnwlNode objects by merging their descriptions, upserting them into the graph store,
         and updating their embeddings.
 
         Args:
@@ -224,11 +224,17 @@ class SemanticGraph(SemanticGraphBase):
 
         return KnwlEdge(**data)
 
-    def fix_lists_in_data(self, data: dict):
+    def fix_lists_in_data(self, data: dict | list):
         """
         Ensure that any list fields in the data dictionary are properly formatted as lists.
         This is particularly useful when data is stored in formats that may convert lists to strings.
         """
+        if data is None:
+            return data
+        if isinstance(data, list):
+            for item in data:
+                self.fix_lists_in_data(item)
+            return data
         for key, value in data.items():
             if isinstance(value, str) and value.startswith("[") and value.endswith("]"):
                 try:
@@ -289,7 +295,7 @@ class SemanticGraph(SemanticGraphBase):
     ) -> KnwlGraph | None:
         """
         Consolidate two knowledge graphs into one, merging (descriptions of) nodes and edges.
-        
+
         - Does not store anything, just returns the consolidated graph.
         - The returned graph has the id of g1.
         - Merges on the basis of the node and edge ids, not the names or types.
@@ -548,6 +554,38 @@ class SemanticGraph(SemanticGraphBase):
         """
         return await self._graph_store.export_graph(format=format)
 
+    async def get_graph_of_chunk(self, chunk_id: str) -> Optional[KnwlGraph]:
+        """
+        Get the knowledge graph for a given chunk Id.
+        """
+        nodes: list[dict] | None = await self._graph_store.get_nodes_by_metadata(
+            chunk_ids=chunk_id
+        )
+        edges: list[dict] | None = await self._graph_store.get_edges_by_metadata(
+            chunk_ids=chunk_id
+        )
+        if nodes is None and edges is None:
+            return None
+        # let's make sure the graph is consistent
+        node_ids = set()
+        if nodes:
+            for n in nodes:
+                node_ids.add(n["id"])
+        if edges:
+            filtered_edges = []
+            for e in edges:
+                if e["source_id"] in node_ids and e["target_id"] in node_ids:
+                    filtered_edges.append(e)
+            edges = filtered_edges
+
+        self.fix_lists_in_data(nodes)
+        self.fix_lists_in_data(edges)
+        # dict to KnwlNode/KnwlEdge
+        nodes = [KnwlNode(**n) for n in nodes] if nodes else []
+        edges = [KnwlEdge(**e) for e in edges] if edges else []
+        return KnwlGraph(nodes=nodes, edges=edges)
+
+ 
     def __repr__(self):
         return f"<SemanticGraph, graph={self._graph_store.__class__.__name__}, nodes={self.node_embeddings.__class__.__name__}, edge_embeddings={self.edge_embeddings.__class__.__name__}, summarization={self.summarization.__class__.__name__}>"
 

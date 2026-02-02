@@ -253,8 +253,8 @@ class KnwlChunkTerminalFormatter(ModelFormatter):
         )
         table.add_row("Index", str(model.index))
         table.add_row(
-            "Document ID",
-            f"[{formatter.theme.ID_STYLE}]{model.document_id}[/{formatter.theme.ID_STYLE}]",
+            "Origin Id",
+            f"[{formatter.theme.ID_STYLE}]{model.origin_id}[/{formatter.theme.ID_STYLE}]",
         )
 
         content_preview = (

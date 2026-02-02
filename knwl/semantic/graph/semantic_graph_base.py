@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Union
+from typing import Optional, Union
 
 from knwl.framework_base import FrameworkBase
 from knwl.models import KnwlNode, KnwlEdge
@@ -335,7 +335,20 @@ class SemanticGraphBase(FrameworkBase, ABC):
         ...
 
     @abstractmethod
-    async def node_degree(self, node_id: str) -> int: ...
+    async def node_degree(self, node_id: str) -> int:
+        """
+        Asynchronously computes and returns the degree of the specified node in the graph.
+
+        Args:
+            node_id (str): The unique identifier of the node whose degree is to be calculated.
+
+        Returns:
+            int: The degree of the node, representing the number of edges connected to it.
+
+        Raises:
+            KeyError: If the specified node_id does not exist in the graph.
+        """
+        ...
 
     @abstractmethod
     async def edge_degree(self, edge_or_source_id: str, target_id: str = None) -> int:
@@ -437,3 +450,13 @@ class SemanticGraphBase(FrameworkBase, ABC):
         Supported formats: json, csv, ttl (Turtle), cypher.
         """
         ...
+
+    @abstractmethod
+    async def get_graph_of_chunk(
+        self, chunk_id: str
+    ) -> Optional[KnwlGraph]:
+        """
+        Get the knowledge graph for a given chunk Id.
+        """
+        ...
+     

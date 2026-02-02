@@ -64,6 +64,17 @@ def test_knwledge():
     assert edge4.id == edge1.id
 
 
+def test_arrays():
+    d = {
+        "chunks_ids": "['c1', 'c2', 'c3']",
+        "id": "n1",
+        "name": "Node1",
+        "type": "TypeA",
+    }
+    node = KnwlNode(**d)
+    assert isinstance(node.chunk_ids, list)
+
+
 def test_knwlgraph():
 
     g = KnwlGraph(nodes=[], edges=[])

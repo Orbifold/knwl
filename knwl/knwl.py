@@ -18,6 +18,7 @@ from knwl.models.KnwlGraph import KnwlGraph
 from knwl.models.KnwlNode import KnwlNode
 from knwl.services import Services
 from knwl.logging import log
+from knwl.utils import get_full_path
 
 
 class PromptType(Enum):
@@ -243,6 +244,24 @@ class Knwl:
         return await self.grag.get_document_chunks(
             document_id=document_id, include_content=include_content
         )
+    async def get_graph_of_chunk(
+        self, chunk_id: str
+    ) -> Optional[KnwlGraph]:
+        """
+        Get the knowledge graph for a given chunk Id.
+        """
+        return await self.grag.get_graph_of_chunk(
+            chunk_id=chunk_id
+        )
+    async def get_graph_of_document(
+        self, document_id: str
+    ) -> Optional[KnwlGraph]:
+        """
+        Get the knowledge graph for a given document Id.
+        """
+        return await self.grag.get_graph_of_document(
+            document_id=document_id
+        )
     async def get_document_of_chunk(
         self, chunk_id: str, include_content: bool = False
     ) -> Optional[KnwlDocument]:
@@ -443,6 +462,14 @@ class Knwl:
         Supported formats: json, csv, ttl (Turtle), ntriples, xml (RDF/XML)
         """
         return await self.grag.semantic_graph.export_graph(format=format)  # type: ignore
+
+    async def ingest_short_text(self) -> KnwlGraph:
+        file_path = get_full_path("$/library/short.md")
+        print(f"Reading short text from: {file_path}")
+        with open(file_path, "r") as f:
+            text = f.read()
+        input = KnwlInput(text=text, description="Short example ingestion", name="Short Text")
+        return await self.add(input)
 
     def __repr__(self) -> str:
         from importlib.metadata import version

@@ -84,6 +84,27 @@ class NetworkXGraphStorage(GraphStorageBase):
     def in_memory(self):
         return self._in_memory
 
+    def fix_lists_in_data(self, data: dict | list):
+        """
+        Ensure that any list fields in the data dictionary are properly formatted as lists.
+        This is particularly useful when data is stored in formats that may convert lists to strings.
+        """
+        if data is None:
+            return data
+        if isinstance(data, list):
+            for item in data:
+                self.fix_lists_in_data(item)
+            return data
+        for key, value in data.items():
+            if isinstance(value, str) and value.startswith("[") and value.endswith("]"):
+                try:
+                    import ast
+
+                    data[key] = ast.literal_eval(value)
+                except Exception:
+                    pass
+        return data
+
     @staticmethod
     def to_edge(obj) -> dict:
         if isinstance(obj, dict):
@@ -424,6 +445,9 @@ class NetworkXGraphStorage(GraphStorageBase):
 
     @staticmethod
     def load(file_name) -> nx.MultiDiGraph | None:
+        """
+        This load the graph from a GraphML file, it does not return a NetworkXGraphStorage instance!
+        """
         try:
             if os.path.exists(file_name):
                 return nx.read_graphml(file_name, force_multigraph=True)
@@ -1210,3 +1234,58 @@ class NetworkXGraphStorage(GraphStorageBase):
             raise ValueError(
                 f"Unsupported export format '{format}'. Supported formats: json, csv, ttl, ntriples, xml, cypher"
             )
+
+    async def get_nodes_by_metadata(self, **metadata) -> list[dict]:
+        found = []
+        for node_id, data in self.graph.nodes(data=True):
+            match = True
+            for key, value in metadata.items():
+                d = data.get(key)
+                if isinstance(d, list):
+                    if value not in d:
+                        match = False
+                        break
+                elif "[" in str(d) and "]" in str(d): # check for stringified list
+                    if value in str(d):
+                        continue
+                else:
+                    if data.get(key) != value:
+                        match = False
+                        break
+            if match:
+                node_data = {"id": node_id, **data}
+                found.append(node_data)
+        return found
+
+    async def get_edges_by_metadata(self, **metadata) -> list[dict]:
+        found = []
+        for source_id, target_id, data in self.graph.edges(data=True):
+            match = True
+            for key, value in metadata.items():
+                d = data.get(key)
+                if isinstance(d, list):
+                    if value not in d:
+                        match = False
+                        break
+                elif "[" in str(d) and "]" in str(d):
+                    if value in str(d):
+                        continue
+                else:
+                    if data.get(key) != value:
+                        match = False
+                        break
+            if match:
+                edge_data = {"source_id": source_id, "target_id": target_id, **data}
+                found.append(edge_data)
+        return found
+
+    async def get_graph_by_metadata(self, **metadata) -> dict:
+        nodes = await self.get_nodes_by_metadata(**metadata)
+        edges = await self.get_edges_by_metadata(**metadata)
+        return {"nodes": nodes, "edges": edges}
+
+    def __repr__(self):
+        return f"<NetworkXGraphStorage nodes={self.graph.number_of_nodes()} edges={self.graph.number_of_edges()}>"
+
+    def __str__(self):
+        return self.__repr__()

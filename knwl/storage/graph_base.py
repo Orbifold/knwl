@@ -115,7 +115,7 @@ class GraphStorageBase(StorageBase, ABC):
 
         Args:
             source_node_id_or_key (str): The unique id of the edge or the Id of the source node for the edge.
-            target_node_id (str, optional): The ID of the target node for the edge.
+            target_node_id (str, optional): The Id of the target node for the edge.
                 If None, returns all edges from the source node. Defaults to None.
             label (str, optional): The label/type of the edge to filter by.
                 If None, returns edges regardless of label. Defaults to None.
@@ -137,7 +137,7 @@ class GraphStorageBase(StorageBase, ABC):
         Retrieves all edges connected to the given node.
 
         Args:
-            source_node_id (str): The ID of the source node.
+            source_node_id (str): The Id of the source node.
 
         Returns:
             list[dict] | None: A list of edge objects if the node exists, None otherwise.
@@ -314,9 +314,9 @@ class GraphStorageBase(StorageBase, ABC):
         """Remove an edge from the graph.
 
         Args:
-            source_node_id_or_key (str): The ID or key of the source node, or an edge key
+            source_node_id_or_key (str): The Id or key of the source node, or an edge key
                                         if target_node_id is None.
-            target_node_id (str, optional): The ID of the target node. If None,
+            target_node_id (str, optional): The Id of the target node. If None,
                                            source_node_id_or_key is treated as an edge key.
 
         Raises:
@@ -341,8 +341,8 @@ class GraphStorageBase(StorageBase, ABC):
         Get the weights of edges between two nodes in the graph.
 
         Args:
-            source_node_id_or_key (str): The ID or key of the source node.
-            target_node_id (str, optional): The ID of the target node. If None,
+            source_node_id_or_key (str): The Id or key of the source node.
+            target_node_id (str, optional): The Id of the target node. If None,
                 the source_node_id_or_key is treated as an edge key. Defaults to None.
             type (str, optional): The type of the edge weight. Defaults to None.
         Returns:
@@ -418,5 +418,48 @@ class GraphStorageBase(StorageBase, ABC):
 
         Returns:
             list[dict]: A list of dictionaries representing the nodes that match the query.
+        """
+        ...
+
+    @abstractmethod
+    async def get_nodes_by_metadata(self, key: str, value: str) -> list[dict]:
+        """
+        Retrieve nodes that have specific metadata key-value pair.
+
+        Args:
+            key (str): The metadata key to search for.
+            value (str): The metadata value to match.
+
+        Returns:
+            list[dict]: A list of dictionaries representing the nodes that match the metadata criteria.
+        """
+        ...
+
+    @abstractmethod
+    async def get_edges_by_metadata(self, key: str, value: str) -> list[dict]:
+        """
+        Retrieve edges that have specific metadata key-value pair.
+
+        Args:
+            key (str): The metadata key to search for.
+            value (str): The metadata value to match.
+
+        Returns:
+            list[dict]: A list of dictionaries representing the nodes that match the metadata criteria.
+        """
+        ...
+
+    @abstractmethod
+    async def get_graph_by_metadata(self, **metadata) -> dict:
+        """
+        Retrieve a subgraph containing nodes and edges that match the given metadata key-value pairs.
+
+        Args:
+            **metadata: Arbitrary keyword arguments representing metadata key-value pairs to filter nodes and edges.
+
+        Returns:
+            dict: A dictionary containing two keys: 'nodes' and 'edges'.
+                  'nodes' maps to a list of node dictionaries that match the metadata criteria.
+                  'edges' maps to a list of edge dictionaries that match the metadata criteria.
         """
         ...

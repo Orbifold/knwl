@@ -225,3 +225,4 @@ async def test_add_fact():
     found = await knwl.get_node_by_id("fact_gravity")
     assert found is not None
     assert found.id == "fact_gravity"
+ 

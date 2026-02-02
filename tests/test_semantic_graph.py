@@ -289,3 +289,6 @@ async def test_find():
     assert results[0].id == n1.id
     for r in results:
         print_knwl(r)
+
+
+    

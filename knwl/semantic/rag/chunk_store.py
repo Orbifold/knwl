@@ -186,3 +186,31 @@ class ChunkStore(ChunkBase):
                 chunks.append(chunk)
 
         return chunks
+
+    async def get_by_origin_id(
+        self, origin_id: str, include_content: bool = False
+    ) -> Optional[list[KnwlChunk]]:
+        """
+        Retrieve all chunks associated with a specific origin identifier.
+
+        Args:
+            origin_id (str): The origin identifier of the chunks.
+
+        Returns:
+            Optional[list[KnwlChunk]]: A list of KnwlChunk objects associated with the origin identifier, or None if no chunks are found.
+        """
+        found = await self.chunk_storage.get_by_metadata(origin_id=origin_id)
+        if not found:
+            return None
+        chunks: list[KnwlChunk] = []
+        for c in found:
+            if isinstance(c, KnwlChunk):
+                if not include_content:
+                    c.content = "<content omitted>"
+                chunks.append(c)
+            else:
+                chunk = KnwlChunk.model_validate(c)
+                if not include_content:
+                    chunk.content = "<content omitted>"
+                chunks.append(chunk)    
+        return chunks

@@ -222,6 +222,33 @@ class GraphRAGBase(FrameworkBase, ABC):
         Retrieve all documents from the knowledge graph up to the specified amount.
         """
         ...
+
+    @abstractmethod
+    async def get_graph_of_chunk(self, chunk_id: str) -> Optional[KnwlGraph]:
+        """
+        Retrieve the knowledge graph associated with a specific chunk from the knowledge graph.
+
+        Args:
+            chunk_id (str): The unique identifier of the chunk.
+
+        Returns:
+            Optional[KnwlGraph]: The KnwlGraph object associated with the chunk, or None if no graph is found.
+        """
+        ...
+
+    @abstractmethod
+    async def get_graph_of_document(self, document_id: str) -> Optional[KnwlGraph]:
+        """
+        Retrieve the knowledge graph associated with a specific document from the knowledge graph.
+
+        Args:
+            document_id (str): The unique identifier of the document.
+
+        Returns:
+            Optional[KnwlGraph]: The KnwlGraph object associated with the document, or None if no graph is found.
+        """
+        ...
+
     @abstractmethod
     async def get_document_chunks(
         self, document_id: str, include_content: bool = False
@@ -237,6 +264,7 @@ class GraphRAGBase(FrameworkBase, ABC):
             Optional[list[KnwlChunk]]: A list of KnwlChunk objects associated with the document, or None if no chunks are found.
         """
         ...
+
     @abstractmethod
     async def get_document_of_chunk(
         self, chunk_id: str, include_content: bool = False
@@ -252,6 +280,7 @@ class GraphRAGBase(FrameworkBase, ABC):
             Optional[KnwlDocument]: The KnwlDocument object associated with the chunk, or None if no document is found.
         """
         ...
+
     @abstractmethod
     async def chunk_count(self) -> int:
         """
