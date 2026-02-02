@@ -43,7 +43,9 @@ class FileStorage(BlobStorageBase, ABC):
             "description": blob.description,
             "timestamp": blob.timestamp,
             "type_name": blob.type_name,
-            "metadata": json.dumps(blob.metadata or {}),  # Store metadata as JSON string
+            "metadata": json.dumps(
+                blob.metadata or {}
+            ),  # Store metadata as JSON string
         }
         metadata_json = json.dumps(metadata, ensure_ascii=False)
         metadata_bytes = metadata_json.encode("utf-8")
@@ -59,7 +61,7 @@ class FileStorage(BlobStorageBase, ABC):
 
         return blob.id
 
-    async def get_by_id(self, id) -> KnwlBlob | None:
+    async def get_by_id(self, id: str, include_data: bool = True) -> KnwlBlob | None:
         """
         Get a blob by id from a file, reconstructing full object with metadata.
         """
@@ -83,16 +85,34 @@ class FileStorage(BlobStorageBase, ABC):
             metadata = json.loads(metadata_bytes.decode("utf-8"))
 
             # Read remaining binary data
-            data = f.read()
+            if include_data:
+                data = f.read()
+            else:
+                data = b"<data not included>"
 
         return KnwlBlob(
             id=metadata.get("id", id),
             name=metadata.get("name", ""),
             description=metadata.get("description", ""),
             timestamp=metadata.get("timestamp"),
-            metadata=json.loads(metadata.get("metadata", "{}")) if metadata.get("metadata") else {},
+            metadata=(
+                json.loads(metadata.get("metadata", "{}"))
+                if metadata.get("metadata")
+                else {}
+            ),
             data=data,
         )
+
+    async def get_all(self, include_data: bool = False, amount: int = None) -> list[KnwlBlob]:
+        """Get all blobs from the file storage."""
+        blobs = []
+        for filename in os.listdir(self.base_path):
+            blob = await self.get_by_id(filename, include_data=include_data)
+            if blob is not None:
+                blobs.append(blob)
+        # sort by name
+        blobs.sort(key=lambda b: b.name)
+        return blobs[:amount] if amount is not None else blobs
 
     async def delete_by_id(self, id: str) -> bool:
         """Delete a blob by id from a file."""

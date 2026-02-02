@@ -1,6 +1,8 @@
 import time
 from enum import Enum
 from typing import Optional
+
+import pymupdf4llm
 from knwl.api.knwl_api.taskiq_broker import broker
 from knwl import (
     Knwl,
@@ -28,6 +30,23 @@ class JobType(str, Enum):
 # This is a singleton shared across all requests
 knwl = Knwl()
 
+@broker.task
+async def parse_pdf_to_markdown(file_path: str, page_number: int = None) -> str:
+    """
+    Background task to parse a PDF file and extract its content as Markdown.
+
+    Args:
+        file_path: Path to the PDF file to be parsed
+        page_number: Optional specific page number to extract
+    Returns:
+        Extracted Markdown content as a string
+    """
+    page_number_list=None
+    if not (page_number is None):
+        page_number_list= [page_number]   
+    
+    md =  pymupdf4llm.to_markdown(file_path, pages=page_number_list)
+    return md
 
 @broker.task
 async def process_ingest_job(doc_data: dict) -> dict:

@@ -1,6 +1,7 @@
 import asyncio
 import copy
 from enum import Enum
+import os
 from typing import Optional, Tuple, Union
 
 from knwl import prompts, services, KnwlInput, GraphRAG, KnwlAnswer, KnwlContext
@@ -11,13 +12,14 @@ from knwl.config import (
     set_active_config,
 )
 from knwl.llm.llm_base import LLMBase
-from knwl.models import KnwlChunk
+from knwl.models import KnwlBlob, KnwlChunk
 from knwl.models.KnwlDocument import KnwlDocument
 from knwl.models.KnwlEdge import KnwlEdge
 from knwl.models.KnwlGraph import KnwlGraph
 from knwl.models.KnwlNode import KnwlNode
 from knwl.services import Services
 from knwl.logging import log
+from knwl.storage.blob_storage_base import BlobStorageBase
 from knwl.utils import get_full_path
 
 
@@ -244,24 +246,19 @@ class Knwl:
         return await self.grag.get_document_chunks(
             document_id=document_id, include_content=include_content
         )
-    async def get_graph_of_chunk(
-        self, chunk_id: str
-    ) -> Optional[KnwlGraph]:
+
+    async def get_graph_of_chunk(self, chunk_id: str) -> Optional[KnwlGraph]:
         """
         Get the knowledge graph for a given chunk Id.
         """
-        return await self.grag.get_graph_of_chunk(
-            chunk_id=chunk_id
-        )
-    async def get_graph_of_document(
-        self, document_id: str
-    ) -> Optional[KnwlGraph]:
+        return await self.grag.get_graph_of_chunk(chunk_id=chunk_id)
+
+    async def get_graph_of_document(self, document_id: str) -> Optional[KnwlGraph]:
         """
         Get the knowledge graph for a given document Id.
         """
-        return await self.grag.get_graph_of_document(
-            document_id=document_id
-        )
+        return await self.grag.get_graph_of_document(document_id=document_id)
+
     async def get_document_of_chunk(
         self, chunk_id: str, include_content: bool = False
     ) -> Optional[KnwlDocument]:
@@ -464,12 +461,57 @@ class Knwl:
         return await self.grag.semantic_graph.export_graph(format=format)  # type: ignore
 
     async def ingest_short_text(self) -> KnwlGraph:
+        """
+        Ingest the short example text from the library.
+        This is just a convenience method for testing.
+        """
         file_path = get_full_path("$/library/short.md")
         print(f"Reading short text from: {file_path}")
         with open(file_path, "r") as f:
             text = f.read()
-        input = KnwlInput(text=text, description="Short example ingestion", name="Short Text")
+        input = KnwlInput(
+            text=text, description="Short example ingestion", name="Short Text"
+        )
         return await self.add(input)
+
+    async def blob_count(self) -> int:
+        """
+        Get the total number of blobs in the system.
+        """
+        blob_store: BlobStorageBase = services.get_service("blob")
+        return await blob_store.count()
+
+    async def blob_upsert(
+        self, data: bytes, id: Optional[str] = None, metadata: Optional[dict] = None
+    ) -> str:
+        blob = KnwlBlob(data=data, id=id, metadata=metadata)
+        blob_store: BlobStorageBase = services.get_service("blob")
+        return await blob_store.upsert(blob)
+
+    async def blob_get_by_id(self, id: str) -> KnwlBlob | None:
+        blob_store: BlobStorageBase = services.get_service("blob")
+        return await blob_store.get_by_id(id)
+
+    async def blob_delete_by_id(self, id: str) -> bool:
+        blob_store: BlobStorageBase = services.get_service("blob")
+        return await blob_store.delete_by_id(id)
+
+    async def blob_upsert_file(
+        self, path: str, id: Optional[str] = None, metadata: Optional[dict] = None
+    ) -> str:
+        path = get_full_path(path)
+        if not os.path.isfile(path):
+            raise FileNotFoundError(f"File not found: {path}")
+        with open(path, "rb") as f:
+            data = f.read()
+        blob = KnwlBlob(data=data, id=id, metadata=metadata, name=os.path.basename(path), description=f"Blob uploaded from file {path}")
+        blob_store: BlobStorageBase = services.get_service("blob")
+        id = await blob_store.upsert(blob)
+        return id
+
+    async def get_all_blobs(self, include_data: bool = False, amount: int = None) -> list[KnwlBlob]:
+        blob_store: BlobStorageBase = services.get_service("blob")
+        return await blob_store.get_all(include_data=include_data, amount=amount)
 
     def __repr__(self) -> str:
         from importlib.metadata import version

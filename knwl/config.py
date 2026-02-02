@@ -21,7 +21,7 @@ _default_config = {
         "file_system": {
             "description": "File system based blob storage",
             "class": "knwl.storage.file_storage.FileStorage",
-            "base_path": "$/data/blobs",
+            "base_path": "$/user/default/blobs",
         },
         "seaweed": {
             "description": "S3 blob storage using SeaweedFS in docker",

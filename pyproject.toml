@@ -47,8 +47,9 @@ server = [
     "fastapi>=0.128.0",
     "uvicorn>=0.40.0",
     "fastmcp>=2.14.4",
-    "python-multipart>=0.0.20",
     "taskiq>=0.12.1",
+    "pymupdf4llm>=0.2.9",
+    "python-multipart>=0.0.22",
     "taskiq-redis>=1.0.0"
 ]
 extra = [

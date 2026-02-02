@@ -46,7 +46,7 @@ class BlobStorageBase(StorageBase, ABC):
     """
 
     @abstractmethod
-    async def get_by_id(self, id: str) -> KnwlBlob | None:
+    async def get_by_id(self, id: str, include_data: bool = True) -> KnwlBlob | None:
         """
         Asynchronously retrieve a KnwlBlob by its unique identifier.
 
@@ -131,4 +131,9 @@ class BlobStorageBase(StorageBase, ABC):
             - Implementations should be safe for concurrent use.
             - Document any normalization applied to `id` (case sensitivity, trimming, etc.).
         """
+        ...
+
+    @abstractmethod
+    async def get_all(self, include_data: bool = False, amount: int = None) -> list[KnwlBlob]:
+        """Get all blobs from the storage."""
         ...
