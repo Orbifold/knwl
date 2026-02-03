@@ -1,3 +1,4 @@
+import asyncio
 import time
 from enum import Enum
 from typing import Optional
@@ -15,6 +16,7 @@ from knwl import (
 )
 
 from knwl.api.knwl_api.models.JobStatus import JobStatus, JobState
+from knwl.api.knwl_api.models.JobResult import JobResult
 from knwl.logging import log
 
 
@@ -25,6 +27,7 @@ class JobType(str, Enum):
     EXTRACT = "extract"
     FACT = "fact"
     DUMMY = "dummy"
+    PARSE = "parse"
 
 
 # Initialize Knwl instance with default namespace
@@ -32,7 +35,7 @@ class JobType(str, Enum):
 knwl = Knwl()
 
 @broker.task
-async def parse_pdf_to_markdown(file_path: str, page_number: int = None, save_document: bool = False) -> dict:
+async def parse_pdf_to_markdown(file_path: str, page_number: int = None, save_document: bool = False) -> JobResult:
     """
     Background task to parse a PDF file and extract its content as Markdown.
 
@@ -48,28 +51,36 @@ async def parse_pdf_to_markdown(file_path: str, page_number: int = None, save_do
         page_number_list= [page_number]   
     
     md =  pymupdf4llm.to_markdown(file_path, pages=page_number_list)
+    started_at = time.time()
     if save_document:
         name = file_path.split("/")[-1]
         # remove extension
         name = name.rsplit(".", 1)[0]
         doc = KnwlDocument(
-            name = name,
+            name=name,
             content=md,
             description=f"Parsed from PDF file: {file_path}",
         )
         doc_dict = await knwl.save_document(doc)
-        return {
-            "markdown": md,
-            "document": doc.id,
-        }
+        output = {"markdown": md, "document": doc.id}
     else:
-        return {
-            "markdown": md,
-            :"document": None,
-        }
+        output = {"markdown": md, "document": None}
+
+    finished_at = time.time()
+    duration = finished_at - started_at
+
+    job_res = JobResult(
+        job_type=JobType.PARSE.value,
+        started_at=started_at,
+        finished_at=finished_at,
+        duration=duration,
+        output=output,
+    )
+
+    return job_res.model_dump()
 
 @broker.task
-async def process_ingest_job(doc_data: dict) -> dict:
+async def process_ingest_job(doc_data: dict) -> JobResult:
     """
     Background task to process data ingestion.
 
@@ -99,13 +110,17 @@ async def process_ingest_job(doc_data: dict) -> dict:
 
         log.info(f"Ingestion completed in {duration:.2f}s for: {doc.name}")
 
-        result_dict = result.model_dump(mode="json")
-        result_dict["started_at"] = started_at
-        result_dict["finished_at"] = finished_at
-        result_dict["duration"] = duration
-        result_dict["job_type"] = JobType.INGEST.value
+        output = result.model_dump(mode="json")
+        job_res = JobResult(
+            job_type=JobType.INGEST.value,
+            started_at=started_at,
+            finished_at=finished_at,
+            duration=duration,
+            output=output,
+        )
 
-        return result_dict
+        # Return a JSON-serializable form for the TaskIQ result backend
+        return job_res.model_dump()
 
     except Exception as e:
         finished_at = time.time()
@@ -115,7 +130,7 @@ async def process_ingest_job(doc_data: dict) -> dict:
 
 
 @broker.task
-async def process_extract_job(doc_data: dict) -> dict:
+async def process_extract_job(doc_data: dict) -> JobResult:
     """
     Background task to process data extraction.
 
@@ -144,13 +159,16 @@ async def process_extract_job(doc_data: dict) -> dict:
 
         log.info(f"Extraction completed in {duration:.2f}s for: {doc.name}")
 
-        result_dict = result.model_dump(mode="json")
-        result_dict["started_at"] = started_at
-        result_dict["finished_at"] = finished_at
-        result_dict["duration"] = duration
-        result_dict["job_type"] = JobType.EXTRACT.value
+        output = result.model_dump(mode="json")
+        job_res = JobResult(
+            job_type=JobType.EXTRACT.value,
+            started_at=started_at,
+            finished_at=finished_at,
+            duration=duration,
+            output=output,
+        )
 
-        return result_dict
+        return job_res.model_dump()
 
     except Exception as e:
         finished_at = time.time()
@@ -160,7 +178,7 @@ async def process_extract_job(doc_data: dict) -> dict:
 
 
 @broker.task
-async def process_fact_job(fact_data: dict) -> dict:
+async def process_fact_job(fact_data: dict) -> JobResult:
     """
     Background task to process adding a fact.
 
@@ -190,13 +208,16 @@ async def process_fact_job(fact_data: dict) -> dict:
 
         log.info(f"Fact addition completed in {duration:.2f}s for: {fact.name}")
 
-        result_dict = result.model_dump(mode="json")
-        result_dict["started_at"] = started_at
-        result_dict["finished_at"] = finished_at
-        result_dict["duration"] = duration
-        result_dict["job_type"] = JobType.FACT.value
+        output = result.model_dump(mode="json")
+        job_res = JobResult(
+            job_type=JobType.FACT.value,
+            started_at=started_at,
+            finished_at=finished_at,
+            duration=duration,
+            output=output,
+        )
 
-        return result_dict
+        return job_res.model_dump()
 
     except Exception as e:
         finished_at = time.time()
@@ -206,27 +227,29 @@ async def process_fact_job(fact_data: dict) -> dict:
         )
         raise
 @broker.task
-async def dummy_job(name:str, delay_seconds: int = 5) -> dict:
+async def dummy_job(name:str, delay_seconds: int = 5) -> JobResult:
     """
     A simple dummy job that waits for a specified duration.
 
     Args:
         delay_seconds: Number of seconds to wait
     Returns:
-        Dict containing job timing information
+        JobResult containing job timing information
     """
     started_at = time.time()
     log.info(f"Starting dummy job '{name}' with {delay_seconds}s delay")
-    await broker.sleep(delay_seconds)
+    await asyncio.sleep(delay_seconds)
     finished_at = time.time()
     duration = finished_at - started_at
     log.info(f"Dummy job '{name}' completed in {duration:.2f}s")
-    return {
-        "started_at": started_at,
-        "finished_at": finished_at,
-        "duration": duration,
-        "job_type": JobType.DUMMY.value,
-    }
+    job_res = JobResult(
+        job_type=JobType.DUMMY.value,
+        started_at=started_at,
+        finished_at=finished_at,
+        duration=duration,
+        output=f"Dummy job '{name}'",
+    )
+    return job_res.model_dump()
 
 async def add_job(job_type: str, data: dict) -> str:
     """
@@ -325,13 +348,31 @@ async def get_job_status(job_id: str) -> Optional[JobStatus]:
         # Job completed successfully
         state = JobState.COMPLETED
         error = None
-        job_result = result.return_value
-        started_at = job_result.get("started_at", 0)
-        finished_at = job_result.get("finished_at", 0)
-        job_type = job_result.get("job_type", "Unknown")
-        duration = job_result.get(
-            "duration", finished_at - started_at if finished_at else 0
-        )
+        raw = result.return_value
+        try:
+            if isinstance(raw, dict):
+                jr = JobResult(**raw)
+            elif isinstance(raw, JobResult):
+                jr = raw
+            else:
+                jr = JobResult(**dict(raw))
+        except Exception:
+            # Fall back to treating the return as a plain dict
+            jr = None
+
+        if jr is not None:
+            job_result = jr.output
+            started_at = jr.started_at
+            finished_at = jr.finished_at
+            job_type = jr.job_type
+            duration = jr.duration
+        else:
+            # Last-resort fallback to previous behavior
+            job_result = raw
+            started_at = raw.get("started_at", 0)
+            finished_at = raw.get("finished_at", 0)
+            job_type = raw.get("job_type", "Unknown")
+            duration = raw.get("duration", finished_at - started_at if finished_at else 0)
 
         log.debug(f"Job {job_id} completed in {duration:.2f}s")
 
