@@ -24,6 +24,7 @@ class JobType(str, Enum):
     INGEST = "ingest"
     EXTRACT = "extract"
     FACT = "fact"
+    DUMMY = "dummy"
 
 
 # Initialize Knwl instance with default namespace
@@ -31,22 +32,41 @@ class JobType(str, Enum):
 knwl = Knwl()
 
 @broker.task
-async def parse_pdf_to_markdown(file_path: str, page_number: int = None) -> str:
+async def parse_pdf_to_markdown(file_path: str, page_number: int = None, save_document: bool = False) -> dict:
     """
     Background task to parse a PDF file and extract its content as Markdown.
 
     Args:
         file_path: Path to the PDF file to be parsed
         page_number: Optional specific page number to extract
+        save_document: Whether to use the document storage system to save the document
     Returns:
-        Extracted Markdown content as a string
+        Extracted Markdown content and optionally the document as a dict
     """
     page_number_list=None
     if not (page_number is None):
         page_number_list= [page_number]   
     
     md =  pymupdf4llm.to_markdown(file_path, pages=page_number_list)
-    return md
+    if save_document:
+        name = file_path.split("/")[-1]
+        # remove extension
+        name = name.rsplit(".", 1)[0]
+        doc = KnwlDocument(
+            name = name,
+            content=md,
+            description=f"Parsed from PDF file: {file_path}",
+        )
+        doc_dict = await knwl.save_document(doc)
+        return {
+            "markdown": md,
+            "document": doc.id,
+        }
+    else:
+        return {
+            "markdown": md,
+            :"document": None,
+        }
 
 @broker.task
 async def process_ingest_job(doc_data: dict) -> dict:
@@ -185,7 +205,28 @@ async def process_fact_job(fact_data: dict) -> dict:
             f"Fact addition failed after {duration:.2f}s: {str(e)}"
         )
         raise
+@broker.task
+async def dummy_job(name:str, delay_seconds: int = 5) -> dict:
+    """
+    A simple dummy job that waits for a specified duration.
 
+    Args:
+        delay_seconds: Number of seconds to wait
+    Returns:
+        Dict containing job timing information
+    """
+    started_at = time.time()
+    log.info(f"Starting dummy job '{name}' with {delay_seconds}s delay")
+    await broker.sleep(delay_seconds)
+    finished_at = time.time()
+    duration = finished_at - started_at
+    log.info(f"Dummy job '{name}' completed in {duration:.2f}s")
+    return {
+        "started_at": started_at,
+        "finished_at": finished_at,
+        "duration": duration,
+        "job_type": JobType.DUMMY.value,
+    }
 
 async def add_job(job_type: str, data: dict) -> str:
     """
@@ -217,6 +258,8 @@ async def add_job(job_type: str, data: dict) -> str:
         task = await process_fact_job.kiq(data)
     elif job_type == JobType.EXTRACT.value:
         task = await process_extract_job.kiq(data)
+    elif job_type == JobType.DUMMY.value:
+        task = await dummy_job.kiq(**data)
     else:
         valid_types = [jt.value for jt in JobType]
         raise ValueError(

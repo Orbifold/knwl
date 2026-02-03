@@ -17,6 +17,7 @@ from knwl.models.KnwlDocument import KnwlDocument
 from knwl.models.KnwlEdge import KnwlEdge
 from knwl.models.KnwlGraph import KnwlGraph
 from knwl.models.KnwlNode import KnwlNode
+from knwl.semantic.rag.document_base import DocumentBase
 from knwl.services import Services
 from knwl.logging import log
 from knwl.storage.blob_storage_base import BlobStorageBase
@@ -536,6 +537,19 @@ class Knwl:
         blob_store: BlobStorageBase = services.get_service("blob")
         blob_id = await blob_store.upsert(blob)
         return blob_id
+
+    async def save_document(self, document: KnwlDocument) -> str:
+        """
+        Save a KnwlDocument using the document storage system.
+
+        Args:
+            document (KnwlDocument): The document to be saved.
+        Returns:
+            str: The Id of the saved document.
+        """
+        doc_store: DocumentBase = services.get_service("document_store")
+        document_id = await doc_store.upsert(document)
+        return document_id
 
     def __repr__(self) -> str:
         from importlib.metadata import version

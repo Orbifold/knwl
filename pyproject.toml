@@ -50,7 +50,8 @@ server = [
     "taskiq>=0.12.1",
     "pymupdf4llm>=0.2.9",
     "python-multipart>=0.0.22",
-    "taskiq-redis>=1.0.0"
+    "taskiq-redis>=1.0.0",
+    "aiosqlite>=0.20.0"
 ]
 extra = [
     "transformers>=4.46.1",
