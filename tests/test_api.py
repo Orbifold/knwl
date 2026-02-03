@@ -256,3 +256,26 @@ async def test_find_node_by_name(client):
             or test_name.lower() in node.get("description", "").lower()
         ), f"Node name '{node['name']}' does not match search name '{test_name}'"
     print(f"Found {len(nodes)} nodes with name matching '{test_name}'")
+
+@pytest.mark.asyncio
+async def test_get_documents(client):
+    """
+    Test the /documents endpoint to retrieve a list of documents from storage.
+    1. Calls the /documents endpoint with a specified amount and include_content flag.
+    2. Verifies the response status and content.
+    3. Validates that the returned documents match the requested amount and content inclusion.
+    """
+    amount = 5
+    include_content = False
+    print(f"Testing /documents endpoint with amount: {amount}, include_content: {include_content}")
+    response = client.get(f"/storage/documents?amount={amount}&include_content={str(include_content).lower()}")
+    assert response.status_code == 200, "Failed to retrieve documents"
+    documents = response.json()
+    assert isinstance(documents, list), "Response should be a list of documents"
+    assert len(documents) <= amount, f"Number of documents returned exceeds requested amount of {amount}"
+    for doc in documents:
+        assert "id" in doc, "Document should have an 'id' field"
+        assert "name" in doc, "Document should have a 'name' field"
+       
+    print(f"Retrieved {len(documents)} documents from storage")
+    

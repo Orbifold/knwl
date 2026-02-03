@@ -75,7 +75,7 @@ async def get_documents(amount: int = 10, include_content: bool = False) -> Dict
 
 
 @router.get(
-    "/documents/{document_id}",
+    "/document/{document_id}",
     response_model=KnwlDocument,
     summary="Get document by Id",
     description="Retrieve a document by its Id from storage.",

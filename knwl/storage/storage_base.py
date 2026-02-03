@@ -55,3 +55,9 @@ class StorageBase(FrameworkBase, ABC):
         Returns the total number of objects in storage.
         """
         return 0
+
+    async def get_all(self, amount: int = 10, include_content: bool = False) -> list[KnwlModel]:
+        """
+        Retrieves all objects up to the specified amount.
+        """
+        return []

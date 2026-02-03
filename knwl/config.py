@@ -55,8 +55,8 @@ _default_config = {
     "document_store": {
         "default": "user",
         "user": {
-            "class": "knwl.semantic.rag.document_store.DocumentStore",
-            "document_storage": "@/json/user_documents",
+             "class": "knwl.semantic.rag.document_store.DocumentStore",
+            "document_storage": "@/json_document_store",
         },
     },
     "entity_extraction": {
@@ -156,6 +156,13 @@ _default_config = {
             "path": "$/user/default/chunks.jsonl",
         },
     },
+    "json_document_store": {
+        "default": "user",
+        "user": {
+            "class": "knwl.storage.json_document_storage.JsonDocumentStorage",
+            "root_path": "$/user/default/documents",
+        },
+    },
     "keywords_extraction": {
         "default": "basic",
         "basic": {
@@ -192,11 +199,11 @@ _default_config = {
             "caching_service": "@/llm_caching/user",
             "temperature": 0.1,
             "context_window": 32768,
-            "api_key": os.getenv("OPENAI_API_KEY", "")            
+            "api_key": os.getenv("OPENAI_API_KEY", ""),
         },
         "anthropic": {
             "class": "knwl.llm.anthropic.AnthropicClient",
-            "model": "claude-haiku-4-5-20251001", #"claude-sonnet-4-5-20250929", 
+            "model": "claude-haiku-4-5-20251001",  # "claude-sonnet-4-5-20250929",
             "caching_service": "@/llm_caching/user",
             "temperature": 0.1,
             "context_window": 4096,  # Max tokens for response (lower to avoid streaming requirement)
@@ -207,10 +214,10 @@ _default_config = {
             "model": "HuggingFaceTB/SmolLM-1.7B-Instruct",
             # "model": "Qwen/Qwen2.5-7B-Instruct",
             "caching_service": "@/llm_caching/user",
-            "temperature": 0.1,     
+            "temperature": 0.1,
             "context_window": 2048,
             "device": None,  # Auto-detect: cuda, mps, or cpu
-            "api_key": os.getenv("HF_TOKEN", ""), # HF_TOKEN for gated models
+            "api_key": os.getenv("HF_TOKEN", ""),  # HF_TOKEN for gated models
         },
     },
     "llm_caching": {

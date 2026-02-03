@@ -27,7 +27,7 @@ async def extract_markdown(file: UploadFile, page_number:int=None):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to start ingestion job: {str(e)}",
         )
-    return extract_pdf_to_markdown(,page_number)
+    # return extract_pdf_to_markdown(,page_number)
 
 @router.post("/extract/tables")
 def extract_table(file: UploadFile, page_number:int=None):

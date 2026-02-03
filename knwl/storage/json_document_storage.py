@@ -11,7 +11,7 @@ from knwl.storage.storage_adapter import StorageAdapter
 from knwl.utils import get_full_path, load_json, write_json
 
 
-@defaults("document_store")
+@defaults("json_document_store")
 class JsonDocumentStorage(StorageBase):
     """
     Saves models as individual JSON files in a specified directory.
@@ -22,7 +22,8 @@ class JsonDocumentStorage(StorageBase):
         super().__init__()
         self.root_path = root_path
         if self.root_path is None:
-            self.root_path = get_full_path("$/user/documents")
+            print("path not provided for JsonDocumentStorage, using default: $/user/default/documents")
+            self.root_path = get_full_path("$/user/default/documents")
         else:
             # create dirs by default
             self.root_path = get_full_path(self.root_path)
@@ -113,3 +114,26 @@ class JsonDocumentStorage(StorageBase):
         if not os.path.exists(self.root_path):
             return 0
         return len([f for f in os.listdir(self.root_path) if f.endswith(".json")])
+
+    async def get_all(self, amount: int = 10, include_content: bool = False) -> list[KnwlModel]:
+        """
+        Retrieves all objects up to the specified amount.
+        """
+        results: list[KnwlModel] = []
+        if not os.path.exists(self.root_path):
+            return results
+        count = 0
+        for fn in os.listdir(self.root_path):
+            if not fn.endswith(".json"):
+                continue
+            file_path = get_full_path(os.path.join(self.root_path, fn))
+            data = load_json(file_path)
+            if data is None:
+                continue
+            if not include_content:
+                data["content"] = "<content omitted>"
+            results.append(data)
+            count += 1
+            if count >= amount:
+                break
+        return results

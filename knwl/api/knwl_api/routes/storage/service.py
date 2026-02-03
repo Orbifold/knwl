@@ -50,7 +50,7 @@ async def get_document_by_id(document_id: str) -> KnwlDocument | None:
         KnwlDocument | None: The retrieved document or None if not found
     """
     try:
-        document = await knwl.get_document_by_id(id=document_id)
+        document = await knwl.get_document_by_id(document_id=document_id)
         if document:
             log.debug(f"Document with Id {document_id} retrieved.")
         else:
