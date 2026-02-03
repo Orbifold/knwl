@@ -488,9 +488,11 @@ class Knwl:
         blob_store: BlobStorageBase = services.get_service("blob")
         return await blob_store.upsert(blob)
 
-    async def blob_get_by_id(self, id: str) -> KnwlBlob | None:
+    async def blob_get_by_id(
+        self, id: str, include_data: bool = False
+    ) -> KnwlBlob | None:
         blob_store: BlobStorageBase = services.get_service("blob")
-        return await blob_store.get_by_id(id)
+        return await blob_store.get_by_id(id, include_data=include_data)
 
     async def blob_delete_by_id(self, id: str) -> bool:
         blob_store: BlobStorageBase = services.get_service("blob")
@@ -504,14 +506,36 @@ class Knwl:
             raise FileNotFoundError(f"File not found: {path}")
         with open(path, "rb") as f:
             data = f.read()
-        blob = KnwlBlob(data=data, id=id, metadata=metadata, name=os.path.basename(path), description=f"Blob uploaded from file {path}")
+        blob = KnwlBlob(
+            data=data,
+            id=id,
+            metadata=metadata,
+            name=os.path.basename(path),
+            description=f"Blob uploaded from file {path}",
+        )
         blob_store: BlobStorageBase = services.get_service("blob")
         id = await blob_store.upsert(blob)
         return id
 
-    async def get_all_blobs(self, include_data: bool = False, amount: int = None) -> list[KnwlBlob]:
+    async def get_all_blobs(
+        self, include_data: bool = False, amount: int = None
+    ) -> list[KnwlBlob]:
         blob_store: BlobStorageBase = services.get_service("blob")
         return await blob_store.get_all(include_data=include_data, amount=amount)
+
+    async def save_document_to_blob(self, document: KnwlDocument) -> str:
+        """
+        Save a KnwlDocument as a KnwlBlob in the blob storage.
+
+        Args:
+            document (KnwlDocument): The document to be saved as a blob.
+        Returns:
+            str: The Id of the saved blob.
+        """
+        blob = KnwlBlob.from_document(document)
+        blob_store: BlobStorageBase = services.get_service("blob")
+        blob_id = await blob_store.upsert(blob)
+        return blob_id
 
     def __repr__(self) -> str:
         from importlib.metadata import version

@@ -125,7 +125,8 @@ class GraphRAG(GraphRAGBase):
             return None
 
         # ============================================================================================
-        # Store source document
+        # Store source document.
+        # You could store it to blob storage as well.
         # ============================================================================================
         if self.ragger:
             await self.ragger.upsert_document(result.input)
@@ -137,6 +138,7 @@ class GraphRAG(GraphRAGBase):
         node_dicts = [n.model_dump() for n in result.graph.nodes]
         edge_dicts = [e.model_dump() for e in result.graph.edges]
         await self.semantic_graph.graph.merge(node_dicts, edge_dicts)
+        
         # ============================================================================================
         # Vectorize nodes and edges
         # ============================================================================================

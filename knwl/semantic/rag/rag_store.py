@@ -55,19 +55,19 @@ class RagStore(RagBase):
         else:
             raise ValueError(f"RagStore: unsupported upsert object type: {type(obj)}")
 
-    async def upsert_document(self, obj: KnwlDocument) -> str:
-        if obj is None:
+    async def upsert_document(self, doc: KnwlDocument) -> str:
+        if doc is None:
             raise ValueError("RagStore: cannot upsert None document")
-        if not isinstance(obj, KnwlDocument):
+        if not isinstance(doc, KnwlDocument):
             raise ValueError(
-                f"RagStore: use the `upsert` method for non-document types, got: {type(obj)}"
+                f"RagStore: use the `upsert` method for non-document types, got: {type(doc)}"
             )
         if self.auto_chunk:
-            chunks = await self.chunk(obj)
+            chunks = await self.chunk(doc)
             for chunk in chunks:
                 await self.upsert_chunk(chunk)
 
-        return await self.document_store.upsert(obj)
+        return await self.document_store.upsert(doc)
 
     async def chunk(self, doc: KnwlDocument) -> list[KnwlChunk]:
         if self.chunker is None:
